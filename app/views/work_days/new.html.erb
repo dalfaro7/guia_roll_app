@@ -1,3 +1,4 @@
+<div class="container">
 <h1>New Work Day</h1>
 
 <%= form_with model: @work_day do |f| %>
@@ -5,15 +6,16 @@
     <%= f.label :date %><br>
     <%= f.date_field :date, min: Date.today %>
   </div>
-
+<br>
   <div>
     <%= f.label :guides_requested %><br>
     <%= f.number_field :guides_requested %>
   </div>
-
-  <div>
-    <%= f.submit "Create" %>
+<br>
+  <div class="">
+    <%= f.submit "Create", class: "btn btn-primary btn-lg" %>
   </div>
 <% end %>
-
+<br>
 <%= link_to "Back", work_days_path %>
+</div>
