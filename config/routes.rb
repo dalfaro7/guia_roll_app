@@ -9,7 +9,7 @@ Rails.application.routes.draw do
 
 resources :work_days do
   member do
-    post :generate_roles
+    patch :generate_roles
     post :publish
     post :unpublish
     post :reset_roll

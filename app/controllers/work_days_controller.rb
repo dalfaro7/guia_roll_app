@@ -55,9 +55,14 @@ class WorkDaysController < ApplicationController
  def generate_roles
   work_day = WorkDay.find(params[:id])
 
-  RoleGenerator.new(work_day).generate!
+  begin
+    RoleGenerator.new(work_day).generate!
+    flash[:notice] = "Generated"
+  rescue => e
+    flash[:alert] = e.message
+  end
 
-  redirect_to work_day_path(work_day), notice: "Roles generated successfully."
+  redirect_to work_day_path(work_day)
 end
 
   # =====================================

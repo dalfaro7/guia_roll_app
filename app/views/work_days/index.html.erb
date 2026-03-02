@@ -18,7 +18,7 @@
       <td>
         <%= link_to "View", work_day_path(day) %>
         <% if day.draft? %>
-          | <%= button_to "Generate", generate_roles_work_day_path(day), method: :post %>
+          | <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch %>
         <% end %>
         <% if day.generated? %>
           | <%= button_to "Publish", publish_work_day_path(day), method: :post %>
