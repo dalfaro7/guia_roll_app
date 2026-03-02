@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_183217) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_02_204425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,7 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_183217) do
     t.bigint "guide_id", null: false
     t.date "month"
     t.datetime "updated_at", null: false
-    t.integer "worked_days"
+    t.integer "worked_days", default: 0, null: false
     t.index ["guide_id"], name: "index_monthly_balances_on_guide_id"
   end
 
