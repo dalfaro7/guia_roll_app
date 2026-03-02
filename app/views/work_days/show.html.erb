@@ -30,21 +30,16 @@
         <th>Status</th>
       </tr>
 
-      <% Guide.active.order(:priority).each do |guide| %>
-        <tr>
-          <td><%= guide.name %></td>
-          <td>
-            <%= select_tag "availability[#{guide.id}]",
-                  options_for_select(
-                    [
-                      ["Available", ""],
-                      ["Day Off", "day_off"],
-                      ["Vacation", "vacation"]
-                    ]
-                  ) %>
-          </td>
-        </tr>
-      <% end %>
+      <% @guide_days.each do |gd| %>
+  <tr>
+    <td><%= gd.guide.name %></td>
+
+    <td>
+      <%= select_tag "availability[#{gd.id}]",
+            options_for_select(GuideDay.statuses.keys, gd.status) %>
+    </td>
+  </tr>
+<% end %>
     </table>
 
     <br>

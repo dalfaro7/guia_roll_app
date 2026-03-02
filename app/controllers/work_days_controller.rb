@@ -14,24 +14,53 @@ class WorkDaysController < ApplicationController
 
   def show
     @guide_days = @work_day.guide_days.includes(:guide)
+    @work_day = WorkDay.find(params[:id])
   end
 
   def new
     @work_day = WorkDay.new
   end
 
-  def create
-    @work_day = WorkDay.new(work_day_params)
+ 
 
-    if @work_day.save
-      redirect_to @work_day, notice: "Work day created."
-    else
-      render :new
-    end
+  def create
+  @work_day = WorkDay.new(work_day_params)
+
+  if WorkDay.exists?(date: @work_day.date)
+    redirect_back fallback_location: work_days_path,
+                  alert: "A Work Day already exists for this date."
+    return
   end
 
+  if @work_day.save
+    redirect_to @work_day, notice: "Work Day created successfully."
+  else
+    redirect_back fallback_location: work_days_path,
+                  alert: @work_day.errors.full_messages.join(", ")
+  end
+end
+
+# =====================================
+  # UPDATE availability
   # =====================================
-  # UPDATE
+
+def update_availability
+  @work_day = WorkDay.find(params[:id])
+
+  params[:availability]&.each do |guide_day_id, status|
+    guide_day = @work_day.guide_days.find(guide_day_id)
+
+    guide_day.update!(
+      status: status,
+      manually_modified: true
+    )
+  end
+
+  redirect_to @work_day, notice: "Availability updated."
+end
+
+  # =====================================
+  # UPDATE roles
   # =====================================
 
   def update_roles

@@ -8,6 +8,7 @@ class WorkDay < ApplicationRecord
   has_many :guides, through: :guide_days
 
   accepts_nested_attributes_for :guide_days, update_only: true
+  after_create :initialize_guide_days
 
   # ==============================
   # VALIDATIONS
@@ -24,6 +25,19 @@ class WorkDay < ApplicationRecord
     generated: 1,
     published: 2
   }
+
+
+  # ==============================
+  # inicializar guide_day
+  # ==============================
+  def initialize_guide_days
+  Guide.active.find_each do |guide|
+    guide_days.create!(
+      guide: guide,
+      status: :standby
+    )
+  end
+end
 
   # ==============================
   # GENERATE ROLES
