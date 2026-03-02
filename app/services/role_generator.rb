@@ -4,31 +4,27 @@ class RoleGenerator
   end
 
   def generate!
-    raise "WorkDay must be draft" unless @work_day.draft?
+    raise "WorkDay must be in draft" unless @work_day.draft?
 
     ActiveRecord::Base.transaction do
       reset_worked_assignments
 
-      guides = guides_sorted_by_equity
-      assigned = 0
+      sorted_guides.each do |guide|
+        break if rolled_count >= @work_day.guides_requested
 
-      guides.each do |guide|
-        break if assigned >= @work_day.guides_requested
-        next unless available?(guide)
-
-        assign_guide(guide)
-        assigned += 1
+        next unless assignable?(guide)
+        assign_as_worked(guide)
       end
 
-      raise ActiveRecord::Rollback if assigned < @work_day.guides_requested
+      ensure_full_assignments!
 
-      create_version_snapshot
+      snapshot_roll!
     end
   end
 
   private
 
-  def guides_sorted_by_equity
+  def sorted_guides
     Guide
       .left_joins(:monthly_balance)
       .where(active: true)
@@ -36,55 +32,45 @@ class RoleGenerator
       .order(Arel.sql("COALESCE(monthly_balances.worked_days, 0) ASC"))
   end
 
-  def available?(guide)
+  def assignable?(guide)
     gd = @work_day.guide_days.find_by(guide: guide)
     return true unless gd
 
     !gd.vacation? && !gd.day_off?
   end
 
-  def assign_guide(guide)
-    guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
-
-    guide_day.update!(
-      status: :worked,
-      manually_modified: false,
-      modified_by_id: nil
-    )
-
-    increment_balance(guide)
-  end
-
-  def increment_balance(guide)
-    balance = guide.monthly_balance ||
-              guide.create_monthly_balance(
-                month: @work_day.date.beginning_of_month,
-                worked_days: 0
-              )
-
-    balance.increment!(:worked_days)
+  def assign_as_worked(guide)
+    gd = @work_day.guide_days.find_or_initialize_by(guide: guide)
+    gd.assign_attributes(status: :worked)
+    gd.manually_modified = false
+    gd.save!
   end
 
   def reset_worked_assignments
     @work_day.guide_days.worked.each do |gd|
-      gd.guide.monthly_balance&.decrement!(:worked_days)
-      gd.destroy
+      # revierte solo worked y deja intactos standbys/días libres manuales
+      gd.update!(status: nil)
     end
   end
 
-  def create_version_snapshot
+  def rolled_count
+    @work_day.guide_days.worked.count
+  end
+
+  def ensure_full_assignments!
+    if rolled_count < @work_day.guides_requested
+      raise ActiveRecord::Rollback, "Not enough assignable guides"
+    end
+  end
+
+  def snapshot_roll!
     WorkDayVersion.create!(
       work_day: @work_day,
-      event: "roles_generated",
+      event: "generated",
       snapshot: {
         date: @work_day.date,
         guides_requested: @work_day.guides_requested,
-        assignments: @work_day.guide_days.map do |gd|
-          {
-            guide_id: gd.guide_id,
-            status: gd.status
-          }
-        end
+        assignments: @work_day.guide_days.map { |gd| { guide_id: gd.guide_id, status: gd.status } }
       }
     )
   end
