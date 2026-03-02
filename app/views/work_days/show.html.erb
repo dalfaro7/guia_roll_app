@@ -54,41 +54,59 @@
 <% end %>
 
 
-
 <% if @work_day.generated? %>
 
   <h2>Edit Roles</h2>
 
-  <%= form_with url: update_roles_work_day_path(@work_day), method: :patch do %>
+  <%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
 
     <table border="1" cellpadding="8">
-      <tr>
-        <th>Guide</th>
-        <th>Primary Role</th>
-        <th>Secondary Role</th>
-      </tr>
-
-      <% @guide_days.worked.each do |gd| %>
+      <thead>
         <tr>
-          <td><%= gd.guide.name %></td>
-
-          <td>
-            <%= select_tag "roles[#{gd.id}][role_primary]",
-                  options_for_select(
-                    ["River Guide", "Safety Kayaker", "Photographer"],
-                    gd.role_primary
-                  ) %>
-          </td>
-
-          <td>
-            <%= select_tag "roles[#{gd.id}][role_secondary]",
-                  options_for_select(
-                    ["", "Head Guide", "Bus Guide", "Driver"],
-                    gd.role_secondary
-                  ) %>
-          </td>
+          <th>Guide</th>
+          <th>Current Primary</th>
+          <th>New Primary</th>
+          <th>Current Secondary</th>
+          <th>New Secondary</th>
         </tr>
-      <% end %>
+      </thead>
+
+      <tbody>
+        <% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
+        <% secondary_roles = ["Head Guide", "Bus Guide", "Driver"] %>
+
+        <% @guide_days.worked.each do |gd| %>
+          <tr>
+            <td>
+              <strong><%= gd.guide.name %></strong>
+            </td>
+
+            <!-- Mostrar rol actual guardado -->
+            <td>
+              <%= gd.role_primary.presence || "-" %>
+            </td>
+
+            <!-- Selector para nuevo rol primario -->
+            <td>
+              <%= select_tag "roles[#{gd.id}][role_primary]",
+                    options_for_select(primary_roles, gd.role_primary.to_s),
+                    include_blank: true %>
+            </td>
+
+            <!-- Mostrar rol secundario actual -->
+            <td>
+              <%= gd.role_secondary.presence || "-" %>
+            </td>
+
+            <!-- Selector para nuevo rol secundario -->
+            <td>
+              <%= select_tag "roles[#{gd.id}][role_secondary]",
+                    options_for_select(secondary_roles, gd.role_secondary.to_s),
+                    include_blank: true %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
     </table>
 
     <br>
@@ -97,6 +115,7 @@
   <% end %>
 
 <% end %>
+
 
 <% if @work_day.published? %>
   <%= button_to "Unpublish Work Day",
@@ -107,29 +126,48 @@
 
 <hr>
 
-<h2>Guide Assignments</h2>
+<h3>Assigned Guides</h3>
 
-  <table border="1" cellpadding="8">
+<table border="1" cellpadding="6">
+  <thead>
     <tr>
       <th>Guide</th>
       <th>Status</th>
       <th>Primary Role</th>
       <th>Secondary Role</th>
+      <th></th>
     </tr>
+  </thead>
 
-    <% @guide_days.each do |guide_day| %>
+  <tbody>
+    <% @work_day.guide_days.each do |guide_day| %>
       <tr>
-        <td><%= guide_day.guide.name %></td>
-        <td><%= guide_day.status %></td>
-        <td><%= guide_day.role_primary %></td>
-        <td><%= guide_day.role_secondary %></td>
+        <%= form_with model: guide_day, local: true do |f| %>
+          <td><%= guide_day.guide.name %></td>
+
+          <td>
+            <%= f.select :status,
+                  GuideDay.statuses.keys.map { |s| [s.humanize, s] } %>
+          </td>
+
+          <td>
+            <%= f.text_field :role_primary %>
+          </td>
+
+          <td>
+            <%= f.text_field :role_secondary %>
+          </td>
+
+          <td>
+            <%= f.submit "Update" %>
+          </td>
+        <% end %>
       </tr>
     <% end %>
-  </table>
+  </tbody>
+</table>
 <%end%>
 <br>
-
-
 
 
 

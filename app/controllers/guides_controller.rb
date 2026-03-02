@@ -8,8 +8,6 @@ class GuidesController < ApplicationController
   end
 
   def create
-  Rails.logger.info "PARAMS:"
-  Rails.logger.info params.inspect
 
   @guide = Guide.new(guide_params)
 

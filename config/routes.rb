@@ -19,6 +19,8 @@ resources :work_days do
   end
 end
 
+resources :guide_days, only: [:update]
+
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.

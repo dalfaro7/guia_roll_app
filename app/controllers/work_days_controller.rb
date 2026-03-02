@@ -34,19 +34,9 @@ class WorkDaysController < ApplicationController
   # UPDATE
   # =====================================
   def update
-    new_count = work_day_params[:guides_requested].to_i
-
-    if new_count != @work_day.guides_requested
-      @work_day.regenerate_with_new_count!(new_count)
-      redirect_to @work_day, notice: "Work day regenerated."
-      return
-    end
-
-    if @work_day.update(work_day_params)
-      redirect_to @work_day, notice: "Work day updated."
-    else
-      render :edit
-    end
+  @work_day = WorkDay.find(params[:id])
+  @work_day.update(work_day_params)
+  redirect_to @work_day
   end
 
   # =====================================
