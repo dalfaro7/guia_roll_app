@@ -1,7 +1,7 @@
 class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
-    :update,
+    :update_roles,
     :generate_roles,
     :publish,
     :unpublish,
@@ -33,11 +33,31 @@ class WorkDaysController < ApplicationController
   # =====================================
   # UPDATE
   # =====================================
-  def update
+
+  def update_roles
   @work_day = WorkDay.find(params[:id])
-  @work_day.update(work_day_params)
-  redirect_to @work_day
+
+  return redirect_to @work_day unless params[:roles]
+
+  @work_day.guide_days.where(id: params[:roles].keys).each do |guide_day|
+
+    role_data = params[:roles][guide_day.id.to_s]
+
+    updates = {}
+
+    if role_data["role_primary"].present?
+      updates[:role_primary] = role_data["role_primary"]
+    end
+
+    if role_data["role_secondary"].present?
+      updates[:role_secondary] = role_data["role_secondary"]
+    end
+
+    guide_day.update(updates) if updates.any?
   end
+
+  redirect_to @work_day, notice: "Roles updated successfully."
+end
 
   # =====================================
   # GENERATE ROLES
@@ -86,6 +106,37 @@ end
       redirect_to @work_day, alert: "Only published days can be unpublished."
     end
   end
+
+  # =====================================
+  # delete ROLL
+  # =====================================
+  def delete_with_reset
+  @work_day = WorkDay.find(params[:id])
+
+  ActiveRecord::Base.transaction do
+
+    # 1️⃣ Revertir balances solo si estaban worked
+    @work_day.guide_days.worked.each do |guide_day|
+      guide = guide_day.guide
+      balance = guide.monthly_balance
+
+      if balance && balance.worked_days > 0
+        balance.decrement!(:worked_days)
+      end
+    end
+
+    # 2️⃣ Eliminar snapshots relacionados
+    WorkDayVersion.where(work_day_id: @work_day.id).delete_all
+
+    # 3️⃣ Eliminar guide_days
+    @work_day.guide_days.delete_all
+
+    # 4️⃣ Eliminar work_day
+    @work_day.destroy!
+  end
+
+  redirect_to work_days_path, notice: "Work Day deleted and balances restored."
+end
 
    # =====================================
   # RESET ROLL

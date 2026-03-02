@@ -117,6 +117,8 @@
 <% end %>
 
 
+<!-- ROLL PUBLICADO -->
+
 <% if @work_day.published? %>
   <%= button_to "Unpublish Work Day",
       unpublish_work_day_path(@work_day),
@@ -135,33 +137,25 @@
       <th>Status</th>
       <th>Primary Role</th>
       <th>Secondary Role</th>
-      <th></th>
     </tr>
   </thead>
 
   <tbody>
     <% @work_day.guide_days.each do |guide_day| %>
       <tr>
-        <%= form_with model: guide_day, local: true do |f| %>
           <td><%= guide_day.guide.name %></td>
 
           <td>
-            <%= f.select :status,
-                  GuideDay.statuses.keys.map { |s| [s.humanize, s] } %>
+            <%= guide_day.status%>
           </td>
 
           <td>
-            <%= f.text_field :role_primary %>
+            <%= guide_day.role_primary%>
           </td>
 
           <td>
-            <%= f.text_field :role_secondary %>
+            <%= guide_day.role_secondary %>
           </td>
-
-          <td>
-            <%= f.submit "Update" %>
-          </td>
-        <% end %>
       </tr>
     <% end %>
   </tbody>
@@ -169,7 +163,15 @@
 <%end%>
 <br>
 
+<!-- botones -->
 
+<%= button_to "Delete Work Day",
+      delete_with_reset_work_day_path(@work_day),
+      method: :delete,
+      data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" },
+      class: "btn btn-danger" %>
+
+      <br>
 
 <% if @work_day.generated? %>
   <hr>
@@ -191,3 +193,5 @@
 <% end %>
 <hr>
 <%= link_to "Back to Work Days", work_days_path %>
+
+

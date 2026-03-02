@@ -71,31 +71,17 @@ class RoleGenerator
   # =====================================================
 
   def assign_roles(selected_guides)
-    selected_guides.each_with_index do |guide, index|
-      guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
+  selected_guides.each do |guide|
+    guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
 
-      primary_role = primary_role_for(index)
-      secondary_role = secondary_role_for(index)
-
-      guide_day.update!(
-        status: :worked,
-        role_primary: primary_role,
-        role_secondary: secondary_role,
-        manually_modified: false,
-        modified_by_id: nil
-      )
-    end
+    guide_day.update!(
+      status: :worked,
+      role_primary: "River Guide",
+      role_secondary: nil,
+      manually_modified: false
+    )
   end
-
-  def primary_role_for(index)
-    return "Lead" if index.zero?
-    "Guide"
-  end
-
-  def secondary_role_for(index)
-    return "Safety" if index == 1
-    nil
-  end
+end
 
   # =====================================================
   # SNAPSHOT

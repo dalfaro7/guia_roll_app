@@ -16,6 +16,7 @@ resources :work_days do
     patch :update_assignments
     patch :update_availability
     patch :update_roles
+    delete :delete_with_reset 
   end
 end
 
