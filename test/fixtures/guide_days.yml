@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  guide: one
+  work_day: one
+  status: 1
+  role_primary: MyString
+  role_secondary: MyString
+  manually_modified: false
+  modified_by: one
+
+two:
+  guide: two
+  work_day: two
+  status: 1
+  role_primary: MyString
+  role_secondary: MyString
+  manually_modified: false
+  modified_by: two

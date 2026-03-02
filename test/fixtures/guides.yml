@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  priority: 1
+  active: false
+  start_date: 2026-02-26
+  total_worked_days: 1
+  last_priority_change_date: 2026-02-26
+
+two:
+  name: MyString
+  priority: 1
+  active: false
+  start_date: 2026-02-26
+  total_worked_days: 1
+  last_priority_change_date: 2026-02-26

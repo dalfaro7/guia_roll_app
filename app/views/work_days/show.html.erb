@@ -1,0 +1,155 @@
+
+<h1>Work Day - <%= @work_day.date %></h1>
+
+<p>
+  <strong>Guides Requested:</strong>
+  <%= @work_day.guides_requested %>
+</p>
+
+<%= form_with model: @work_day, method: :patch do |f| %>
+  <%= f.number_field :guides_requested %>
+  <%= f.submit "Update" %>
+<% end %>
+
+<p>
+  <strong>Status:</strong>
+  <%= @work_day.status %>
+</p>
+
+<hr>
+
+<% if @work_day.draft? %>
+
+  <h2>Set Availability</h2>
+
+  <%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
+
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Guide</th>
+        <th>Status</th>
+      </tr>
+
+      <% Guide.active.order(:priority).each do |guide| %>
+        <tr>
+          <td><%= guide.name %></td>
+          <td>
+            <%= select_tag "availability[#{guide.id}]",
+                  options_for_select(
+                    [
+                      ["Available", ""],
+                      ["Day Off", "day_off"],
+                      ["Vacation", "vacation"]
+                    ]
+                  ) %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+
+    <br>
+    <%= submit_tag "Save Availability" %>
+
+  <% end %>
+<% end %>
+
+
+
+<% if @work_day.generated? %>
+
+  <h2>Edit Roles</h2>
+
+  <%= form_with url: update_roles_work_day_path(@work_day), method: :patch do %>
+
+    <table border="1" cellpadding="8">
+      <tr>
+        <th>Guide</th>
+        <th>Primary Role</th>
+        <th>Secondary Role</th>
+      </tr>
+
+      <% @guide_days.worked.each do |gd| %>
+        <tr>
+          <td><%= gd.guide.name %></td>
+
+          <td>
+            <%= select_tag "roles[#{gd.id}][role_primary]",
+                  options_for_select(
+                    ["River Guide", "Safety Kayaker", "Photographer"],
+                    gd.role_primary
+                  ) %>
+          </td>
+
+          <td>
+            <%= select_tag "roles[#{gd.id}][role_secondary]",
+                  options_for_select(
+                    ["", "Head Guide", "Bus Guide", "Driver"],
+                    gd.role_secondary
+                  ) %>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+
+    <br>
+    <%= submit_tag "Save Roles" %>
+
+  <% end %>
+
+<% end %>
+
+<% if @work_day.published? %>
+  <%= button_to "Unpublish Work Day",
+      unpublish_work_day_path(@work_day),
+      method: :post,
+      data: { confirm: "Reopen this work day?" },
+      style: "padding:10px; background:#dc3545; color:white;" %>
+
+<hr>
+
+<h2>Guide Assignments</h2>
+
+  <table border="1" cellpadding="8">
+    <tr>
+      <th>Guide</th>
+      <th>Status</th>
+      <th>Primary Role</th>
+      <th>Secondary Role</th>
+    </tr>
+
+    <% @guide_days.each do |guide_day| %>
+      <tr>
+        <td><%= guide_day.guide.name %></td>
+        <td><%= guide_day.status %></td>
+        <td><%= guide_day.role_primary %></td>
+        <td><%= guide_day.role_secondary %></td>
+      </tr>
+    <% end %>
+  </table>
+<%end%>
+<br>
+
+
+
+
+
+<% if @work_day.generated? %>
+  <hr>
+  <%= button_to "Publish Work Day",
+      publish_work_day_path(@work_day),
+      method: :post,
+      data: { confirm: "Are you sure you want to publish?" },
+      style: "padding:10px; background:#28a745; color:white;" %>
+<% end %>
+
+<br>
+
+<% unless @work_day.draft? %>
+  <%= button_to "Reset Roll",
+      reset_roll_work_day_path(@work_day),
+      method: :post,
+      data: { confirm: "Reset this day's roll completely?" },
+      style: "background:#dc3545; color:white; padding:8px;" %>
+<% end %>
+<hr>
+<%= link_to "Back to Work Days", work_days_path %>

@@ -1,0 +1,29 @@
+<h1>Work Days</h1>
+
+<%= link_to "New Work Day", new_work_day_path, class: "btn" %>
+
+<table border="1" cellpadding="8">
+  <tr>
+    <th>Date</th>
+    <th>Guides Requested</th>
+    <th>Status</th>
+    <th>Actions</th>
+  </tr>
+
+  <% @work_days.each do |day| %>
+    <tr>
+      <td><%= day.date %></td>
+      <td><%= day.guides_requested %></td>
+      <td><%= day.status %></td>
+      <td>
+        <%= link_to "View", work_day_path(day) %>
+        <% if day.draft? %>
+          | <%= button_to "Generate", generate_roles_work_day_path(day), method: :post %>
+        <% end %>
+        <% if day.generated? %>
+          | <%= button_to "Publish", publish_work_day_path(day), method: :post %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+</table>

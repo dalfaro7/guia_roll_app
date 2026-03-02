@@ -1,0 +1,19 @@
+<h1>New Work Day</h1>
+
+<%= form_with model: @work_day do |f| %>
+  <div>
+    <%= f.label :date %><br>
+    <%= f.date_field :date, min: Date.today %>
+  </div>
+
+  <div>
+    <%= f.label :guides_requested %><br>
+    <%= f.number_field :guides_requested %>
+  </div>
+
+  <div>
+    <%= f.submit "Create" %>
+  </div>
+<% end %>
+
+<%= link_to "Back", work_days_path %>

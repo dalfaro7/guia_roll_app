@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  date: 2026-02-26
+  guides_requested: 1
+  status: 1
+  published_at: 2026-02-26 21:23:21
+
+two:
+  date: 2026-02-26
+  guides_requested: 1
+  status: 1
+  published_at: 2026-02-26 21:23:21

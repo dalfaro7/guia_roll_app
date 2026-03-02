@@ -1,0 +1,19 @@
+<h1>Guides</h1>
+
+<%= link_to "New Guide", new_guide_path, class: "btn" %>
+
+<table border="1" cellpadding="8">
+  <tr>
+    <th>Name</th>
+    <th>Priority</th>
+    <th>Status</th>
+  </tr>
+
+  <% @guides.each do |guide| %>
+    <tr>
+      <td><%= guide.name %></td>
+      <td><%= guide.priority %></td>
+      <td><%= guide.active? ? "Active" : "Inactive" %></td>
+    </tr>
+  <% end %>
+</table>

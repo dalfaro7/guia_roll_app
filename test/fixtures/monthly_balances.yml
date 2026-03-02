@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  guide: one
+  month: 2026-02-26
+  worked_days: 1
+  balance: 1
+  bus_days: 1
+
+two:
+  guide: two
+  month: 2026-02-26
+  worked_days: 1
+  balance: 1
+  bus_days: 1
