@@ -7,9 +7,9 @@ class RoleGenerator
     raise "WorkDay must be draft" unless @work_day.draft?
 
     ActiveRecord::Base.transaction do
-      reset_previous_worked
+      reset_previous_worked_assignments
 
-      candidates = eligible_guides
+      candidates = ordered_eligible_guides
 
       if candidates.size < @work_day.guides_requested
         raise "Not enough available guides"
@@ -17,15 +17,7 @@ class RoleGenerator
 
       selected_guides = candidates.first(@work_day.guides_requested)
 
-      selected_guides.each do |guide|
-        guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
-
-        guide_day.update!(
-          status: :worked,
-          manually_modified: false,
-          modified_by_id: nil
-        )
-      end
+      assign_roles(selected_guides)
 
       @work_day.update!(status: :generated)
 
@@ -35,19 +27,25 @@ class RoleGenerator
 
   private
 
-  # ============================
-  # RESET SOLO worked
-  # ============================
+  # =====================================================
+  # RESET SOLO worked (no toca vacation/day_off manuales)
+  # =====================================================
 
-  def reset_previous_worked
-    @work_day.guide_days.worked.update_all(status: GuideDay.statuses[:standby])
+  def reset_previous_worked_assignments
+    @work_day.guide_days.worked.find_each do |gd|
+      gd.update!(
+        status: :standby,
+        role_primary: nil,
+        role_secondary: nil
+      )
+    end
   end
 
-  # ============================
-  # SELECCIÓN ORDENADA
-  # ============================
+  # =====================================================
+  # ORDENAMIENTO POR PRIORIDAD + EQUIDAD MENSUAL
+  # =====================================================
 
-  def eligible_guides
+  def ordered_eligible_guides
     Guide.all
          .sort_by { |g| [g.priority || 999, worked_days_for(g)] }
          .select { |g| assignable?(g) }
@@ -57,9 +55,9 @@ class RoleGenerator
     guide.monthly_balance&.worked_days || 0
   end
 
-  # ============================
+  # =====================================================
   # DISPONIBILIDAD
-  # ============================
+  # =====================================================
 
   def assignable?(guide)
     gd = @work_day.guide_days.find_by(guide: guide)
@@ -68,9 +66,40 @@ class RoleGenerator
     !gd.vacation? && !gd.day_off?
   end
 
-  # ============================
+  # =====================================================
+  # ASIGNACIÓN DE ROLES
+  # =====================================================
+
+  def assign_roles(selected_guides)
+    selected_guides.each_with_index do |guide, index|
+      guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
+
+      primary_role = primary_role_for(index)
+      secondary_role = secondary_role_for(index)
+
+      guide_day.update!(
+        status: :worked,
+        role_primary: primary_role,
+        role_secondary: secondary_role,
+        manually_modified: false,
+        modified_by_id: nil
+      )
+    end
+  end
+
+  def primary_role_for(index)
+    return "Lead" if index.zero?
+    "Guide"
+  end
+
+  def secondary_role_for(index)
+    return "Safety" if index == 1
+    nil
+  end
+
+  # =====================================================
   # SNAPSHOT
-  # ============================
+  # =====================================================
 
   def create_snapshot
     WorkDayVersion.create!(
@@ -82,7 +111,9 @@ class RoleGenerator
         assignments: @work_day.guide_days.map do |gd|
           {
             guide_id: gd.guide_id,
-            status: gd.status
+            status: gd.status,
+            role_primary: gd.role_primary,
+            role_secondary: gd.role_secondary
           }
         end
       }

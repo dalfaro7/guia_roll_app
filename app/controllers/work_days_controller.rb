@@ -112,7 +112,17 @@ end
   end
 
   def work_day_params
-    params.require(:work_day).permit(:date, :guides_requested)
-  end
+  params.require(:work_day).permit(
+    :date,
+    :guides_requested,
+    guide_days_attributes: [
+      :id,
+      :status,
+      :role_primary,
+      :role_secondary,
+      :manually_modified
+    ]
+  )
+end
 
 end

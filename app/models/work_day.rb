@@ -5,6 +5,9 @@ class WorkDay < ApplicationRecord
   # ==============================
   has_many :work_day_versions, dependent: :destroy
   has_many :guide_days, dependent: :destroy
+  has_many :guides, through: :guide_days
+
+  accepts_nested_attributes_for :guide_days, update_only: true
 
   # ==============================
   # VALIDATIONS
