@@ -1,12 +1,14 @@
+<div class="container">
 <h1>Equity Dashboard - <%= @month.strftime("%B %Y") %></h1>
 <h2>Worked Days Distribution</h2>
-<h2>Select Month</h2>
 
+<div class="text-end">
+<h2>Select Month</h2>
 <%= form_with url: dashboard_path, method: :get, local: true do %>
   <%= month_field_tag :month, @month.strftime("%Y-%m") %>
   <%= submit_tag "View", class: "btn" %>
 <% end %>
-
+</div>
 
 <%= column_chart @chart_data,
     height: "400px",
@@ -16,20 +18,6 @@
       }
     } %>
 
-
-    <h3>Select Guide for Historical View</h3>
-<%= form_with url: dashboard_path, method: :get, local: true do %>
-  <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
-
-  <%= select_tag :guide_id,
-        options_from_collection_for_select(@guides, :id, :name, @selected_guide.id) %>
-
-  <%= submit_tag "View Guide" %>
-<% end %>
-
-<h2>Historical Days - <%= @selected_guide.name %></h2>
-
-<%= line_chart @historical_data, xtitle: "Month", discrete: true %>
 
 
 <table border="1" cellpadding="8">
@@ -58,3 +46,23 @@
 
 <p>Total Worked Days: <%= @total_worked %></p>
 <p>Monthly Average: <%= @average.round(2) %></p>
+
+
+<hr>
+<div>
+<h3>Select Guide for Historical View</h3>
+<%= form_with url: dashboard_path, method: :get, local: true do %>
+  <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+
+  <%= select_tag :guide_id,
+        options_from_collection_for_select(@guides, :id, :name, @selected_guide.id) %>
+
+  <%= submit_tag "View Guide" %>
+<% end %>
+
+<h2>Historical Days - <%= @selected_guide.name %></h2>
+
+<%= line_chart @historical_data, xtitle: "Month", discrete: true %>
+</div>
+
+</div>

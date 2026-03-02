@@ -3,13 +3,3 @@ import "@hotwired/turbo-rails"
 import "controllers"
 // In your application.js or similar file
 import "bootstrap"
-import "chartkick"
-import "chart.js/auto"
-
-document.addEventListener("turbo:load", function () {
-  if (window.Chartkick) {
-    Chartkick.eachChart(function(chart) {
-      chart.redraw();
-    });
-  }
-});
