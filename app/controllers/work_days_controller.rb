@@ -52,36 +52,12 @@ class WorkDaysController < ApplicationController
   # =====================================
   # GENERATE ROLES
   # =====================================
-  def generate_roles
-  guides = guides_sorted_by_equity
-  assigned_count = 0
+ def generate_roles
+  work_day = WorkDay.find(params[:id])
 
-  guides.each do |guide|
+  RoleGenerator.new(work_day).generate!
 
-    guide_day = GuideDay.find_or_initialize_by(
-      guide: guide,
-      work_day: @work_day
-    )
-
-    # Si está libre o vacaciones → respetar
-    if guide_day.day_off? || guide_day.vacation?
-      next
-    end
-
-    status =
-      if assigned_count < @work_day.guides_requested
-        assigned_count += 1
-        :worked
-      else
-        :standby
-      end
-
-    guide_day.update!(
-      status: status,
-      role_primary: assign_primary_role(status),
-      manually_modified: false
-    )
-  end
+  redirect_to work_day_path(work_day), notice: "Roles generated successfully."
 end
 
   # =====================================
