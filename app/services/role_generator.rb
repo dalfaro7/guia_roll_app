@@ -4,34 +4,62 @@ class RoleGenerator
   end
 
   def generate!
-  raise "WorkDay must be draft" unless @work_day.draft?
+    raise "WorkDay must be draft" unless @work_day.draft?
 
-  ActiveRecord::Base.transaction do
-    reset_worked_assignments
+    ActiveRecord::Base.transaction do
+      reset_previous_worked
 
-    available_guides = sorted_guides.select { |g| assignable?(g) }
+      candidates = eligible_guides
 
-    if available_guides.size < @work_day.guides_requested
-      raise "Not enough available guides"
+      if candidates.size < @work_day.guides_requested
+        raise "Not enough available guides"
+      end
+
+      selected_guides = candidates.first(@work_day.guides_requested)
+
+      selected_guides.each do |guide|
+        guide_day = @work_day.guide_days.find_or_initialize_by(guide: guide)
+
+        guide_day.update!(
+          status: :worked,
+          manually_modified: false,
+          modified_by_id: nil
+        )
+      end
+
+      @work_day.update!(status: :generated)
+
+      create_snapshot
     end
-
-    available_guides
-      .first(@work_day.guides_requested)
-      .each { |guide| assign_as_worked(guide) }
-
-    snapshot_roll!
   end
-end
 
   private
 
-  def sorted_guides
-    Guide
-      .left_joins(:monthly_balance)
-      .where(active: true)
-      .order(priority: :asc)
-      .order(Arel.sql("COALESCE(monthly_balances.worked_days, 0) ASC"))
+  # ============================
+  # RESET SOLO worked
+  # ============================
+
+  def reset_previous_worked
+    @work_day.guide_days.worked.update_all(status: GuideDay.statuses[:standby])
   end
+
+  # ============================
+  # SELECCIÓN ORDENADA
+  # ============================
+
+  def eligible_guides
+    Guide.all
+         .sort_by { |g| [g.priority || 999, worked_days_for(g)] }
+         .select { |g| assignable?(g) }
+  end
+
+  def worked_days_for(guide)
+    guide.monthly_balance&.worked_days || 0
+  end
+
+  # ============================
+  # DISPONIBILIDAD
+  # ============================
 
   def assignable?(guide)
     gd = @work_day.guide_days.find_by(guide: guide)
@@ -40,43 +68,24 @@ end
     !gd.vacation? && !gd.day_off?
   end
 
-  def assign_as_worked(guide)
-    gd = @work_day.guide_days.find_or_initialize_by(guide: guide)
-    gd.assign_attributes(status: :worked)
-    gd.manually_modified = false
-    gd.save!
-  end
+  # ============================
+  # SNAPSHOT
+  # ============================
 
-  def reset_worked_assignments
-  @work_day.guide_days.worked.each do |gd|
-    gd.update!(status: :standby)
+  def create_snapshot
+    WorkDayVersion.create!(
+      work_day: @work_day,
+      snapshot: {
+        type: "generated",
+        date: @work_day.date,
+        guides_requested: @work_day.guides_requested,
+        assignments: @work_day.guide_days.map do |gd|
+          {
+            guide_id: gd.guide_id,
+            status: gd.status
+          }
+        end
+      }
+    )
   end
-end
-
-  def rolled_count
-    @work_day.guide_days.worked.count
-  end
-
-  def ensure_full_assignments!
-    if rolled_count < @work_day.guides_requested
-      raise ActiveRecord::Rollback, "Not enough assignable guides"
-    end
-  end
-
-  def snapshot_roll!
-  WorkDayVersion.create!(
-    work_day: @work_day,
-    snapshot: {
-      type: "generated",
-      date: @work_day.date,
-      guides_requested: @work_day.guides_requested,
-      assignments: @work_day.guide_days.map do |gd|
-        {
-          guide_id: gd.guide_id,
-          status: gd.status
-        }
-      end
-    }
-  )
-end
 end
