@@ -85,22 +85,8 @@ end
   # RESET ROLL
   # ==============================
   def reset_roll!
-    raise "Cannot reset draft day" if draft?
-
-    previous_status = status
-
-    ActiveRecord::Base.transaction do
-      revert_balances if published?
-
-      guide_days.destroy_all
-
-      update!(
-        status: :draft,
-        published_at: nil
-      )
-
-      log_event("reset_roll", previous_status, "draft")
-    end
+     raise "Cannot reset draft day" if draft?
+  RoleResetService.new(self).call
   end
 
 
@@ -158,30 +144,6 @@ end
         performed_at: Time.current
       }
     )
-  end
-
-  # ==============================
-  # BALANCE REVERSION
-  # ==============================
-  def revert_balances
-    guide_days.worked.includes(:guide).each do |gd|
-      month = date.beginning_of_month
-
-      balance = MonthlyBalance.find_by(
-        guide: gd.guide,
-        month: month
-      )
-
-      next unless balance
-
-      balance.update!(
-        worked_days: [balance.worked_days - 1, 0].max
-      )
-
-      gd.guide.update!(
-        total_worked_days: [gd.guide.total_worked_days - 1, 0].max
-      )
-    end
   end
 
   # ==============================

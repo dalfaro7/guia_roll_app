@@ -13,7 +13,6 @@ resources :work_days do
     post :publish
     post :unpublish
     post :reset_roll
-    patch :update_assignments
     patch :update_availability
     patch :update_roles
     delete :delete_with_reset 

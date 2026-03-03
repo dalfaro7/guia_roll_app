@@ -1,3 +1,6 @@
+
+
+
 class RoleGenerator
   def initialize(work_day)
     @work_day = work_day

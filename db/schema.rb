@@ -10,18 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_204425) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_163924) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
-
-  create_table "assignments", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "guide_id", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "work_day_id", null: false
-    t.index ["guide_id"], name: "index_assignments_on_guide_id"
-    t.index ["work_day_id"], name: "index_assignments_on_work_day_id"
-  end
 
   create_table "guide_days", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -91,8 +82,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_204425) do
     t.index ["date"], name: "index_work_days_on_date", unique: true
   end
 
-  add_foreign_key "assignments", "guides"
-  add_foreign_key "assignments", "work_days"
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"
   add_foreign_key "guide_days", "work_days"

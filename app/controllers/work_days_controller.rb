@@ -14,7 +14,6 @@ class WorkDaysController < ApplicationController
 
   def show
     @guide_days = @work_day.guide_days.includes(:guide)
-    @work_day = WorkDay.find(params[:id])
   end
 
   def new
@@ -136,26 +135,32 @@ end
     end
   end
 
-  # =====================================
-  # delete ROLL
-  # =====================================
-  def delete_with_reset
+ # =====================================
+# DELETE WORK DAY WITH BALANCE RESET
+# =====================================
+def delete_with_reset
   @work_day = WorkDay.find(params[:id])
 
   ActiveRecord::Base.transaction do
+    month = @work_day.date.beginning_of_month
 
-    # 1️⃣ Revertir balances solo si estaban worked
-    @work_day.guide_days.worked.each do |guide_day|
+    # 1️⃣ Revertir balances solo de los worked
+    @work_day.guide_days.worked.includes(:guide).each do |guide_day|
       guide = guide_day.guide
-      balance = guide.monthly_balance
 
-      if balance && balance.worked_days > 0
+      balance = guide.monthly_balances.find_by(month: month)
+
+      if balance&.worked_days.to_i > 0
         balance.decrement!(:worked_days)
+      end
+
+      if guide.total_worked_days.to_i > 0
+        guide.decrement!(:total_worked_days)
       end
     end
 
-    # 2️⃣ Eliminar snapshots relacionados
-    WorkDayVersion.where(work_day_id: @work_day.id).delete_all
+    # 2️⃣ Eliminar versiones
+    @work_day.work_day_versions.delete_all
 
     # 3️⃣ Eliminar guide_days
     @work_day.guide_days.delete_all
@@ -164,16 +169,18 @@ end
     @work_day.destroy!
   end
 
-  redirect_to work_days_path, notice: "Work Day deleted and balances restored."
+  redirect_to work_days_path,
+              notice: "Work Day deleted and balances restored."
 end
+
 
    # =====================================
   # RESET ROLL
   # =====================================
-  def reset_roll
+ def reset_roll
   @work_day.reset_roll!
   redirect_to @work_day, notice: "Roll reset. You may now set new availability."
-  end
+end
 
   private
 
