@@ -39,6 +39,17 @@ class WorkDaysController < ApplicationController
   end
 end
 
+
+  def update
+  @work_day = WorkDay.find(params[:id])
+
+  if @work_day.update(work_day_params)
+    redirect_to @work_day, notice: "Work day actualizado correctamente."
+  else
+    render :edit, status: :unprocessable_entity
+  end
+end
+
 # =====================================
   # UPDATE availability
   # =====================================

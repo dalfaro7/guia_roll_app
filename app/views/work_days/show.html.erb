@@ -1,4 +1,4 @@
-<div class="container-fluid">
+<div class="container p-3">
 <h1>Work Day - <%= @work_day.date %></h1>
 
 <p>
@@ -6,10 +6,14 @@
   <%= @work_day.guides_requested %>
 </p>
 
+<div class="container">
+<% if @work_day.draft? %>
 <%= form_with model: @work_day, method: :patch do |f| %>
   <%= f.number_field :guides_requested %>
-  <%= f.submit "Update" %>
+  <%= f.submit "Update", class:"btn btn-primary" %>
 <% end %>
+<% end %>
+</div>
 
 <p>
   <strong>Status:</strong>
@@ -30,7 +34,9 @@
         <th>Status</th>
       </tr>
 
-      <% @guide_days.each do |gd| %>
+      <% @guide_days.includes(:guide)
+                       .joins(:guide)
+                       .order(:status, "guides.priority ASC").each do |gd| %>
   <tr>
     <td><%= gd.guide.name %></td>
 
@@ -43,12 +49,12 @@
     </table>
 
     <br>
-    <%= submit_tag "Save Availability" %>
+    <%= submit_tag "Save Availability", class:"btn btn-info" %>
 
   <% end %>
 <% end %>
 
-
+<div class="container">
 <% if @work_day.generated? %>
 
   <h2>Edit Roles</h2>
@@ -105,22 +111,16 @@
     </table>
 
     <br>
-    <%= submit_tag "Save Roles" %>
-
+    <div class="d-flex justify-content-center">
+    <%= submit_tag "Save Roles", class:"btn btn-primary" %>
+    </div>
   <% end %>
 
 <% end %>
+</div>
 
-
-<!-- ROLL PUBLICADO -->
 
 <% if @work_day.published? %>
-  <%= button_to "Unpublish Work Day",
-      unpublish_work_day_path(@work_day),
-      method: :post,
-      data: { confirm: "Reopen this work day?" },
-      style: "padding:10px; background:#dc3545; color:white;" %>
-
 <hr>
 
 <h3>Assigned Guides</h3>
@@ -136,7 +136,9 @@
   </thead>
 
   <tbody>
-    <% @work_day.guide_days.each do |guide_day| %>
+    <% @work_day.guide_days.includes(:guide)
+                       .joins(:guide)
+                       .order(:status, "guides.priority ASC").each do |guide_day| %>
       <tr>
           <td><%= guide_day.guide.name %></td>
 
@@ -156,38 +158,55 @@
   </tbody>
 </table>
 <%end%>
-<br>
 
-<!-- botones -->
+<!-- botones esquina superior derecha-->
 
 <%= button_to "Delete Work Day",
       delete_with_reset_work_day_path(@work_day),
       method: :delete,
       data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" },
-      class: "btn btn-danger" %>
+      class: "btn btn-danger position-absolute top-0 end-0 m-2" %>
+  
 
-      <br>
 
-<% if @work_day.generated? %>
-  <hr>
-  <%= button_to "Publish Work Day",
+<!-- botones inferiores -->
+<div class="d-flex justify-content-center mt-3">
+      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+        <% if @work_day.draft? %>
+      <%= button_to "Generate Roles",
+        generate_roles_work_day_path(@work_day),
+        method: :patch,
+        class: "btn btn-primary",
+        data: { turbo: false, confirm: "Generate roles for this day?" } %>
+       <% end %>
+
+        <% if @work_day.generated? %>
+      <%= button_to "Publish Work Day",
       publish_work_day_path(@work_day),
       method: :post,
-      data: { confirm: "Are you sure you want to publish?" },
-      style: "padding:10px; background:#28a745; color:white;" %>
-<% end %>
+      data: { turbo: false, confirm: "Are you sure you want to publish?" },
+      class: "btn btn-success" %>
+      <% end %>
 
-<br>
-
-<% unless @work_day.draft? %>
-  <%= button_to "Reset Roll",
+      <% unless @work_day.draft? %>
+      <%= button_to "Reset Roll",
       reset_roll_work_day_path(@work_day),
       method: :post,
-      data: { confirm: "Reset this day's roll completely?" },
-      style: "background:#dc3545; color:white; padding:8px;" %>
-<% end %>
-<hr>
-<%= link_to "Back to Work Days", work_days_path %>
+      class: "btn btn-danger", 
+      data: { turbo: false, confirm: "Reset this day's roll completely?" }%>
+      <% end %>
+
+      <% if @work_day.published? %>
+      <%= button_to "Unpublish Work Day",
+      unpublish_work_day_path(@work_day),
+      method: :post,
+      class: "btn btn-warning",
+      data: { turbo: false, confirm: "Reopen this work day?" } %>
+      <% end %>
+
+      <%= link_to "Back to Work Days", work_days_path, class: "btn btn-info" %>
+        </div>
+</div>
 </div>
 
 

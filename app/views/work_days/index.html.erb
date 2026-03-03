@@ -20,13 +20,15 @@
       <td><%= day.guides_requested %></td>
       <td><%= day.status %></td>
       <td>
-        <%= link_to "View", work_day_path(day) %>
+      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+        <%= link_to "View", work_day_path(day), type: "button",class: "btn btn-info" %>
         <% if day.draft? %>
-          | <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch %>
+           <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch, type: "button", class: "btn btn-warning" %>
         <% end %>
         <% if day.generated? %>
-          | <%= button_to "Publish", publish_work_day_path(day), method: :post %>
+           <%= button_to "Publish", publish_work_day_path(day), method: :post, type: "button", class:"btn btn-success" %>
         <% end %>
+        </div>
       </td>
     </tr>
   <% end %>

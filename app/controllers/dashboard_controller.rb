@@ -27,12 +27,9 @@ class DashboardController < ApplicationController
     # 3️⃣ Garantizar balances del mes
     # =====================================
 
-    @balances = @guides.map do |guide|
-      MonthlyBalance.find_or_create_by(
-        guide: guide,
-        month: month_date
-      )
-    end
+    @balances = MonthlyBalance
+              .where(guide: @guides, month: month_date)
+              .includes(:guide)
 
     # =====================================
     # 4️⃣ Métricas generales (blindadas contra nil)

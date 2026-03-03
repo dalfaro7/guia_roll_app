@@ -27,6 +27,8 @@ class WorkDay < ApplicationRecord
   }
 
 
+
+
   # ==============================
   # inicializar guide_day
   # ==============================
@@ -69,16 +71,16 @@ end
   # UNPUBLISH
   # ==============================
   def unpublish!
-    raise "Only published days can be unpublished" unless published?
+  raise "Only published days can be unpublished" unless published?
 
-    previous_status = status
+  previous_status = status
 
-    ActiveRecord::Base.transaction do
-      revert_balances
-      update!(status: :generated, published_at: nil)
-      log_event("unpublish", previous_status, "generated")
-    end
+  ActiveRecord::Base.transaction do
+    RoleResetService.new(self).revert_only_balances
+    update!(status: :generated, published_at: nil)
+    log_event("unpublish", previous_status, "generated")
   end
+end
 
 
   # ==============================
