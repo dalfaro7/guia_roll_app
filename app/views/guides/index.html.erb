@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container p-3">
 <h1 class="inline">Guides</h1>
 <%= link_to "New Guide", new_guide_path, class: "btn btn-info inline" %>
 
@@ -7,6 +7,7 @@
     <th>Name</th>
     <th>Priority</th>
     <th>Status</th>
+    <th>Id</th>
   </tr>
 
   <% @guides.each do |guide| %>
@@ -14,6 +15,7 @@
       <td><%= guide.name %></td>
       <td><%= guide.priority %></td>
       <td><%= guide.active? ? "Active" : "Inactive" %></td>
+      <td><%= guide.id %></td>
     </tr>
   <% end %>
 </table>

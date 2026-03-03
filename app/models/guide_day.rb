@@ -12,4 +12,39 @@ class GuideDay < ApplicationRecord
 
   validates :status, presence: true
 
+  scope :ordered_for_display, -> {
+  joins(:guide).order(
+    Arel.sql("
+      CASE guide_days.status
+        WHEN 0 THEN 1   -- worked
+        WHEN 1 THEN 2   -- standby
+        ELSE 3
+      END
+    "),
+    Arel.sql("
+      CASE guide_days.location
+        WHEN 'Sara-3&4' THEN 1
+        WHEN 'Balsa' THEN 2
+        WHEN 'PM' THEN 3
+        ELSE 4
+      END
+    "),
+    "guides.priority ASC"
+  )
+}
+
+
+def location_css_class
+  case location
+  when "Sara-3&4"
+    "location-sara"
+  when "Balsa"
+    "location-balsa"
+  when "PM"
+    "location-pm"
+  else
+    ""
+  end
+end
+
 end

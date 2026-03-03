@@ -34,9 +34,7 @@
         <th>Status</th>
       </tr>
 
-      <% @guide_days.includes(:guide)
-                       .joins(:guide)
-                       .order(:status, "guides.priority ASC").each do |gd| %>
+      <% @guide_days.ordered_for_display.each do |gd| %>
   <tr>
     <td><%= gd.guide.name %></td>
 
@@ -69,6 +67,8 @@
           <th>New Primary</th>
           <th>Current Secondary</th>
           <th>New Secondary</th>
+          <th>Current Location</th>
+          <th>New Location</th>
         </tr>
       </thead>
 
@@ -76,7 +76,7 @@
         <% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
         <% secondary_roles = ["Head Guide", "Bus Guide", "Driver"] %>
 
-        <% @guide_days.worked.each do |gd| %>
+        <% @guide_days.worked.ordered_for_display.each do |gd| %>
           <tr>
             <td>
               <strong><%= gd.guide.name %></strong>
@@ -105,6 +105,17 @@
                     options_for_select(secondary_roles, gd.role_secondary.to_s),
                     include_blank: true %>
             </td>
+            <td>
+            <%= gd.location.presence || "Balsa" %>
+            </td>
+
+            <td>
+            <%= select_tag "roles[#{gd.id}][location]",
+            options_for_select(
+            ["Balsa", "Sara-3&4", "PM"],
+            gd.location
+            ) %>
+          </td>
           </tr>
         <% end %>
       </tbody>
@@ -132,14 +143,14 @@
       <th>Status</th>
       <th>Primary Role</th>
       <th>Secondary Role</th>
+      <th>Location</th>
+
     </tr>
   </thead>
 
   <tbody>
-    <% @work_day.guide_days.includes(:guide)
-                       .joins(:guide)
-                       .order(:status, "guides.priority ASC").each do |guide_day| %>
-      <tr>
+    <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
+  <tr class="<%= guide_day.location_css_class %>">
           <td><%= guide_day.guide.name %></td>
 
           <td>
@@ -152,6 +163,15 @@
 
           <td>
             <%= guide_day.role_secondary %>
+          </td>
+          <td>
+            <td>
+  <% if guide_day.worked? %>
+    <%= guide_day.location %>
+  <% else %>
+    -
+  <% end %>
+</td>
           </td>
       </tr>
     <% end %>

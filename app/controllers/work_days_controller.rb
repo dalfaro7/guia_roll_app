@@ -92,6 +92,10 @@ end
       updates[:role_secondary] = role_data["role_secondary"]
     end
 
+    if role_data["location"].present?
+      updates[:location] = role_data["location"]
+    end
+
     guide_day.update(updates) if updates.any?
   end
 

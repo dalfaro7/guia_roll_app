@@ -10,13 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_163924) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_230925) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "guide_days", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "guide_id", null: false
+    t.string "location", default: "Balsa"
     t.boolean "manually_modified"
     t.bigint "modified_by_id"
     t.string "role_primary"

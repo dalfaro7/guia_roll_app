@@ -23,14 +23,14 @@ guides_data = [
   ["Jilbin Martínez Laguna", 3],
   ["Jose Victor Alvarez", 1],
   ["Joseph Madrigal Berrocal", 3],
-  ["Juan Inocente Rosales Rivas", 2],
+  ["Juan Inocente Rosales Rivas", 0],
   ["Junior Duarte Badilla", 2],
   ["Mariam Victoria Araya Rojas", 3],
   ["Matías Ignacio Vasquez Poblete", 3],
   ["Moisés Hernández Jarquin", 3],
   ["Roberto Alfaro Sibaja", 2],
   ["Tom Leon Oviedo", 2],
-  ["Victor Fonseca Campos", 2],
+  ["Victor Fonseca Campos", 0],
   ["William Molina Vásquez", 2],
   ["Yader Romero Astorga", 2]
 ]
