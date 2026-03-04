@@ -47,3 +47,21 @@ guides_data.each do |name, priority|
 end
 
 puts "Guides seeded successfully."
+
+
+skills = [
+  "Elite",
+  "Kayaker",
+  "ClassIV",
+  "Photographer",
+  "Busguide",
+  "HG",
+  "ClassIII",
+  "B1",
+  "Computer",
+  "Certified"
+]
+
+skills.each do |skill_name|
+  Skill.find_or_create_by!(name: skill_name)
+end

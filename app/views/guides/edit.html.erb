@@ -1,0 +1,47 @@
+<div class="container">
+
+<h1>Edit Guide</h1>
+
+<%= form_with model: @guide do |f| %>
+
+<div class="mb-3">
+<%= f.label :name %><br>
+<%= f.text_field :name %>
+</div>
+
+<div class="mb-3">
+<%= f.label :priority %><br>
+<%= f.number_field :priority %>
+</div>
+
+<div class="mb-3">
+<%= f.label :active %>
+<%= f.check_box :active %>
+</div>
+
+<hr>
+
+<h3>Skills</h3>
+
+<div class="mb-3">
+
+<%= collection_check_boxes(:guide, :skill_ids, Skill.order(:name), :id, :name) do |b| %>
+
+<div class="form-check">
+<%= b.check_box(class: "form-check-input") %>
+<%= b.label(class: "form-check-label") %>
+</div>
+
+<% end %>
+
+</div>
+
+<%= f.submit "Update Guide", class: "btn btn-primary" %>
+
+<% end %>
+
+<br>
+
+<%= link_to "Back", guides_path, class: "btn btn-secondary" %>
+
+</div>

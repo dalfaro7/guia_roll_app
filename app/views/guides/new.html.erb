@@ -17,6 +17,12 @@
   <%= f.number_field :priority %>
 </div>
 
+<div>
+<label>Skills</label>
+
+<%= collection_check_boxes :guide, :skill_ids, Skill.all, :id, :name %>
+</div>
+
   <div>
     <%= f.submit "Create Guide" %>
   </div>

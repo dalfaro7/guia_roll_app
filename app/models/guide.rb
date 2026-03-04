@@ -2,6 +2,8 @@ class Guide < ApplicationRecord
   
   has_many :guide_days, dependent: :destroy
   has_many :monthly_balances, dependent: :destroy
+  has_many :guide_skills, dependent: :destroy
+  has_many :skills, through: :guide_skills
   validates :name, presence: true
   validates :priority, presence: true
 

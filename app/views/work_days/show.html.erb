@@ -1,233 +1,249 @@
-<div class="container p-3">
+<div class="container p-4">
+
 <h1>Work Day - <%= @work_day.date %></h1>
 
 <p>
-  <strong>Guides Requested:</strong>
-  <%= @work_day.guides_requested %>
+<strong>Guides Requested:</strong>
+<%= @work_day.guides_requested %>
 </p>
 
-<div class="container">
 <% if @work_day.draft? %>
 <%= form_with model: @work_day, method: :patch do |f| %>
-  <%= f.number_field :guides_requested %>
-  <%= f.submit "Update", class:"btn btn-primary" %>
-<% end %>
-<% end %>
+<div class="mb-3">
+<%= f.number_field :guides_requested %>
+<%= f.submit "Update", class:"btn btn-primary ms-2" %>
 </div>
+<% end %>
+<% end %>
 
 <p>
-  <strong>Status:</strong>
-  <%= @work_day.status %>
+<strong>Status:</strong>
+<%= @work_day.status %>
 </p>
 
 <hr>
 
+<!-- ACTION BUTTONS -->
+
+<div class="d-flex justify-content-center mb-4">
+<div class="btn-group">
+
 <% if @work_day.draft? %>
-
-  <h2>Set Availability</h2>
-
-  <%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
-
-    <table border="1" cellpadding="8">
-      <tr>
-        <th>Guide</th>
-        <th>Status</th>
-      </tr>
-
-      <% @guide_days.ordered_for_display.each do |gd| %>
-  <tr>
-    <td><%= gd.guide.name %></td>
-
-    <td>
-      <%= select_tag "availability[#{gd.id}]",
-            options_for_select(GuideDay.statuses.keys, gd.status) %>
-    </td>
-  </tr>
-<% end %>
-    </table>
-
-    <br>
-    <%= submit_tag "Save Availability", class:"btn btn-info" %>
-
-  <% end %>
+<%= button_to "Generate Roles",
+generate_roles_work_day_path(@work_day),
+method: :patch,
+class: "btn btn-outline-primary",
+data: { turbo: false, confirm: "Generate roles for this day?" } %>
 <% end %>
 
-<div class="container">
 <% if @work_day.generated? %>
-
-  <h2>Edit Roles</h2>
-
-  <%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
-
-    <table border="1" cellpadding="8">
-      <thead>
-        <tr>
-          <th>Guide</th>
-          <th>Current Primary</th>
-          <th>New Primary</th>
-          <th>Current Secondary</th>
-          <th>New Secondary</th>
-          <th>Current Location</th>
-          <th>New Location</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
-        <% secondary_roles = ["Head Guide", "Bus Guide", "Driver"] %>
-
-        <% @guide_days.worked.ordered_for_display.each do |gd| %>
-          <tr>
-            <td>
-              <strong><%= gd.guide.name %></strong>
-            </td>
-
-            <!-- Mostrar rol actual guardado -->
-            <td>
-              <%= gd.role_primary.presence || "-" %>
-            </td>
-
-            <!-- Selector para nuevo rol primario -->
-            <td>
-              <%= select_tag "roles[#{gd.id}][role_primary]",
-                    options_for_select(primary_roles, gd.role_primary.to_s),
-                    include_blank: true %>
-            </td>
-
-            <!-- Mostrar rol secundario actual -->
-            <td>
-              <%= gd.role_secondary.presence || "-" %>
-            </td>
-
-            <!-- Selector para nuevo rol secundario -->
-            <td>
-              <%= select_tag "roles[#{gd.id}][role_secondary]",
-                    options_for_select(secondary_roles, gd.role_secondary.to_s),
-                    include_blank: true %>
-            </td>
-            <td>
-            <%= gd.location.presence || "Balsa" %>
-            </td>
-
-            <td>
-            <%= select_tag "roles[#{gd.id}][location]",
-            options_for_select(
-            ["Balsa", "Sara-3&4", "PM"],
-            gd.location
-            ) %>
-          </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-
-    <br>
-    <div class="d-flex justify-content-center">
-    <%= submit_tag "Save Roles", class:"btn btn-primary" %>
-    </div>
-  <% end %>
-
+<%= button_to "Publish Work Day",
+publish_work_day_path(@work_day),
+method: :post,
+class: "btn btn-outline-success",
+data: { turbo: false, confirm: "Are you sure you want to publish?" } %>
 <% end %>
-</div>
 
+<% if @work_day.generated? %>
+<%= button_to "Reset Roll",
+reset_roll_work_day_path(@work_day),
+method: :post,
+class: "btn btn-outline-danger",
+data: { turbo: false, confirm: "Reset this day's roll completely?" } %>
+<% end %>
 
 <% if @work_day.published? %>
+<%= button_to "Unpublish Work Day",
+unpublish_work_day_path(@work_day),
+method: :post,
+class: "btn btn-outline-warning",
+data: { turbo: false, confirm: "Reopen this work day?" } %>
+<% end %>
+
+<%= link_to "Back to Work Days",
+work_days_path,
+class: "btn btn-outline-primary" %>
+
+</div>
+</div>
+
 <hr>
+
+<!-- AVAILABILITY -->
+
+<% if @work_day.draft? %>
+
+<h2>Set Availability</h2>
+
+<%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
+
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Guide</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody>
+
+<% @guide_days.ordered_for_display.each do |gd| %>
+
+<tr>
+<td><%= gd.guide.name %></td>
+
+<td>
+<%= select_tag "availability[#{gd.id}]",
+options_for_select(GuideDay.statuses.keys, gd.status) %>
+</td>
+</tr>
+
+<% end %>
+
+</tbody>
+</table>
+
+<%= submit_tag "Save Availability", class:"btn btn-info" %>
+
+<% end %>
+
+<% end %>
+
+<!-- EDIT ROLES -->
+
+<% if @work_day.generated? %>
+
+<h2>Edit Roles</h2>
+
+<%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
+
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Guide</th>
+<th>Current Primary</th>
+<th>New Primary</th>
+<th>Current Secondary</th>
+<th>New Secondary</th>
+<th>Current Location</th>
+<th>New Location</th>
+</tr>
+</thead>
+
+<tbody>
+
+<% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
+<% secondary_roles = ["Head Guide", "Bus Guide", "Driver"] %>
+
+<% @guide_days.worked.ordered_for_display.each do |gd| %>
+
+<tr>
+
+<td>
+<strong><%= gd.guide.name %></strong>
+</td>
+
+<td>
+<%= gd.role_primary.presence || "-" %>
+</td>
+
+<td>
+<%= select_tag "roles[#{gd.id}][role_primary]",
+options_for_select(primary_roles, gd.role_primary),
+include_blank: true %>
+</td>
+
+<td>
+<%= gd.role_secondary.presence || "-" %>
+</td>
+
+<td>
+<%= select_tag "roles[#{gd.id}][role_secondary]",
+options_for_select(secondary_roles, gd.role_secondary),
+include_blank: true %>
+</td>
+
+<td>
+<%= gd.location.presence || "Balsa" %>
+</td>
+
+<td>
+<%= select_tag "roles[#{gd.id}][location]",
+options_for_select(["Balsa","Sara-3&4","PM","Private"], gd.location) %>
+</td>
+
+</tr>
+
+<% end %>
+
+</tbody>
+</table>
+
+<div class="text-center">
+<%= submit_tag "Save Roles", class:"btn btn-primary" %>
+</div>
+
+<% end %>
+
+<% end %>
+
+<!-- PUBLISHED VIEW -->
+
+<% if @work_day.published? %>
 
 <h3>Assigned Guides</h3>
 
-<table border="1" cellpadding="6">
-  <thead>
-    <tr>
-      <th>Guide</th>
-      <th>Status</th>
-      <th>Primary Role</th>
-      <th>Secondary Role</th>
-      <th>Location</th>
+<table class="table table-bordered">
 
-    </tr>
-  </thead>
+<thead>
+<tr>
+<th>Guide</th>
+<th>Status</th>
+<th>Primary Role</th>
+<th>Secondary Role</th>
+<th>Location</th>
+</tr>
+</thead>
 
-  <tbody>
-    <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
-  <tr class="<%= guide_day.location_css_class %>">
-          <td><%= guide_day.guide.name %></td>
+<tbody>
 
-          <td>
-            <%= guide_day.status%>
-          </td>
+<% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
 
-          <td>
-            <%= guide_day.role_primary%>
-          </td>
+<tr class="<%= guide_day.worked? ? guide_day.location_css_class : '' %>">
 
-          <td>
-            <%= guide_day.role_secondary %>
-          </td>
-          <td>
-            <td>
-  <% if guide_day.worked? %>
-    <%= guide_day.location %>
-  <% else %>
-    -
-  <% end %>
+<td><%= guide_day.guide.name %></td>
+
+<td><%= guide_day.status %></td>
+
+<td><%= guide_day.role_primary %></td>
+
+<td><%= guide_day.role_secondary %></td>
+
+<td>
+<%= guide_day.worked? ? guide_day.location : "-" %>
 </td>
-          </td>
-      </tr>
-    <% end %>
-  </tbody>
+
+</tr>
+
+<% end %>
+
+</tbody>
 </table>
-<%end%>
 
-<!-- botones esquina superior derecha-->
+<% end %>
 
-<%= button_to "Delete Work Day",
-      delete_with_reset_work_day_path(@work_day),
-      method: :delete,
-      data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" },
-      class: "btn btn-danger position-absolute top-0 end-0 m-2" %>
-  
+<!-- DELETE BUTTON -->
 
+<div class="mt-4">
 
-<!-- botones inferiores -->
-<div class="d-flex justify-content-center mt-3">
-      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
-        <% if @work_day.draft? %>
-      <%= button_to "Generate Roles",
-        generate_roles_work_day_path(@work_day),
-        method: :patch,
-        class: "btn btn-primary",
-        data: { turbo: false, confirm: "Generate roles for this day?" } %>
-       <% end %>
+<%= button_to "X) Delete Work Day",
+delete_with_reset_work_day_path(@work_day),
+method: :delete,
+class: "btn btn-outline-danger btn-sm",
+data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" } %>
 
-        <% if @work_day.generated? %>
-      <%= button_to "Publish Work Day",
-      publish_work_day_path(@work_day),
-      method: :post,
-      data: { turbo: false, confirm: "Are you sure you want to publish?" },
-      class: "btn btn-success" %>
-      <% end %>
-
-      <% unless @work_day.draft? %>
-      <%= button_to "Reset Roll",
-      reset_roll_work_day_path(@work_day),
-      method: :post,
-      class: "btn btn-danger", 
-      data: { turbo: false, confirm: "Reset this day's roll completely?" }%>
-      <% end %>
-
-      <% if @work_day.published? %>
-      <%= button_to "Unpublish Work Day",
-      unpublish_work_day_path(@work_day),
-      method: :post,
-      class: "btn btn-warning",
-      data: { turbo: false, confirm: "Reopen this work day?" } %>
-      <% end %>
-
-      <%= link_to "Back to Work Days", work_days_path, class: "btn btn-info" %>
-        </div>
-</div>
 </div>
 
-
-
+</div>

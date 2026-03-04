@@ -7,6 +7,7 @@
     <th>Name</th>
     <th>Priority</th>
     <th>Status</th>
+    <th>Skills</th>
     <th>Id</th>
   </tr>
 
@@ -15,7 +16,13 @@
       <td><%= guide.name %></td>
       <td><%= guide.priority %></td>
       <td><%= guide.active? ? "Active" : "Inactive" %></td>
+      <td>
+<%= guide.skills.pluck(:name).join(", ") %>
+</td>
       <td><%= guide.id %></td>
+      <td>
+<%= link_to "Edit", edit_guide_path(guide), class: "btn btn-sm btn-primary" %>
+</td>
     </tr>
   <% end %>
 </table>

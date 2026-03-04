@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_03_230925) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_04_194804) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,6 +28,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_230925) do
     t.index ["guide_id"], name: "index_guide_days_on_guide_id"
     t.index ["modified_by_id"], name: "index_guide_days_on_modified_by_id"
     t.index ["work_day_id"], name: "index_guide_days_on_work_day_id"
+  end
+
+  create_table "guide_skills", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "guide_id", null: false
+    t.bigint "skill_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guide_id", "skill_id"], name: "index_guide_skills_on_guide_id_and_skill_id", unique: true
+    t.index ["guide_id"], name: "index_guide_skills_on_guide_id"
+    t.index ["skill_id"], name: "index_guide_skills_on_skill_id"
   end
 
   create_table "guides", force: :cascade do |t|
@@ -50,6 +60,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_230925) do
     t.datetime "updated_at", null: false
     t.integer "worked_days", default: 0, null: false
     t.index ["guide_id"], name: "index_monthly_balances_on_guide_id"
+  end
+
+  create_table "skills", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
@@ -86,6 +102,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_03_230925) do
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"
   add_foreign_key "guide_days", "work_days"
+  add_foreign_key "guide_skills", "guides"
+  add_foreign_key "guide_skills", "skills"
   add_foreign_key "monthly_balances", "guides"
   add_foreign_key "work_day_versions", "work_days"
 end
