@@ -1,0 +1,77 @@
+<div class="container p-3">
+
+<h2>Configure Slot Requirements</h2>
+
+<% skills = Skill.all %>
+
+<%= form_with url: update_all_location_slots_path, method: :patch do %>
+
+<% @work_day.location_slots.group_by(&:location).each do |location, slots| %>
+
+<div class="card p-3 mb-4">
+
+<h3><%= location %></h3>
+
+<table class="table">
+
+<tr>
+<th>Slot</th>
+<% skills.each do |skill| %>
+<th><%= skill.name %></th>
+<% end %>
+</tr>
+
+<% slots.each_with_index do |slot, index| %>
+
+<tr>
+
+<td>
+<strong>Slot <%= index + 1 %></strong>
+</td>
+
+<% skills.each do |skill| %>
+
+<td>
+
+<%
+checked = slot.skills.include?(skill)
+
+# reglas automáticas para Sara
+if location == "Sara-3&4"
+
+  if skill.name == "ClassIV"
+    checked = true
+  end
+
+  if index == 0 && skill.name == "Computer"
+    checked = true
+  end
+
+end
+%>
+
+<%= check_box_tag "slots[#{slot.id}][]",
+                  skill.id,
+                  checked %>
+
+</td>
+
+<% end %>
+
+</tr>
+
+<% end %>
+
+</table>
+
+</div>
+
+<% end %>
+
+<div class="text-center mt-4">
+<%= submit_tag "Update All Locations", class: "btn btn-success btn-lg" %>
+</div>
+
+<% end %>
+
+</div>

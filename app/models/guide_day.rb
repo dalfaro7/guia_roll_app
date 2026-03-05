@@ -25,7 +25,7 @@ class GuideDay < ApplicationRecord
       CASE guide_days.location
         WHEN 'Sara-3&4' THEN 1
         WHEN 'Balsa' THEN 2
-        WHEN 'Private' THEN 3
+        WHEN 'Privado' THEN 3
         WHEN 'PM' THEN 4
         ELSE 5
       END
@@ -43,8 +43,8 @@ def location_css_class
     "location-balsa"
   when "PM"
     "location-pm"
-  when "Private"
-    "location-private"
+  when "Privado"
+    "location-privado"
   else
     ""
   end

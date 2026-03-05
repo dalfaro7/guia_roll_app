@@ -51,6 +51,61 @@ end
 end
 
 # =====================================
+  # forzar el primer stand by para entrar al rol
+  # =====================================
+def force_assign
+  work_day = WorkDay.find(params[:id])
+  location = params[:location]
+  skills = params[:skills] || []
+
+  service = ForceAssignmentService.new(work_day, location, skills)
+
+  begin
+    service.call
+    guide_name = service.guide.name
+
+    redirect_to work_day_path(work_day),
+                notice: "#{guide_name} was forced into #{location}"
+
+  rescue => e
+    redirect_to work_day_path(work_day), alert: e.message
+  end
+end
+
+# =====================================
+  # siguiente en roll vista previa
+  # =====================================
+def preview_force_assign
+
+  work_day = WorkDay.find(params[:id])
+  skill_ids = (params[:skills] || []).map(&:to_i)
+
+  candidates = work_day.guide_days
+                       .includes(guide: :skills)
+                       .joins(:guide)
+                       .where(status: :standby)
+                       .order("guides.priority ASC")
+
+  guide_day = candidates.find do |gd|
+
+    guide_skill_ids = gd.guide.skills.pluck(:id)
+
+    (skill_ids - guide_skill_ids).empty?
+
+  end
+
+  if guide_day
+    render json: {
+      name: guide_day.guide.name,
+      priority: guide_day.guide.priority
+    }
+  else
+    render json: { name: nil }
+  end
+
+end
+
+# =====================================
   # UPDATE availability
   # =====================================
 
@@ -109,7 +164,7 @@ end
   work_day = WorkDay.find(params[:id])
 
   begin
-    RoleGenerator.new(work_day).generate!
+    RoleGeneratorV2.new(work_day).generate!
     flash[:notice] = "Generated"
   rescue => e
     flash[:alert] = e.message
@@ -195,6 +250,41 @@ end
  def reset_roll
   @work_day.reset_roll!
   redirect_to @work_day, notice: "Roll reset. You may now set new availability."
+end
+
+def locations
+  @work_day = WorkDay.find(params[:id])
+
+  @location_counts = @work_day
+                       .location_slots
+                       .group(:location)
+                       .count
+end
+
+def create_slots
+  @work_day = WorkDay.find(params[:id])
+
+  @work_day.location_slots.destroy_all
+
+  params[:locations].each do |location, qty|
+    qty.to_i.times do
+      slot = @work_day.location_slots.create!(location: location)
+
+      default_skill = Skill.find_by(name: "ClassIII")
+      slot.slot_skills.create!(skill: default_skill) if default_skill
+    end
+  end
+
+  # sincronizar número total de guías solicitadas
+  total_slots = @work_day.location_slots.count
+
+  @work_day.update!(guides_requested: total_slots)
+
+  redirect_to @work_day, notice: "Slots created successfully."
+end
+
+def edit_slots
+  @work_day = WorkDay.find(params[:id])
 end
 
   private

@@ -6,6 +6,7 @@ class WorkDay < ApplicationRecord
   has_many :work_day_versions, dependent: :destroy
   has_many :guide_days, dependent: :destroy
   has_many :guides, through: :guide_days
+  has_many :location_slots, dependent: :destroy
 
   accepts_nested_attributes_for :guide_days, update_only: true
   after_create :initialize_guide_days
@@ -49,6 +50,13 @@ end
 
     RoleGenerator.new(self).call
     log_event("generate_roles", "draft", "generated")
+  end
+
+   # ==============================
+  # codigo temporal para iniciar contador
+  # ==============================
+  def guides_requested
+  location_slots.count
   end
 
   # ==============================

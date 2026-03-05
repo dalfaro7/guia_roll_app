@@ -1,0 +1,55 @@
+<div class="container text-center">
+
+<h2>Define Guides per Location</h2>
+
+<%= form_with url: create_slots_work_day_path(@work_day), method: :post do %>
+
+<table class="table">
+<tr>
+<th>Location</th>
+<th>Guides Needed</th>
+</tr>
+
+<tr>
+<td>Sara-3&4</td>
+<td>
+<%= number_field_tag "locations[Sara-3&4]",
+@location_counts["Sara-3&4"] || 0 %>
+</td>
+</tr>
+
+<tr>
+<td>Balsa</td>
+<td>
+<%= number_field_tag "locations[Balsa]",
+@location_counts["Balsa"] || 0 %>
+</td>
+</tr>
+
+<tr>
+<td>PM</td>
+<td>
+<%= number_field_tag "locations[PM]",
+@location_counts["PM"] || 0 %>
+</td>
+</tr>
+
+<tr>
+<td>Privado</td>
+<td>
+<%= number_field_tag "locations[Privado]",
+@location_counts["Privado"] || 0 %>
+</td>
+</tr>
+
+</table>
+
+<%= submit_tag "Create Slots", class: "btn btn-primary" %>
+
+<% end %>
+
+<br>
+
+<%= link_to "Back", work_day_path(@work_day), class: "btn btn-secondary" %>
+
+</div>

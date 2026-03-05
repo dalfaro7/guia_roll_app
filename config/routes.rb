@@ -16,7 +16,17 @@ resources :work_days do
     patch :update_availability
     patch :update_roles
     delete :delete_with_reset 
+    get :locations
+    post :create_slots
+    get :edit_slots
+    post :force_assign
+    get :preview_force_assign
   end
+end
+
+resources :location_slots do
+  patch :update_skills, on: :member
+  patch :update_all, on: :collection
 end
 
 resources :guide_days, only: [:update]

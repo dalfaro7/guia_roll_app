@@ -58,8 +58,9 @@ skills = [
   "HG",
   "ClassIII",
   "B1",
+  "Certified",
   "Computer",
-  "Certified"
+  "Weekend"
 ]
 
 skills.each do |skill_name|

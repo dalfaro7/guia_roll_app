@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_04_194804) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_04_213209) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -51,6 +51,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_194804) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "location_slots", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "location"
+    t.datetime "updated_at", null: false
+    t.bigint "work_day_id", null: false
+    t.index ["work_day_id"], name: "index_location_slots_on_work_day_id"
+  end
+
   create_table "monthly_balances", force: :cascade do |t|
     t.integer "balance"
     t.integer "bus_days"
@@ -66,6 +74,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_194804) do
     t.datetime "created_at", null: false
     t.string "name"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "slot_skills", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "location_slot_id", null: false
+    t.bigint "skill_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location_slot_id"], name: "index_slot_skills_on_location_slot_id"
+    t.index ["skill_id"], name: "index_slot_skills_on_skill_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -104,6 +121,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_194804) do
   add_foreign_key "guide_days", "work_days"
   add_foreign_key "guide_skills", "guides"
   add_foreign_key "guide_skills", "skills"
+  add_foreign_key "location_slots", "work_days"
   add_foreign_key "monthly_balances", "guides"
+  add_foreign_key "slot_skills", "location_slots"
+  add_foreign_key "slot_skills", "skills"
   add_foreign_key "work_day_versions", "work_days"
 end
