@@ -16,3 +16,11 @@ table tr.location-privado td {
   background-color: #bbfaea !important;
 }
 
+
+body {
+  background-image: url("roles.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+

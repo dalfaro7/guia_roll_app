@@ -39,7 +39,7 @@ class WorkDaysController < ApplicationController
   end
 end
 
-
+ 
   def update
   @work_day = WorkDay.find(params[:id])
 

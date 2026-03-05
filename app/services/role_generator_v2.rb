@@ -79,13 +79,17 @@ end
 
   required_skill_ids = slot.skills.map(&:id)
 
-  candidates = Guide.active
-                    .includes(:skills)
-                    .reject { |g| @assigned_guides.include?(g.id) }
+  candidates = @work_day.guide_days
+                        .includes(guide: :skills)
+                        .joins(:guide)
+                        .where(status: :standby)
+                        .reject { |gd| @assigned_guides.include?(gd.guide_id) }
 
-  candidates = candidates.select do |guide|
+  candidates = candidates.select do |gd|
 
-    # regla: prioridad 0 no puede entrar a Sara o Privado
+    guide = gd.guide
+
+    # prioridad 0 no puede entrar a Sara ni Privado
     if guide.priority == 0 && ["Sara-3&4", "Privado"].include?(slot.location)
       next false
     end
@@ -96,12 +100,18 @@ end
 
   end
 
-  candidates.sort_by do |guide|
+  selected = candidates.sort_by do |gd|
+
+    guide = gd.guide
+
     [
       guide.priority || 999,
       worked_days_for(guide)
     ]
+
   end.first
+
+  selected&.guide
 
 end
 

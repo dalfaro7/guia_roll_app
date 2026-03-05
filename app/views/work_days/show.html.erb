@@ -1,318 +1,373 @@
 <div class="container p-4">
-<div class="container text-center">
-  <div class="row">
-    <div class="col">
-      <h3>Work Day - <%= @work_day.date %></h3>
-<p>
-<strong>Guides Requested:</strong>
-<%= @work_day.guides_requested %>
-</p>
+    <div class="container text-center">
+        <div class="row">
+            <div class="col">
+                <h3>Work Day - <%= @work_day.date %></h3>
+                <p>
+                    <strong>Guides Requested:</strong>
+                    <%= @work_day.guides_requested %>
+                </p>
 
-<% if @work_day.draft? %>
+                <% if @work_day.draft? %>
 
-<%= link_to "Configure Locations",
+                <%= link_to "Configure Locations",
     locations_work_day_path(@work_day),
     class: "btn btn-outline-dark" %>
 
-<%= link_to "Edit Slot Requirements",
+                <%= link_to "Edit Slot Requirements",
     edit_slots_work_day_path(@work_day),
     class: "btn btn-outline-dark" %>
-<% end %>
+                <% end %>
 
-<p>
-<strong>Status:</strong>
-<%= @work_day.status %>
-</p>
-    </div>
-    <div class="col">
-      <!-- NOT AVAILABLE GUIDES -->
-<div class="card mt-4">
-  <div class="card-header bg-warning text-white">
-    <strong>No disponibles</strong>
-  </div>
+                <p>
+                    <strong>Status:</strong>
+                    <%= @work_day.status %>
+                </p>
+            </div>
+            <div class="col">
+                <% if !@work_day.draft? %>
+                <div class="card">
 
-  <div class="card-body">
+                    <div class="card-header bg-dark text-white">
+                        Trips
+                    </div>
 
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th>Guide</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+                    <div class="card-body">
 
-      <tbody>
+                        <table class="table table-sm">
 
-      <% @work_day.guide_days
+                            <thead>
+                                <tr>
+                                    <th>Location</th>
+                                    <th>Guides</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <% locations = @work_day.guide_days
+                       .where(status: :worked)
+                       .group(:location)
+                       .count %>
+
+                                <% ["Privado","Sara-3&4","Balsa","PM"].each do |loc| %>
+
+                                <tr>
+                                    <td><%= loc %></td>
+                                    <td><%= locations[loc] || 0 %></td>
+                                </tr>
+
+                                <% end %>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+                <%end%>
+            </div>
+            <div class="col">
+                <!-- NOT AVAILABLE GUIDES -->
+                <div class="card mt-4">
+                    <div class="card-header bg-warning text-white">
+                        <strong>No disponibles</strong>
+                    </div>
+
+                    <div class="card-body">
+
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Guide</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <% @work_day.guide_days
                   .includes(:guide)
                   .where(status: [:vacation, :day_off])
                   .joins(:guide)
                   .order("guides.priority ASC")
                   .each do |gd| %>
 
-        <tr>
-          <td><%= gd.guide.name %></td>
+                                <tr>
+                                    <td><%= gd.guide.name %></td>
 
-          <td>
-            <% if gd.vacation? %>
-              <span class="badge bg-danger">Vacation</span>
-            <% elsif gd.day_off? %>
-              <span class="badge bg-warning text-dark">Day Off</span>
-            <% end %>
-          </td>
-        </tr>
+                                    <td>
+                                        <% if gd.vacation? %>
+                                        <span class="badge bg-danger">Vacation</span>
+                                        <% elsif gd.day_off? %>
+                                        <span class="badge bg-warning text-dark">Day Off</span>
+                                        <% end %>
+                                    </td>
+                                </tr>
 
-      <% end %>
+                                <% end %>
 
-      </tbody>
-    </table>
+                            </tbody>
+                        </table>
 
-  </div>
-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <% if @work_day.draft? %>
+                <div class="card">
+
+                    <div class="card-header bg-success text-white">
+                        Top Day-Off Balance
+                    </div>
+
+                    <div class="card-body">
+
+                        <table class="table table-sm">
+
+                            <thead>
+                                <tr>
+                                    <th>Guide</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                <% Guide
+   .active
+   .order(day_off_balance: :desc)
+   .limit(5)
+   .each do |guide| %>
+
+                                <tr>
+
+                                    <td><%= guide.name %></td>
+
+                                    <td class="<%= 'text-danger fw-bold' if guide.day_off_balance < 0 %>">
+
+                                        <%= guide.day_off_balance %>
+
+                                    </td>
+
+                                </tr>
+
+                                <% end %>
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+                <%end%>
+            </div>
+        </div>
     </div>
-    <div class="col">
-    <% if !@work_day.draft? %>
-      <div class="card">
-
-<div class="card-header bg-dark text-white">
-Trips
-</div>
-
-<div class="card-body">
-
-<table class="table table-sm">
-
-<thead>
-<tr>
-<th>Location</th>
-<th>Guides</th>
-</tr>
-</thead>
-
-<tbody>
-
-<% locations = @work_day.guide_days
-                       .where(status: :worked)
-                       .group(:location)
-                       .count %>
-
-<% ["Privado","Sara-3&4","Balsa","PM"].each do |loc| %>
-
-<tr>
-<td><%= loc %></td>
-<td><%= locations[loc] || 0 %></td>
-</tr>
-
-<% end %>
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-<%end%>
-    </div>
-  </div>
-</div>
 
 
-<hr>
+    <hr>
 
-<!-- ACTION BUTTONS -->
+    <!-- ACTION BUTTONS -->
 
-<div class="d-flex justify-content-center mb-4">
-<div class="btn-group">
+    <div class="d-flex justify-content-center mb-4">
+        <div class="btn-group">
 
-<% if @work_day.draft? %>
-<%= button_to "Generate Roles",
+            <% if @work_day.draft? %>
+            <%= button_to "Generate Roles",
 generate_roles_work_day_path(@work_day),
 method: :patch,
 class: "btn btn-outline-primary",
 data: { turbo: false, confirm: "Generate roles for this day?" } %>
-<% end %>
+            <% end %>
 
-<% if @work_day.generated? %>
-<%= button_to "Publish Work Day",
+            <% if @work_day.generated? %>
+            <%= button_to "Publish Work Day",
 publish_work_day_path(@work_day),
 method: :post,
 class: "btn btn-outline-success",
 data: { turbo: false, confirm: "Are you sure you want to publish?" } %>
-<% end %>
+            <% end %>
 
-<% if @work_day.generated? %>
-<%= button_to "Reset Roll",
+            <% if @work_day.generated? %>
+            <%= button_to "Reset Roll",
 reset_roll_work_day_path(@work_day),
 method: :post,
 class: "btn btn-outline-danger",
 data: { turbo: false, confirm: "Reset this day's roll completely?" } %>
-<% end %>
+            <% end %>
 
-<% if @work_day.published? %>
-<%= button_to "Unpublish Work Day",
+            <% if @work_day.published? %>
+            <%= button_to "Unpublish Work Day",
 unpublish_work_day_path(@work_day),
 method: :post,
 class: "btn btn-outline-warning",
 data: { turbo: false, confirm: "Reopen this work day?" } %>
-<% end %>
+            <% end %>
 
-<%= link_to "Back to Work Days",
+            <%= link_to "Back to Work Days",
 work_days_path,
 class: "btn btn-outline-primary" %>
 
-</div>
-</div>
+        </div>
+    </div>
 
-<hr>
-<!-- AVAILABILITY -->
+    <hr>
+    <!-- AVAILABILITY -->
 
-<% if @work_day.draft? %>
+    <% if @work_day.draft? %>
 
-<h2>Set Availability</h2>
+    <h2>Set Availability</h2>
 
-<%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
+    <%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
 
-<table class="table table-bordered">
+    <table class="table table-bordered">
 
-<thead>
-<tr>
-<th>Guide</th>
-<th>Status</th>
-</tr>
-</thead>
+        <thead>
+            <tr>
+                <th>Guide</th>
+                <th>Status</th>
+                <th>Day Off Balance</th>
+            </tr>
+        </thead>
 
-<tbody>
+        <tbody>
 
-<% @guide_days.ordered_for_display.each do |gd| %>
+            <% @guide_days.ordered_for_display.each do |gd| %>
 
-<tr>
-<td><%= gd.guide.name %></td>
+            <tr>
+                <td><%= gd.guide.name %></td>
 
-<td>
-<%= select_tag "availability[#{gd.id}]",
+                <td>
+                    <%= select_tag "availability[#{gd.id}]",
 options_for_select(GuideDay.statuses.keys, gd.status) %>
-</td>
-</tr>
+                </td>
+                <td class="<%= 'text-danger fw-bold' if gd.guide.day_off_balance < 0 %>">
+                    <%= gd.guide.day_off_balance %>
+                </td>
+            </tr>
 
-<% end %>
+            <% end %>
 
-</tbody>
-</table>
+        </tbody>
+    </table>
 
-<%= submit_tag "Save Availability", class:"btn btn-info" %>
+    <%= submit_tag "Save Availability", class:"btn btn-info" %>
 
-<% end %>
+    <% end %>
 
-<% end %>
+    <% end %>
 
-<!-- EDIT ROLES -->
+    <!-- EDIT ROLES -->
 
-<% if @work_day.generated? %>
+    <% if @work_day.generated? %>
 
-<h2>Edit Roles</h2>
+    <h2>Edit Roles</h2>
 
-<%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
+    <%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
 
-<table class="table table-bordered">
+    <table class="table table-bordered">
 
-<thead>
-<tr>
-<th>Guide</th>
-<th>Current Primary</th>
-<th>New Primary</th>
-<th>Current Secondary</th>
-<th>New Secondary</th>
-<th>Current Location</th>
-<th>New Location</th>
-</tr>
-</thead>
+        <thead>
+            <tr>
+                <th>Guide</th>
+                <th>Current Primary</th>
+                <th>New Primary</th>
+                <th>Current Secondary</th>
+                <th>New Secondary</th>
+                <th>Current Location</th>
+                <th>New Location</th>
+            </tr>
+        </thead>
 
-<tbody>
+        <tbody>
 
-<% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
-<% secondary_roles = ["Head Guide", "Bus Guide", "Driver", "Bus Guide & SendPhotos", "SendPhotos"] %>
-<% locations = ["Balsa","Sara-3&4","PM","Privado"] %>
+            <% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
+            <% secondary_roles = ["Head Guide", "Bus Guide", "Driver", "Bus Guide & SendPhotos", "SendPhotos"] %>
+            <% locations = ["Balsa","Sara-3&4","PM","Privado"] %>
 
-<% @guide_days.worked.ordered_for_display.each do |gd| %>
+            <% @guide_days.worked.ordered_for_display.each do |gd| %>
 
-<tr>
+            <tr>
 
-<td>
-<strong><%= gd.guide.name %></strong>
-</td>
+                <td>
+                    <strong><%= gd.guide.name %></strong>
+                </td>
 
-<td>
-<%= gd.role_primary.presence || "-" %>
-</td>
+                <td>
+                    <%= gd.role_primary.presence || "-" %>
+                </td>
 
-<td>
-<%= select_tag "roles[#{gd.id}][role_primary]",
+                <td>
+                    <%= select_tag "roles[#{gd.id}][role_primary]",
 options_for_select(primary_roles, gd.role_primary),
 include_blank: true %>
-</td>
+                </td>
 
-<td>
-<%= gd.role_secondary.presence || "-" %>
-</td>
+                <td>
+                    <%= gd.role_secondary.presence || "-" %>
+                </td>
 
-<td>
-<%= select_tag "roles[#{gd.id}][role_secondary]",
+                <td>
+                    <%= select_tag "roles[#{gd.id}][role_secondary]",
 options_for_select(secondary_roles, gd.role_secondary),
 include_blank: true %>
-</td>
+                </td>
 
-<td>
-<%= gd.location.presence || "-" %>
-</td>
+                <td>
+                    <%= gd.location.presence || "-" %>
+                </td>
 
-<td>
-<%= select_tag "roles[#{gd.id}][location]",
+                <td>
+                    <%= select_tag "roles[#{gd.id}][location]",
 options_for_select(locations, gd.location) %>
-</td>
+                </td>
 
-</tr>
+            </tr>
 
-<% end %>
+            <% end %>
 
-</tbody>
-</table>
+        </tbody>
+    </table>
 
-<div class="text-center">
-<%= submit_tag "Save Roles", class:"btn btn-primary" %>
-</div>
+    <div class="text-center">
+        <%= submit_tag "Save Roles", class:"btn btn-primary" %>
+    </div>
 
-<% end %>
-<hr>
-<!-- form para forzar guia al roll en stand by -->
-<div class="card mt-4">
+    <% end %>
+    <hr>
+    <!-- form para forzar guia al roll en stand by -->
+    <div class="card mt-4">
 
-<div class="card-header">
-Force Guide Assignment
-</div>
+        <div class="card-header">
+            Force Guide Assignment
+        </div>
 
-<div class="card-body">
+        <div class="card-body">
 
-<%= form_with url: force_assign_work_day_path(@work_day), method: :post do %>
+            <%= form_with url: force_assign_work_day_path(@work_day), method: :post do %>
 
-<div class="row">
+            <div class="row">
 
-<div class="col-md-4">
+                <div class="col-md-4">
 
-<label>Location</label>
+                    <label>Location</label>
 
-<%= select_tag :location,
+                    <%= select_tag :location,
 options_for_select(["Balsa","Sara-3&4","Privado","PM"]),
 class: "form-control",
 id: "force_location" %>
 
-</div>
+                </div>
 
-<div class="col-md-4">
+                <div class="col-md-4">
 
-<label>Required Skills</label>
+                    <label>Required Skills</label>
 
-<%= select_tag "skills[]",
+                    <%= select_tag "skills[]",
 options_from_collection_for_select(
 Skill.all,
 :id,
@@ -323,127 +378,125 @@ multiple: true,
 class: "form-control",
 id: "force_skills" %>
 
-</div>
+                </div>
 
-<div class="col-md-3 d-flex align-items-end">
+                <div class="col-md-3 d-flex align-items-end">
 
-<%= submit_tag "Force Assign",
+                    <%= submit_tag "Force Assign",
 class: "btn btn-warning" %>
 
-</div>
+                </div>
 
-</div>
+            </div>
 
-<% end %>
+            <% end %>
 
-<div class="mt-3">
+            <div class="mt-3">
 
-<strong>Next eligible guide:</strong>
+                <strong>Next eligible guide:</strong>
 
-<span id="preview_guide">
-Select skills to preview
-</span>
+                <span id="preview_guide">
+                    Select skills to preview
+                </span>
 
-</div>
+            </div>
 
-</div>
+        </div>
 
-</div>
-<script>
+    </div>
+    <script>
+        function updateGuidePreview() {
 
-function updateGuidePreview(){
+            const skills = Array.from(
+                document.getElementById("force_skills").selectedOptions
+            ).map(o => o.value)
 
-const skills = Array.from(
-document.getElementById("force_skills").selectedOptions
-).map(o => o.value)
+            fetch("/work_days/<%= @work_day.id %>/preview_force_assign?skills[]=" + skills.join("&skills[]="))
+                .then(r => r.json())
+                .then(data => {
 
-fetch("/work_days/<%= @work_day.id %>/preview_force_assign?skills[]=" + skills.join("&skills[]="))
-.then(r => r.json())
-.then(data => {
+                    const preview = document.getElementById("preview_guide")
 
-const preview = document.getElementById("preview_guide")
+                    if (data.name) {
 
-if(data.name){
+                        preview.innerHTML =
+                            data.name + " (priority " + data.priority + ")"
 
-preview.innerHTML =
-data.name + " (priority " + data.priority + ")"
+                    } else {
 
-}else{
+                        preview.innerHTML =
+                            "No standby guide meets requirements"
 
-preview.innerHTML =
-"No standby guide meets requirements"
+                    }
 
-}
+                })
 
-})
+        }
 
-}
+        document.getElementById("force_skills")
+            .addEventListener("change", updateGuidePreview)
 
-document.getElementById("force_skills")
-.addEventListener("change", updateGuidePreview)
+        document.addEventListener("DOMContentLoaded", updateGuidePreview)
+    </script>
+    <% end %>
 
-document.addEventListener("DOMContentLoaded", updateGuidePreview)
+    <!-- PUBLISHED VIEW -->
 
-</script>
-<% end %>
+    <% if @work_day.published? %>
 
-<!-- PUBLISHED VIEW -->
+    <h3>Assigned Guides</h3>
 
-<% if @work_day.published? %>
+    <table class="table table-bordered">
 
-<h3>Assigned Guides</h3>
+        <thead>
+            <tr>
+                <th>Guide</th>
+                <th>Status</th>
+                <th>Primary Role</th>
+                <th>Secondary Role</th>
+                <th>Location</th>
+            </tr>
+        </thead>
 
-<table class="table table-bordered">
+        <tbody>
 
-<thead>
-<tr>
-<th>Guide</th>
-<th>Status</th>
-<th>Primary Role</th>
-<th>Secondary Role</th>
-<th>Location</th>
-</tr>
-</thead>
+            <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
 
-<tbody>
+            <tr class="<%= guide_day.worked? ? guide_day.location_css_class : '' %>">
 
-<% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
+                <td><%= guide_day.guide.name %></td>
 
-<tr class="<%= guide_day.worked? ? guide_day.location_css_class : '' %>">
+                <td><%= guide_day.status %></td>
 
-<td><%= guide_day.guide.name %></td>
+                <td><%= guide_day.role_primary %></td>
 
-<td><%= guide_day.status %></td>
+                <td><%= guide_day.role_secondary %></td>
 
-<td><%= guide_day.role_primary %></td>
+                <td>
+                    <%= guide_day.worked? ? guide_day.location : "-" %>
+                </td>
 
-<td><%= guide_day.role_secondary %></td>
+            </tr>
 
-<td>
-<%= guide_day.worked? ? guide_day.location : "-" %>
-</td>
+            <% end %>
 
-</tr>
+        </tbody>
+    </table>
 
-<% end %>
+    <% end %>
 
-</tbody>
-</table>
+    <hr>
 
-<% end %>
+    <!-- DELETE BUTTON -->
 
-<hr>
+    <div class="mt-4">
 
-<!-- DELETE BUTTON -->
-
-<div class="mt-4">
-
-<%= button_to "X) Delete Work Day",
+        <%= button_to "X) Delete Work Day",
 delete_with_reset_work_day_path(@work_day),
 method: :delete,
 class: "btn btn-outline-danger btn-sm",
 data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" } %>
 
-</div>
+    </div>
 
 </div>

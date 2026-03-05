@@ -1,29 +1,79 @@
 <div class="container p-3">
-<h1 class="inline">Guides</h1>
-<%= link_to "New Guide", new_guide_path, class: "btn btn-info inline" %>
+    <h3 class="inline">Guides</h3>
+    <%= link_to "New Guide", new_guide_path, class: "btn btn-info inline m-2" %>
+    <br>
 
-<table border="1" cellpadding="8">
-  <tr>
-    <th>Name</th>
-    <th>Priority</th>
-    <th>Status</th>
-    <th>Skills</th>
-    <th>Id</th>
-  </tr>
+    <div class="card p-3 mb-3">
 
-  <% @guides.each do |guide| %>
-    <tr>
-      <td><%= guide.name %></td>
-      <td><%= guide.priority %></td>
-      <td><%= guide.active? ? "Active" : "Inactive" %></td>
-      <td>
-<%= guide.skills.pluck(:name).join(", ") %>
-</td>
-      <td><%= guide.id %></td>
-      <td>
-<%= link_to "Edit", edit_guide_path(guide), class: "btn btn-sm btn-primary" %>
-</td>
-    </tr>
-  <% end %>
-</table>
+        <%= form_with url: guides_path, method: :get, local: true do %>
+
+        <div class="row">
+
+            <div class="col-md-4">
+                <label>Name</label>
+                <%= text_field_tag :name, params[:name], class: "form-control" %>
+            </div>
+
+            <div class="col-md-3">
+                <label>Priority</label>
+                <%= select_tag :priority,
+options_for_select(
+Guide.distinct.order(:priority).pluck(:priority),
+params[:priority]
+),
+include_blank: "All",
+class: "form-control" %>
+            </div>
+
+            <div class="col-md-3">
+                <label>Skill</label>
+                <%= select_tag :skill_id,
+options_from_collection_for_select(
+Skill.order(:name),
+:id,
+:name,
+params[:skill_id]
+),
+include_blank: "All",
+class: "form-control" %>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <%= submit_tag "Search", class: "btn btn-primary w-100" %>
+            </div>
+
+        </div>
+
+        <% end %>
+
+    </div>
+
+
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Skills</th>
+            <th>Day Off Balance</th>
+            <th>Last Day Off Balance Update</th>
+            <th>-</th>
+
+        </tr>
+
+        <% @guides.each do |guide| %>
+        <tr>
+            <td><%= guide.id %></td>
+            <td><%= guide.name %></td>
+            <td><%= guide.priority %></td>
+            <td><%= guide.active? ? "Active" : "Inactive" %></td>
+            <td><%= guide.skills.pluck(:name).join(", ") %></td>
+            <td class="<%= 'text-danger fw-bold' if guide.day_off_balance < 0 %>">
+                <%= guide.day_off_balance %></td>
+            <td><%= guide.day_off_balance_updated_at%></td>
+            <td><%= link_to "Edit", edit_guide_path(guide), class: "btn btn-sm btn-primary" %></td>
+        </tr>
+        <% end %>
+    </table>
 </div>

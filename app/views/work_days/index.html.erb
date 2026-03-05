@@ -1,35 +1,36 @@
 <div class="container text-center">
-<h1>Work Days</h1>
-<div class="text-center">
-  <%= link_to "New Work Day",
+    <h1>Work Days</h1>
+    <div class="text-center">
+        <%= link_to "New Work Day",
               new_work_day_path,
               class: "btn btn-primary" %>
-</div>
-<br>
-<table class="table" border="1" cellpadding="8">
-  <tr>
-    <th>Date</th>
-    <th>Guides Requested</th>
-    <th>Status</th>
-    <th>Actions</th>
-  </tr>
+    </div>
+    <br>
+    <table class="table" border="1" cellpadding="8">
+        <tr>
+            <th>Date</th>
+            <th>Guides Requested</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
 
-  <% @work_days.each do |day| %>
-    <tr>
-      <td><%= day.date %></td>
-      <td><%= day.guides_requested %></td>
-      <td><%= day.status %></td>
-      <td>
-      <div class="btn-group" role="group" aria-label="Basic mixed styles example">
-        <%= link_to "View", work_day_path(day), type: "button",class: "btn btn-info" %>
-        <% if day.draft? %>
-           <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch, type: "button", class: "btn btn-warning" %>
+        <% @work_days.each do |day| %>
+        <tr>
+            <td><%= day.date %></td>
+            <td><%= day.guides_requested %></td>
+            <td><%= day.status %></td>
+            <td>
+                <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                    <%= link_to "View", work_day_path(day), type: "button",class: "btn btn-info" %>
+                    <% if day.draft? %>
+                    <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch, type: "button", class: "btn btn-warning" %>
+                    <% end %>
+                    <% if day.generated? %>
+                    <%= button_to "Publish", publish_work_day_path(day), method: :post, type: "button", class:"btn btn-success" %>
+                    <% end %>
+                </div>
+            </td>
+        </tr>
         <% end %>
-        <% if day.generated? %>
-           <%= button_to "Publish", publish_work_day_path(day), method: :post, type: "button", class:"btn btn-success" %>
-        <% end %>
-        </div>
-      </td>
-    </tr>
-  <% end %>
-</table></div>
+    </table>
+</div>

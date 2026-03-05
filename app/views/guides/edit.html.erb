@@ -1,47 +1,52 @@
 <div class="container">
 
-<h1>Edit Guide</h1>
+    <h1>Edit Guide</h1>
 
-<%= form_with model: @guide do |f| %>
+    <%= form_with model: @guide do |f| %>
 
-<div class="mb-3">
-<%= f.label :name %><br>
-<%= f.text_field :name %>
-</div>
+    <div class="mb-3">
+        <%= f.label :name %><br>
+        <%= f.text_field :name %>
+    </div>
 
-<div class="mb-3">
-<%= f.label :priority %><br>
-<%= f.number_field :priority %>
-</div>
+    <div class="mb-3">
+        <%= f.label :priority %><br>
+        <%= f.number_field :priority %>
+    </div>
 
-<div class="mb-3">
-<%= f.label :active %>
-<%= f.check_box :active %>
-</div>
+    <div class="mb-3">
+        <%= f.label :day_off_balance %><br>
+        <%= f.number_field :day_off_balance %>
+    </div>
+    <small class="text-muted">
+        Last updated:
+        <%= @guide.day_off_balance_updated_at&.strftime("%Y-%m-%d %H:%M") || "never" %>
+    </small>
 
-<hr>
+    <div class="mb-3">
+        <%= f.label :active %>
+        <%= f.check_box :active %>
+    </div>
 
-<h3>Skills</h3>
+    <hr>
 
-<div class="mb-3">
+    <h3>Skills</h3>
 
-<%= collection_check_boxes(:guide, :skill_ids, Skill.order(:name), :id, :name) do |b| %>
+    <div class="mb-3">
+        <%= collection_check_boxes(:guide, :skill_ids, Skill.order(:name), :id, :name) do |b| %>
+        <div class="form-check">
+            <%= b.check_box(class: "form-check-input") %>
+            <%= b.label(class: "form-check-label") %>
+        </div>
+        <% end %>
+    </div>
 
-<div class="form-check">
-<%= b.check_box(class: "form-check-input") %>
-<%= b.label(class: "form-check-label") %>
-</div>
+    <%= f.submit "Update Guide", class: "btn btn-primary" %>
 
-<% end %>
+    <% end %>
 
-</div>
+    <br>
 
-<%= f.submit "Update Guide", class: "btn btn-primary" %>
-
-<% end %>
-
-<br>
-
-<%= link_to "Back", guides_path, class: "btn btn-secondary" %>
+    <%= link_to "Back", guides_path, class: "btn btn-secondary" %>
 
 </div>
