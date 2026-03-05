@@ -93,7 +93,7 @@ production:
     <<: *default
     database: guia_roll_app_production
     username: developer
-    <%= ENV["GUIA_ROLL_APP_DATABASE_PASSWORD"] %>
+    password: <%= ENV["GUIA_ROLL_APP_DATABASE_PASSWORD"] %>
     host: dpg-d6l009vkijhs7390o1l0-a
   cache:
     <<: *primary_production
