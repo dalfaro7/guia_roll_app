@@ -93,7 +93,8 @@ production:
     <<: *default
     database: guia_roll_app_production
     username: developer
-    password: developer
+    password: zaWHakQUpH4pOH3UmKMWvqq8Bbs8ObUH
+    host: dpg-d6l009vkijhs7390o1l0-a
   cache:
     <<: *primary_production
     database: guia_roll_app_production_cache
