@@ -9,7 +9,7 @@ class WorkDaysController < ApplicationController
   ]
 
   def index
-    @work_days = WorkDay.order(date: :asc)
+    @work_days = WorkDay.order(date: :desc)
   end
 
   def show
