@@ -99,5 +99,6 @@ class DashboardController < ApplicationController
       else
         []
       end
+
   end
 end

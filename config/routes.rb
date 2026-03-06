@@ -30,6 +30,7 @@ resources :location_slots do
 end
 
 resources :guide_days, only: [:update]
+get "guide_assignments", to: "guide_assignments#index"
 
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

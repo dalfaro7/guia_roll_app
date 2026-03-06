@@ -1,0 +1,115 @@
+<div class="container">
+
+    <h1>Guide Assignment Lookup</h1>
+
+    <hr>
+
+    <h3>Daily Assignment</h3>
+
+    <%= form_with url: guide_assignments_path, method: :get, local: true do %>
+
+    <div class="row">
+
+        <div class="col-md-4">
+            <label>Guide</label>
+            <%= select_tag :guide_id,
+options_from_collection_for_select(@guides, :id, :name, params[:guide_id]),
+class: "form-control" %>
+        </div>
+
+        <div class="col-md-4">
+            <label>Date</label>
+            <%= date_field_tag :date, params[:date], class: "form-control" %>
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+            <%= submit_tag "Check Day", class: "btn btn-primary w-100" %>
+        </div>
+
+    </div>
+
+    <% end %>
+
+    <br>
+
+    <% if @daily_assignment %>
+
+    <div class="card p-3">
+
+        <strong>Guide:</strong> <%= @daily_assignment.guide.name %><br>
+        <strong>Status:</strong> <%= @daily_assignment.status %><br>
+        <strong>Location:</strong> <%= @daily_assignment.location || "-" %><br>
+        <strong>Primary Role:</strong> <%= @daily_assignment.role_primary || "-" %><br>
+        <strong>Secondary Role:</strong> <%= @daily_assignment.role_secondary || "-" %>
+
+    </div>
+
+    <% end %>
+
+    <hr>
+
+    <h3>Weekly Assignments</h3>
+
+    <%= form_with url: guide_assignments_path, method: :get, local: true do %>
+
+    <div class="row">
+
+        <div class="col-md-4">
+            <label>Guide</label>
+            <%= select_tag :week_guide_id,
+options_from_collection_for_select(@guides, :id, :name, params[:week_guide_id]),
+class: "form-control" %>
+        </div>
+
+        <div class="col-md-4">
+            <label>Week Start</label>
+            <%= date_field_tag :week_start, params[:week_start], class: "form-control" %>
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+            <%= submit_tag "View Week", class: "btn btn-success w-100" %>
+        </div>
+
+    </div>
+
+    <% end %>
+
+    <br>
+
+    <% if @weekly_assignments.present? %>
+
+    <table class="table table-bordered">
+
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Location</th>
+                <th>Primary Role</th>
+                <th>Secondary Role</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <% @weekly_assignments.each do |gd| %>
+
+            <tr>
+
+                <td><%= gd.work_day.date %></td>
+                <td><%= gd.status %></td>
+                <td><%= gd.location || "-" %></td>
+                <td><%= gd.role_primary || "-" %></td>
+                <td><%= gd.role_secondary || "-" %></td>
+
+            </tr>
+
+            <% end %>
+
+        </tbody>
+
+    </table>
+
+    <% end %>
+
+</div>
