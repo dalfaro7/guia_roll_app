@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_05_183415) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_06_190955) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -60,6 +60,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_05_183415) do
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
     t.index ["work_day_id"], name: "index_location_slots_on_work_day_id"
+  end
+
+  create_table "manual_day_offs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date", null: false
+    t.bigint "guide_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guide_id", "date"], name: "index_manual_day_offs_on_guide_id_and_date", unique: true
+    t.index ["guide_id"], name: "index_manual_day_offs_on_guide_id"
   end
 
   create_table "monthly_balances", force: :cascade do |t|
@@ -125,6 +134,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_05_183415) do
   add_foreign_key "guide_skills", "guides"
   add_foreign_key "guide_skills", "skills"
   add_foreign_key "location_slots", "work_days"
+  add_foreign_key "manual_day_offs", "guides"
   add_foreign_key "monthly_balances", "guides"
   add_foreign_key "slot_skills", "location_slots"
   add_foreign_key "slot_skills", "skills"

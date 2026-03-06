@@ -31,6 +31,8 @@ end
 
 resources :guide_days, only: [:update]
 get "guide_assignments", to: "guide_assignments#index"
+get "day_off_report", to: "day_off_report#index"
+post "assign_week_day_off", to: "day_off_report#assign_week_day_off"
 
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -1,0 +1,131 @@
+<div class="container">
+
+    <h3>Assign Day Off for a Week</h3>
+
+    <%= form_with url: assign_week_day_off_path, method: :post, local: true do %>
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+            <label>Week Start</label>
+            <%= date_field_tag :week_start, nil, class: "form-control" %>
+        </div>
+
+    </div>
+
+    <h5>Select Guides</h5>
+
+    <div class="row">
+
+        <% @guides.each do |guide| %>
+
+        <div class="col-md-3">
+
+            <label>
+
+                <%= check_box_tag "guide_ids[]", guide.id %>
+
+                <%= guide.name %>
+
+            </label>
+
+        </div>
+
+        <% end %>
+
+    </div>
+
+    <br>
+
+    <%= submit_tag "Assign Day Off", class: "btn btn-danger" %>
+
+    <% end %>
+
+
+
+    <hr>
+    <h3>Monthly Day Off Report</h3>
+
+    <%= form_with url: day_off_report_path, method: :get, local: true do %>
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+            <label>Month</label>
+            <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control" %>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <%= submit_tag "View", class: "btn btn-primary w-100" %>
+        </div>
+
+    </div>
+
+    <% end %>
+
+    <table class="table table-bordered">
+
+        <thead>
+
+            <tr>
+
+                <th>Guide</th>
+
+                <% @work_days.each do |wd| %>
+                <th><%= wd.date.day %></th>
+                <% end %>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <% @guides.each do |guide| %>
+
+            <tr>
+
+                <td><strong><%= guide.name %></strong></td>
+
+                <% @work_days.each do |wd| %>
+
+                <%
+gd = @guide_days.find do |g|
+  g.guide_id == guide.id && g.work_day.date == date
+end
+
+manual_off =
+@manual_day_offs.any? do |m|
+  m.guide_id == guide.id && m.date == date
+end
+%>
+
+                <td class="text-center">
+
+                    <% if gd&.day_off? %>
+
+                    <span class="badge bg-danger">OFF</span>
+
+                    <% elsif manual_off %>
+
+                    <span class="badge bg-warning">M</span>
+
+                    <% else %>
+
+                    -
+
+                    <% end %>
+
+                </td>
+
+                <% end %>
+
+            </tr>
+
+            <% end %>
+
+        </tbody>
+
+    </table>
+
+</div>
