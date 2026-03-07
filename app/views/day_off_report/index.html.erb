@@ -41,9 +41,9 @@
 
     <% end %>
 
-
-
+    <br><br><br>
     <hr>
+
     <h3>Monthly Day Off Report</h3>
 
     <%= form_with url: day_off_report_path, method: :get, local: true do %>
@@ -63,33 +63,37 @@
 
     <% end %>
 
-    <table class="table table-bordered">
+    <span>Simbology<span>
+            <span class="badge bg-warning">Manual DayOff</span>
+            <span class="badge bg-danger">DayOff by Workdayrole</span><br>
 
-        <thead>
+            <table class="table table-bordered">
 
-            <tr>
+                <thead>
 
-                <th>Guide</th>
+                    <tr>
 
-                <% @work_days.each do |wd| %>
-                <th><%= wd.date.day %></th>
-                <% end %>
+                        <th>Guide</th>
 
-            </tr>
+                        <% @calendar_days.each do |date| %>
+                        <th><%= date.day %></th>
+                        <% end %>
 
-        </thead>
+                    </tr>
 
-        <tbody>
+                </thead>
 
-            <% @guides.each do |guide| %>
+                <tbody>
 
-            <tr>
+                    <% @guides.each do |guide| %>
 
-                <td><strong><%= guide.name %></strong></td>
+                    <tr>
 
-                <% @work_days.each do |wd| %>
+                        <td><strong><%= guide.name %></strong></td>
 
-                <%
+                        <% @calendar_days.each do |date| %>
+
+                        <%
 gd = @guide_days.find do |g|
   g.guide_id == guide.id && g.work_day.date == date
 end
@@ -100,32 +104,32 @@ manual_off =
 end
 %>
 
-                <td class="text-center">
+                        <td class="text-center">
 
-                    <% if gd&.day_off? %>
+                            <% if gd&.day_off? %>
 
-                    <span class="badge bg-danger">OFF</span>
+                            <span class="badge bg-danger">OFF</span>
 
-                    <% elsif manual_off %>
+                            <% elsif manual_off %>
 
-                    <span class="badge bg-warning">M</span>
+                            <span class="badge bg-warning">OFF</span>
 
-                    <% else %>
+                            <% else %>
 
-                    -
+                            -
+
+                            <% end %>
+
+                        </td>
+
+                        <% end %>
+
+                    </tr>
 
                     <% end %>
 
-                </td>
+                </tbody>
 
-                <% end %>
-
-            </tr>
-
-            <% end %>
-
-        </tbody>
-
-    </table>
+            </table>
 
 </div>

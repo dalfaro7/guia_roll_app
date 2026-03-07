@@ -1,71 +1,68 @@
 class DayOffReportController < ApplicationController
 
   def index
-  if params[:month].present?
-    year, month = params[:month].split("-").map(&:to_i)
-    @month = Date.new(year, month, 1)
-  else
-    @month = Date.today.beginning_of_month
+    if params[:month].present?
+      year, month = params[:month].split("-").map(&:to_i)
+      @month = Date.new(year, month, 1)
+    else
+      @month = Date.today.beginning_of_month
+    end
+
+    start_date = @month.beginning_of_month
+    end_date   = @month.end_of_month
+
+    @calendar_days = (start_date..end_date).to_a
+
+    @guides = Guide.where(priority: 1).order(:name)
+
+    @work_days =
+      WorkDay.where(date: start_date..end_date)
+
+    @guide_days =
+      GuideDay.joins(:work_day)
+              .where(work_days: { date: start_date..end_date })
+
+    @manual_day_offs =
+      ManualDayOff.where(date: start_date..end_date)
   end
 
-  start_date = @month.beginning_of_month
-  end_date   = @month.end_of_month
-
-  @guides = Guide.where(priority: 1).order(:name)
-
-  @work_days =
-    WorkDay.where(date: start_date..end_date)
-
-  @guide_days =
-    GuideDay.joins(:work_day)
-            .where(work_days: { date: start_date..end_date })
-
-  @manual_day_offs =
-    ManualDayOff.where(date: start_date..end_date)
-end
 
 
   def assign_week_day_off
 
-  start_date = Date.parse(params[:week_start])
-  end_date = start_date + 6.days
+    start_date = Date.parse(params[:week_start])
+    end_date   = start_date + 6.days
 
-  guides = Guide.where(id: params[:guide_ids])
+    guides = Guide.where(id: params[:guide_ids])
 
-  work_days = WorkDay.where(date: start_date..end_date)
+    assigned_count = 0
+    skipped_count  = 0
 
-  assigned_count = 0
-  skipped_count = 0
+    guides.each do |guide|
 
-  guides.each do |guide|
+      (start_date..end_date).each do |date|
 
-    work_days.each do |work_day|
+        work_day = WorkDay.find_by(date: date)
 
-      # REGLA: bloquear si el roll ya fue generado o publicado
-      if work_day.generated? || work_day.published?
-        skipped_count += 1
-        next
+        if work_day && (work_day.generated? || work_day.published?)
+          skipped_count += 1
+          next
+        end
+
+        ManualDayOff.find_or_create_by!(
+          guide: guide,
+          date: date
+        )
+
+        assigned_count += 1
+
       end
-
-      guide_day = work_day.guide_days.find_by(guide: guide)
-      next unless guide_day
-
-      next unless guide_day.standby? || guide_day.worked?
-
-      guide_day.update!(
-        status: :day_off,
-        manually_modified: true
-      )
-
-      assigned_count += 1
 
     end
 
+    redirect_to day_off_report_path(month: start_date.strftime("%Y-%m")),
+                notice: "#{assigned_count} day off assigned. #{skipped_count} skipped because roll was generated or published."
+
   end
-
-  redirect_to day_off_report_path(month: start_date.strftime("%Y-%m")),
-              alert: "#{assigned_count} day off assigned. #{skipped_count} skipped because roll was generated or published."
-
-end
 
 end

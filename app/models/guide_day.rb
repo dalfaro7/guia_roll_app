@@ -13,6 +13,13 @@ class GuideDay < ApplicationRecord
   validates :status, presence: true
   before_save :apply_day_off_balance, if: :will_save_change_to_status?
 
+  scope :available_for_date, ->(date) {
+  where(status: :standby)
+  .where.not(
+    guide_id: ManualDayOff.where(date: date).select(:guide_id)
+  )
+}
+
   scope :ordered_for_display, -> {
     joins(:guide).order(
       Arel.sql("

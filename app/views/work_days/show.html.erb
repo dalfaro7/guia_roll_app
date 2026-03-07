@@ -87,12 +87,15 @@
 
                             <tbody>
 
+                                <% date = @work_day.date %>
+
+                                <!-- Day Off o Vacation del roll -->
                                 <% @work_day.guide_days
-                  .includes(:guide)
-                  .where(status: [:vacation, :day_off])
-                  .joins(:guide)
-                  .order("guides.priority ASC")
-                  .each do |gd| %>
+      .includes(:guide)
+      .where(status: [:vacation, :day_off])
+      .joins(:guide)
+      .order("guides.priority ASC")
+      .each do |gd| %>
 
                                 <tr>
                                     <td><%= gd.guide.name %></td>
@@ -103,6 +106,25 @@
                                         <% elsif gd.day_off? %>
                                         <span class="badge bg-warning text-dark">Day Off</span>
                                         <% end %>
+                                    </td>
+                                </tr>
+
+                                <% end %>
+
+
+                                <!-- Day Off manual -->
+                                <% ManualDayOff
+      .includes(:guide)
+      .where(date: date)
+      .joins(:guide)
+      .order("guides.priority ASC")
+      .each do |m| %>
+
+                                <tr>
+                                    <td><%= m.guide.name %></td>
+
+                                    <td>
+                                        <span class="badge bg-info text-dark">Manual Off</span>
                                     </td>
                                 </tr>
 

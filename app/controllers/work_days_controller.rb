@@ -20,158 +20,154 @@ class WorkDaysController < ApplicationController
     @work_day = WorkDay.new
   end
 
- 
-
   def create
-  @work_day = WorkDay.new(work_day_params)
+    @work_day = WorkDay.new(work_day_params)
 
-  if WorkDay.exists?(date: @work_day.date)
-    redirect_back fallback_location: work_days_path,
-                  alert: "A Work Day already exists for this date."
-    return
+    if WorkDay.exists?(date: @work_day.date)
+      redirect_back fallback_location: work_days_path,
+                    alert: "A Work Day already exists for this date."
+      return
+    end
+
+    if @work_day.save
+      redirect_to @work_day, notice: "Work Day created successfully."
+    else
+      redirect_back fallback_location: work_days_path,
+                    alert: @work_day.errors.full_messages.join(", ")
+    end
   end
 
-  if @work_day.save
-    redirect_to @work_day, notice: "Work Day created successfully."
-  else
-    redirect_back fallback_location: work_days_path,
-                  alert: @work_day.errors.full_messages.join(", ")
-  end
-end
-
- 
   def update
-  @work_day = WorkDay.find(params[:id])
+    @work_day = WorkDay.find(params[:id])
 
-  if @work_day.update(work_day_params)
-    redirect_to @work_day, notice: "Work day actualizado correctamente."
-  else
-    render :edit, status: :unprocessable_entity
+    if @work_day.update(work_day_params)
+      redirect_to @work_day, notice: "Work day actualizado correctamente."
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
-end
 
-# =====================================
+  # =====================================
   # forzar el primer stand by para entrar al rol
   # =====================================
-def force_assign
-  work_day = WorkDay.find(params[:id])
-  location = params[:location]
-  skills = params[:skills] || []
+  def force_assign
+    work_day = WorkDay.find(params[:id])
+    location = params[:location]
+    skills = params[:skills] || []
 
-  service = ForceAssignmentService.new(work_day, location, skills)
+    service = ForceAssignmentService.new(work_day, location, skills)
 
-  begin
-    service.call
-    guide_name = service.guide.name
+    begin
+      service.call
+      guide_name = service.guide.name
 
-    redirect_to work_day_path(work_day),
-                notice: "#{guide_name} was forced into #{location}"
+      redirect_to work_day_path(work_day),
+                  notice: "#{guide_name} was forced into #{location}"
 
-  rescue => e
-    redirect_to work_day_path(work_day), alert: e.message
+    rescue => e
+      redirect_to work_day_path(work_day), alert: e.message
+    end
   end
-end
 
-# =====================================
+  # =====================================
   # siguiente en roll vista previa
   # =====================================
-def preview_force_assign
+  def preview_force_assign
 
-  work_day = WorkDay.find(params[:id])
-  skill_ids = (params[:skills] || []).map(&:to_i)
+    work_day = WorkDay.find(params[:id])
+    skill_ids = (params[:skills] || []).map(&:to_i)
 
-  candidates = work_day.guide_days
-                       .includes(guide: :skills)
-                       .joins(:guide)
-                       .where(status: :standby)
-                       .order("guides.priority ASC")
+    candidates = GuideDay
+                  .available_for_date(work_day.date)
+                  .where(work_day: work_day)
+                  .includes(guide: :skills)
+                  .joins(:guide)
+                  .order("guides.priority ASC")
 
-  guide_day = candidates.find do |gd|
+    guide_day = candidates.find do |gd|
 
-    guide_skill_ids = gd.guide.skills.pluck(:id)
+      guide_skill_ids = gd.guide.skills.pluck(:id)
 
-    (skill_ids - guide_skill_ids).empty?
+      (skill_ids - guide_skill_ids).empty?
+
+    end
+
+    if guide_day
+      render json: {
+        name: guide_day.guide.name,
+        priority: guide_day.guide.priority
+      }
+    else
+      render json: { name: nil }
+    end
 
   end
 
-  if guide_day
-    render json: {
-      name: guide_day.guide.name,
-      priority: guide_day.guide.priority
-    }
-  else
-    render json: { name: nil }
-  end
-
-end
-
-# =====================================
+  # =====================================
   # UPDATE availability
   # =====================================
+  def update_availability
+    @work_day = WorkDay.find(params[:id])
 
-def update_availability
-  @work_day = WorkDay.find(params[:id])
+    params[:availability]&.each do |guide_day_id, status|
+      guide_day = @work_day.guide_days.find(guide_day_id)
 
-  params[:availability]&.each do |guide_day_id, status|
-    guide_day = @work_day.guide_days.find(guide_day_id)
+      guide_day.update!(
+        status: status,
+        manually_modified: true
+      )
+    end
 
-    guide_day.update!(
-      status: status,
-      manually_modified: true
-    )
+    redirect_to @work_day, notice: "Availability updated."
   end
-
-  redirect_to @work_day, notice: "Availability updated."
-end
 
   # =====================================
   # UPDATE roles
   # =====================================
-
   def update_roles
-  @work_day = WorkDay.find(params[:id])
+    @work_day = WorkDay.find(params[:id])
 
-  return redirect_to @work_day unless params[:roles]
+    return redirect_to @work_day unless params[:roles]
 
-  @work_day.guide_days.where(id: params[:roles].keys).each do |guide_day|
+    @work_day.guide_days.where(id: params[:roles].keys).each do |guide_day|
 
-    role_data = params[:roles][guide_day.id.to_s]
+      role_data = params[:roles][guide_day.id.to_s]
 
-    updates = {}
+      updates = {}
 
-    if role_data["role_primary"].present?
-      updates[:role_primary] = role_data["role_primary"]
+      if role_data["role_primary"].present?
+        updates[:role_primary] = role_data["role_primary"]
+      end
+
+      if role_data["role_secondary"].present?
+        updates[:role_secondary] = role_data["role_secondary"]
+      end
+
+      if role_data["location"].present?
+        updates[:location] = role_data["location"]
+      end
+
+      guide_day.update(updates) if updates.any?
     end
 
-    if role_data["role_secondary"].present?
-      updates[:role_secondary] = role_data["role_secondary"]
-    end
-
-    if role_data["location"].present?
-      updates[:location] = role_data["location"]
-    end
-
-    guide_day.update(updates) if updates.any?
+    redirect_to @work_day, notice: "Roles updated successfully."
   end
-
-  redirect_to @work_day, notice: "Roles updated successfully."
-end
 
   # =====================================
   # GENERATE ROLES
   # =====================================
- def generate_roles
-  work_day = WorkDay.find(params[:id])
+  def generate_roles
+    work_day = WorkDay.find(params[:id])
 
-  begin
-    RoleGeneratorV2.new(work_day).generate!
-    flash[:notice] = "Generated"
-  rescue => e
-    flash[:alert] = e.message
+    begin
+      RoleGeneratorV2.new(work_day).generate!
+      flash[:notice] = "Generated"
+    rescue => e
+      flash[:alert] = e.message
+    end
+
+    redirect_to work_day_path(work_day)
   end
-
-  redirect_to work_day_path(work_day)
-end
 
   # =====================================
   # PUBLISH
@@ -205,87 +201,78 @@ end
     end
   end
 
- # =====================================
-# DELETE WORK DAY WITH BALANCE RESET
-# =====================================
-def delete_with_reset
-  @work_day = WorkDay.find(params[:id])
+  # =====================================
+  # DELETE WORK DAY WITH BALANCE RESET
+  # =====================================
+  def delete_with_reset
+    @work_day = WorkDay.find(params[:id])
 
-  ActiveRecord::Base.transaction do
-    month = @work_day.date.beginning_of_month
+    ActiveRecord::Base.transaction do
+      month = @work_day.date.beginning_of_month
 
-    # 1️⃣ Revertir balances solo de los worked
-    @work_day.guide_days.worked.includes(:guide).each do |guide_day|
-      guide = guide_day.guide
+      @work_day.guide_days.worked.includes(:guide).each do |guide_day|
+        guide = guide_day.guide
 
-      balance = guide.monthly_balances.find_by(month: month)
+        balance = guide.monthly_balances.find_by(month: month)
 
-      if balance&.worked_days.to_i > 0
-        balance.decrement!(:worked_days)
+        if balance&.worked_days.to_i > 0
+          balance.decrement!(:worked_days)
+        end
+
+        if guide.total_worked_days.to_i > 0
+          guide.decrement!(:total_worked_days)
+        end
       end
 
-      if guide.total_worked_days.to_i > 0
-        guide.decrement!(:total_worked_days)
-      end
+      @work_day.work_day_versions.delete_all
+      @work_day.guide_days.delete_all
+      @work_day.destroy!
     end
 
-    # 2️⃣ Eliminar versiones
-    @work_day.work_day_versions.delete_all
-
-    # 3️⃣ Eliminar guide_days
-    @work_day.guide_days.delete_all
-
-    # 4️⃣ Eliminar work_day
-    @work_day.destroy!
+    redirect_to work_days_path,
+                notice: "Work Day deleted and balances restored."
   end
 
-  redirect_to work_days_path,
-              notice: "Work Day deleted and balances restored."
-end
-
-
-   # =====================================
+  # =====================================
   # RESET ROLL
   # =====================================
- def reset_roll
-  @work_day.reset_roll!
-  redirect_to @work_day, notice: "Roll reset. You may now set new availability."
-end
-
-def locations
-  @work_day = WorkDay.find(params[:id])
-
-  @location_counts = @work_day
-                       .location_slots
-                       .group(:location)
-                       .count
-end
-
-def create_slots
-  @work_day = WorkDay.find(params[:id])
-
-  @work_day.location_slots.destroy_all
-
-  params[:locations].each do |location, qty|
-    qty.to_i.times do
-      slot = @work_day.location_slots.create!(location: location)
-
-      default_skill = Skill.find_by(name: "ClassIII")
-      slot.slot_skills.create!(skill: default_skill) if default_skill
-    end
+  def reset_roll
+    @work_day.reset_roll!
+    redirect_to @work_day, notice: "Roll reset. You may now set new availability."
   end
 
-  # sincronizar número total de guías solicitadas
-  total_slots = @work_day.location_slots.count
+  def locations
+    @work_day = WorkDay.find(params[:id])
 
-  @work_day.update!(guides_requested: total_slots)
+    @location_counts = @work_day
+                         .location_slots
+                         .group(:location)
+                         .count
+  end
 
-  redirect_to @work_day, notice: "Slots created successfully."
-end
+  def create_slots
+    @work_day = WorkDay.find(params[:id])
 
-def edit_slots
-  @work_day = WorkDay.find(params[:id])
-end
+    @work_day.location_slots.destroy_all
+
+    params[:locations].each do |location, qty|
+      qty.to_i.times do
+        slot = @work_day.location_slots.create!(location: location)
+
+        default_skill = Skill.find_by(name: "ClassIII")
+        slot.slot_skills.create!(skill: default_skill) if default_skill
+      end
+    end
+
+    total_slots = @work_day.location_slots.count
+    @work_day.update!(guides_requested: total_slots)
+
+    redirect_to @work_day, notice: "Slots created successfully."
+  end
+
+  def edit_slots
+    @work_day = WorkDay.find(params[:id])
+  end
 
   private
 
@@ -294,17 +281,17 @@ end
   end
 
   def work_day_params
-  params.require(:work_day).permit(
-    :date,
-    :guides_requested,
-    guide_days_attributes: [
-      :id,
-      :status,
-      :role_primary,
-      :role_secondary,
-      :manually_modified
-    ]
-  )
-end
+    params.require(:work_day).permit(
+      :date,
+      :guides_requested,
+      guide_days_attributes: [
+        :id,
+        :status,
+        :role_primary,
+        :role_secondary,
+        :manually_modified
+      ]
+    )
+  end
 
 end

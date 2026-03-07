@@ -9,6 +9,7 @@ class ForceAssignmentService
     @month = work_day.date.beginning_of_month
   end
 
+
   def call
 
     guide_day = next_available_guide_day
@@ -37,15 +38,18 @@ class ForceAssignmentService
 
   end
 
+
   private
+
 
   def next_available_guide_day
 
-    candidates = @work_day.guide_days
-                          .includes(guide: :skills)
-                          .joins(:guide)
-                          .where(status: :standby)
-                          .order("guides.priority ASC")
+    candidates = GuideDay
+                  .available_for_date(@work_day.date)
+                  .where(work_day: @work_day)
+                  .includes(guide: :skills)
+                  .joins(:guide)
+                  .order("guides.priority ASC")
 
     candidates.find do |gd|
 
@@ -57,6 +61,7 @@ class ForceAssignmentService
 
   end
 
+
   def assign_skills_to_slot(slot)
 
     return if @required_skill_ids.empty?
@@ -64,6 +69,7 @@ class ForceAssignmentService
     slot.skills = Skill.where(id: @required_skill_ids)
 
   end
+
 
   def increment_balance(guide)
 
