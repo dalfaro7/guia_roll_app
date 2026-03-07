@@ -23,7 +23,7 @@ class DayOffReportController < ApplicationController
               .where(work_days: { date: start_date..end_date })
 
     @manual_day_offs =
-      ManualDayOff.where(date: start_date..end_date).tp_a
+      ManualDayOff.where(date: start_date..end_date).to_a
   end
 
 
