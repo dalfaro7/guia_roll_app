@@ -14,6 +14,14 @@ class WorkDaysController < ApplicationController
 
   def show
     @guide_days = @work_day.guide_days.includes(:guide)
+     @location_counts = @work_day
+                         .location_slots
+                         .group(:location)
+                         .count
+
+    @passenger_counts = @work_day.location_slots
+                                .pluck(:location, :passengers)
+                                .to_h
   end
 
   def new
@@ -248,27 +256,44 @@ class WorkDaysController < ApplicationController
                          .location_slots
                          .group(:location)
                          .count
+
+    @passenger_counts = @work_day.location_slots
+                                .pluck(:location, :passengers)
+                                .to_h
   end
 
   def create_slots
-    @work_day = WorkDay.find(params[:id])
+  @work_day = WorkDay.find(params[:id])
 
-    @work_day.location_slots.destroy_all
+  @work_day.location_slots.destroy_all
 
-    params[:locations].each do |location, qty|
-      qty.to_i.times do
-        slot = @work_day.location_slots.create!(location: location)
+  total_slots = 0
 
-        default_skill = Skill.find_by(name: "ClassIII")
-        slot.slot_skills.create!(skill: default_skill) if default_skill
-      end
+  params[:locations].each do |location, data|
+
+    guides = data[:guides].to_i
+    passengers = data[:passengers].to_i
+
+    guides.times do
+
+      slot = @work_day.location_slots.create!(
+        location: location,
+        passengers: passengers
+      )
+
+      default_skill = Skill.find_by(name: "ClassIII")
+      slot.slot_skills.create!(skill: default_skill) if default_skill
+
+      total_slots += 1
+
     end
 
-    total_slots = @work_day.location_slots.count
-    @work_day.update!(guides_requested: total_slots)
-
-    redirect_to @work_day, notice: "Slots created successfully."
   end
+
+  @work_day.update!(guides_requested: total_slots)
+
+  redirect_to @work_day, notice: "Slots created successfully."
+end
 
   def edit_slots
     @work_day = WorkDay.find(params[:id])

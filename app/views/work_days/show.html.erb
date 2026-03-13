@@ -2,11 +2,25 @@
     <div class="container px-4">
         <div class="bg-dark text-white d-flex justify-content-end align-items-center gap-2 p-2 flex-wrap">
 
+            <% if @work_day.draft? %>
+
+            <%= link_to "Configure Locations",
+    locations_work_day_path(@work_day),
+    class: "btn btn-outline-light" %>
+
+            <%= link_to "Edit Slot Requirements",
+    edit_slots_work_day_path(@work_day),
+    class: "btn btn-outline-light" %>
+            <% end %>
+
+
+
+
             <% if @work_day.generated? %>
             <%= button_to "Reset Roll",
         reset_roll_work_day_path(@work_day),
         method: :post,
-        class: "btn btn-danger",
+        class: "btn btn-secondary",
         data: { turbo: false, confirm: "Reset this day's roll completely?" } %>
             <% end %>
 
@@ -39,7 +53,7 @@
       class: "btn btn-light" %>
 
         </div>
-        <div class="container">
+        <div class="container mt-1">
             <div class="row">
                 <div class="col text-center">
                     <h1 class="fs-3">Operation Date: </h1>
@@ -50,16 +64,6 @@
                         <%= @work_day.guides_requested %>
                     </p>
 
-                    <% if @work_day.draft? %>
-
-                    <%= link_to "Configure Locations",
-    locations_work_day_path(@work_day),
-    class: "btn btn-outline-dark" %>
-
-                    <%= link_to "Edit Slot Requirements",
-    edit_slots_work_day_path(@work_day),
-    class: "btn btn-outline-dark" %>
-                    <% end %>
 
                     <p>
                         <strong>Status:</strong>
@@ -67,7 +71,7 @@
                     </p>
                 </div>
                 <div class="col">
-                    <% if !@work_day.draft? %>
+                    <% if @work_day.draft? %>
                     <div class="card">
 
                         <div class="card-header bg-dark text-white">
@@ -82,26 +86,64 @@
                                     <tr>
                                         <th>Location</th>
                                         <th>Guides</th>
+                                        <th>Passengers</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
 
-                                    <% locations = @work_day.guide_days
-                       .where(status: :worked)
-                       .group(:location)
-                       .count %>
-
-                                    <% ["Privado","Sara-3&4","Balsa","PM"].each do |loc| %>
-
                                     <tr>
-                                        <td><%= loc %></td>
-                                        <td><%= locations[loc] || 0 %></td>
+                                        <td>Sara-3&4</td>
+
+                                        <td>
+                                            <%= @location_counts["Sara-3&4"] || 0 %>
+                                        </td>
+
+                                        <td>
+                                            <%= @passenger_counts["Sara-3&4"] || 0%>
+                                        </td>
                                     </tr>
 
-                                    <% end %>
+
+                                    <tr>
+                                        <td>Balsa</td>
+
+                                        <td>
+                                            <%= @location_counts["Balsa"] || 0 %>
+                                        </td>
+
+                                        <td>
+                                            <%= @passenger_counts["Balsa"] || 0 %>
+                                        </td>
+                                    </tr>
+
+
+                                    <tr>
+                                        <td>PM</td>
+
+                                        <td>
+                                            <%= @location_counts["PM"] || 0 %>
+                                        </td>
+
+                                        <td>
+                                            <%= @passenger_counts["PM"] || 0 %>
+                                        </td>
+                                    </tr>
+
+
+                                    <tr>
+                                        <td>Privado</td>
+
+                                        <td>
+                                            <%= @location_counts["Privado"] || 0 %>
+                                        </td>
+
+                                        <td>
+                                            <%= @passenger_counts["Privado"] || 0%>
+                                        </td>
+                                    </tr>
 
                                 </tbody>
+
 
                             </table>
 

@@ -1,55 +1,98 @@
 <div class="container text-center">
 
-<h2>Define Guides per Location</h2>
+    <h2>Define Guides and Passengers per Location</h2>
 
-<%= form_with url: create_slots_work_day_path(@work_day), method: :post do %>
+    <%= form_with url: create_slots_work_day_path(@work_day), method: :post do %>
 
-<table class="table">
-<tr>
-<th>Location</th>
-<th>Guides Needed</th>
-</tr>
+    <table class="table">
 
-<tr>
-<td>Sara-3&4</td>
-<td>
-<%= number_field_tag "locations[Sara-3&4]",
-@location_counts["Sara-3&4"] || 0 %>
-</td>
-</tr>
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Guides Required</th>
+                <th>Passengers</th>
+            </tr>
+        </thead>
 
-<tr>
-<td>Balsa</td>
-<td>
-<%= number_field_tag "locations[Balsa]",
-@location_counts["Balsa"] || 0 %>
-</td>
-</tr>
+        <tbody>
 
-<tr>
-<td>PM</td>
-<td>
-<%= number_field_tag "locations[PM]",
-@location_counts["PM"] || 0 %>
-</td>
-</tr>
+            <tr>
+                <td>Sara-3&4</td>
 
-<tr>
-<td>Privado</td>
-<td>
-<%= number_field_tag "locations[Privado]",
-@location_counts["Privado"] || 0 %>
-</td>
-</tr>
+                <td>
+                    <%= number_field_tag "locations[Sara-3&4][guides]",
+              @location_counts["Sara-3&4"] || 0,
+              class: "form-control" %>
+                </td>
 
-</table>
+                <td>
+                    <%= number_field_tag "locations[Sara-3&4][passengers]",
+              @passenger_counts["Sara-3&4"] || 0,
+              class: "form-control" %>
+                </td>
+            </tr>
 
-<%= submit_tag "Create Slots", class: "btn btn-primary" %>
 
-<% end %>
+            <tr>
+                <td>Balsa</td>
 
-<br>
+                <td>
+                    <%= number_field_tag "locations[Balsa][guides]",
+              @location_counts["Balsa"] || 0,
+              class: "form-control" %>
+                </td>
 
-<%= link_to "Back", work_day_path(@work_day), class: "btn btn-secondary" %>
+                <td>
+                    <%= number_field_tag "locations[Balsa][passengers]",
+              @passenger_counts["Balsa"] || 0,
+              class: "form-control" %>
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>PM</td>
+
+                <td>
+                    <%= number_field_tag "locations[PM][guides]",
+              @location_counts["PM"] || 0,
+              class: "form-control" %>
+                </td>
+
+                <td>
+                    <%= number_field_tag "locations[PM][passengers]",
+              @passenger_counts["PM"] || 0,
+              class: "form-control" %>
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>Privado</td>
+
+                <td>
+                    <%= number_field_tag "locations[Privado][guides]",
+              @location_counts["Privado"] || 0,
+              class: "form-control" %>
+                </td>
+
+                <td>
+                    <%= number_field_tag "locations[Privado][passengers]",
+              @passenger_counts["Privado"] || 0,
+              class: "form-control" %>
+                </td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+    <%= submit_tag "Create/Save Operation", class: "btn btn-primary" %>
+
+    <% end %>
+
+    <br>
+
+    <%= link_to "Back", work_day_path(@work_day), class: "btn btn-secondary" %>
 
 </div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_195205) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_13_221009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,6 +78,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_195205) do
   create_table "location_slots", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "location"
+    t.integer "passengers", default: 0
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
     t.index ["work_day_id"], name: "index_location_slots_on_work_day_id"

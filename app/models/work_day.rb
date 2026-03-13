@@ -28,8 +28,8 @@ def buses_for(location)
   bus_assignments.includes(:bus).where(location: location)
 end
 
-def seats_assigned_for(location)
-  buses_for(location).sum(:seats_assigned)
+def passengers_for(location)
+  location_slots.find_by(location: location)&.passengers.to_i
 end
 
 def bus_capacity_for(location)
@@ -37,7 +37,7 @@ def bus_capacity_for(location)
 end
 
 def seats_remaining_for(location)
-  bus_capacity_for(location) - seats_assigned_for(location)
+  bus_capacity_for(location) - passengers_for(location)
 end
 
 
@@ -49,8 +49,6 @@ end
     generated: 1,
     published: 2
   }
-
-
 
 
   # ==============================
