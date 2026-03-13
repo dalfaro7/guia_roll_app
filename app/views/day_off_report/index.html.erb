@@ -2,13 +2,13 @@
 
     <h3>Assign Day Off for a Week</h3>
 
-    <%= form_with url: assign_week_day_off_path, method: :post, local: true do %>
+    <%= form_with url: assign_day_off_path, method: :post, local: true do %>
 
     <div class="row mb-3">
 
         <div class="col-md-4">
             <label>Week Start</label>
-            <%= date_field_tag :week_start, nil, class: "form-control" %>
+            <%= date_field_tag :date, nil, class: "form-control" %>
         </div>
 
     </div>
@@ -112,7 +112,15 @@ end
 
                             <% elsif manual_off %>
 
-                            <span class="badge bg-warning">OFF</span>
+                            <%= button_to "OFF",
+      remove_day_off_path(
+        guide_id: guide.id,
+        date: date
+      ),
+      method: :post,
+      class: "badge bg-warning border-0",
+      onclick: "return confirm('Are you sure you want to remove this day off?')" %>
+
 
                             <% else %>
 

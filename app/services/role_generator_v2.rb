@@ -1,12 +1,18 @@
 class RoleGeneratorV2
 
+  PRIORITY_ALLOWED = {
+    "Privado"   => [1,2],
+    "Sara-3&4"  => [1,2,3],
+    "Balsa"     => [0,1,2,3],
+    "PM"        => [1,2,3]
+  }
+
   def initialize(work_day)
     @work_day = work_day
     @month    = work_day.date.beginning_of_month
     @assigned_guides = []
 
     preload_data
-    compute_skill_rarity
   end
 
 
@@ -14,7 +20,10 @@ class RoleGeneratorV2
     raise "WorkDay must be draft" unless @work_day.draft?
 
     ActiveRecord::Base.transaction do
-
+Rails.logger.debug "ORDERED SLOTS:"
+ordered_slots.each do |s|
+  Rails.logger.debug "#{s.location} - #{s.skills.map(&:name).join(", ")}"
+end
       ordered_slots.each do |slot|
 
         guide = select_guide_for_slot(slot)
@@ -33,6 +42,7 @@ class RoleGeneratorV2
 
   private
 
+
   # =====================================
   # PRELOAD
   # =====================================
@@ -49,22 +59,6 @@ class RoleGeneratorV2
   end
 
 
-  # =====================================
-  # RAREZA DE SKILLS
-  # =====================================
-  def compute_skill_rarity
-
-    counts = Hash.new(0)
-
-    Guide.active
-         .joins(:skills)
-         .pluck("skills.id")
-         .each { |sid| counts[sid] += 1 }
-
-    @skill_rarity = counts
-
-  end
-
 
   # =====================================
   # PRIORIDAD LOCATION
@@ -74,7 +68,8 @@ class RoleGeneratorV2
     case location
     when "Privado"   then 0
     when "Sara-3&4"  then 1
-    else                  2
+    when "PM"        then 2
+    else                  3
     end
 
   end
@@ -85,22 +80,19 @@ class RoleGeneratorV2
   # =====================================
   def ordered_slots
 
-    @work_day.location_slots
-             .includes(:skills)
-             .to_a
-             .sort_by do |slot|
+  @work_day.location_slots
+           .includes(:skills)
+           .to_a
+           .sort_by do |slot|
 
-      rarity_score = slot.skills.sum { |s| @skill_rarity[s.id] || 0 }
-
-      [
-        location_priority(slot.location),
-        rarity_score,
-        -slot.skills.count
-      ]
-
-    end
+    [
+      location_priority(slot.location),
+      -slot.skills.count
+    ]
 
   end
+
+end
 
 
   # =====================================
@@ -108,47 +100,34 @@ class RoleGeneratorV2
   # =====================================
   def select_guide_for_slot(slot)
 
-    required_skill_ids = slot.skills.map(&:id)
+  required_skill_ids = slot.skills.map(&:id)
 
-    candidates = GuideDay
-                   .available_for_date(@work_day.date)
-                   .where(work_day: @work_day)
-                   .includes(guide: :skills)
-                   .joins(:guide)
-                   .reject { |gd| @assigned_guides.include?(gd.guide_id) }
+  allowed = PRIORITY_ALLOWED[slot.location] || []
 
-    candidates = candidates.select do |gd|
+  candidates = GuideDay
+               .available_for_date(@work_day.date)
+               .where(work_day: @work_day)
+               .joins(guide: :skills)
+               .where(guides: { priority: allowed })
+               .where(skills: { id: required_skill_ids })
+               .group("guide_days.id, guides.id")
+               .having("COUNT(DISTINCT skills.id) = ?", required_skill_ids.size)
+               .includes(:guide)
 
-      guide = gd.guide
-
-      # prioridad 0 no puede entrar a Sara ni Privado
-      if guide.priority == 0 && ["Sara-3&4", "Privado"].include?(slot.location)
-        next false
-      end
-
-      guide_skill_ids = guide.skills.map(&:id)
-
-      (required_skill_ids - guide_skill_ids).empty?
-
-    end
-
-
-    selected = candidates.sort_by do |gd|
-
-      guide = gd.guide
-
-      [
-        guide.priority || 999,
-        worked_days_for(guide)
-      ]
-
-    end.first
-
-
-    selected&.guide
-
+  candidates = candidates.reject do |gd|
+    @assigned_guides.include?(gd.guide_id)
   end
 
+  selected = candidates.sort_by do |gd|
+    [
+      gd.guide.priority || 999,
+      worked_days_for(gd.guide)
+    ]
+  end.first
+
+  selected&.guide
+
+end
 
   # =====================================
   # ASIGNAR GUÍA
@@ -224,11 +203,14 @@ class RoleGeneratorV2
 
       gd = @guide_days[guide.id]
 
-      if gd && gd.standby?
-        available << guide.name
-      else
-        unavailable << "#{guide.name} (#{gd&.status || "not_in_roll"})"
-      end
+if gd && gd.standby?
+  available << guide.name
+else
+  location = gd&.location || "none"
+  status   = gd&.status || "not_in_roll"
+
+  unavailable << "#{guide.name} (#{status} at #{location})"
+end
 
     end
 
