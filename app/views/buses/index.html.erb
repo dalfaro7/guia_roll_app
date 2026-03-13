@@ -1,0 +1,34 @@
+<div class="container">
+    <h2>Buses</h2>
+
+    <%= link_to "New Bus", new_bus_path %>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Alias</th>
+                <th>Company</th>
+                <th>Plate</th>
+                <th>Capacity</th>
+                <th>Phone</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @buses.each do |bus| %>
+            <tr>
+                <td><%= bus.alias %></td>
+                <td><%= bus.company %></td>
+                <td><%= bus.plate %></td>
+                <td><%= bus.capacity %></td>
+                <td><%= bus.phone %></td>
+                <td>
+                    <%= link_to "Edit", edit_bus_path(bus) %>
+                    <%= link_to "Delete", bus_path(bus), method: :delete, data: { confirm: "Delete this bus?" } %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

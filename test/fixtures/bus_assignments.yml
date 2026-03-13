@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  bus: one
+  location_slot: one
+  seats_assigned: 1
+
+two:
+  bus: two
+  location_slot: two
+  seats_assigned: 1

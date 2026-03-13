@@ -7,6 +7,8 @@ class WorkDay < ApplicationRecord
   has_many :guide_days, dependent: :destroy
   has_many :guides, through: :guide_days
   has_many :location_slots, dependent: :destroy
+  has_many :bus_assignments, dependent: :destroy
+
 
   accepts_nested_attributes_for :guide_days, update_only: true
   after_create :initialize_guide_days
@@ -17,6 +19,27 @@ class WorkDay < ApplicationRecord
   validates :date, presence: true
   validates :guides_requested, presence: true
   validate :date_cannot_be_in_the_past
+
+
+# ==============================
+  # VALIDATIONS forbusassigments
+  # ==============================
+def buses_for(location)
+  bus_assignments.includes(:bus).where(location: location)
+end
+
+def seats_assigned_for(location)
+  buses_for(location).sum(:seats_assigned)
+end
+
+def bus_capacity_for(location)
+  buses_for(location).joins(:bus).sum("buses.capacity")
+end
+
+def seats_remaining_for(location)
+  bus_capacity_for(location) - seats_assigned_for(location)
+end
+
 
   # ==============================
   # ENUM

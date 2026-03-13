@@ -1,0 +1,32 @@
+<%= form_with model: @bus do |f| %>
+
+<div>
+    <%= f.label :alias %><br>
+    <%= f.text_field :alias %>
+</div>
+
+<div>
+    <%= f.label :company %><br>
+    <%= f.text_field :company %>
+</div>
+
+<div>
+    <%= f.label :plate %><br>
+    <%= f.text_field :plate %>
+</div>
+
+<div>
+    <%= f.label :capacity %><br>
+    <%= f.number_field :capacity %>
+</div>
+
+<div>
+    <%= f.label :phone %><br>
+    <%= f.text_field :phone %>
+</div>
+
+<br>
+
+<%= f.submit %>
+
+<% end %>

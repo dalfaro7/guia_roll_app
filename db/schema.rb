@@ -10,9 +10,30 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_06_190955) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_13_195205) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "bus_assignments", force: :cascade do |t|
+    t.bigint "bus_id", null: false
+    t.datetime "created_at", null: false
+    t.string "location", null: false
+    t.integer "seats_assigned"
+    t.datetime "updated_at", null: false
+    t.bigint "work_day_id", null: false
+    t.index ["bus_id"], name: "index_bus_assignments_on_bus_id"
+    t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
+  end
+
+  create_table "buses", force: :cascade do |t|
+    t.string "alias"
+    t.integer "capacity"
+    t.string "company"
+    t.datetime "created_at", null: false
+    t.string "phone"
+    t.string "plate"
+    t.datetime "updated_at", null: false
+  end
 
   create_table "guide_days", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -128,6 +149,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_06_190955) do
     t.index ["date"], name: "index_work_days_on_date", unique: true
   end
 
+  add_foreign_key "bus_assignments", "buses"
+  add_foreign_key "bus_assignments", "work_days"
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"
   add_foreign_key "guide_days", "work_days"

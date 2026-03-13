@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  get "bus_assignments/create"
+  get "bus_assignments/destroy"
+  get "buses/index"
+  get "buses/show"
+  get "buses/new"
+  get "buses/edit"
  
   devise_for :users
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
@@ -34,6 +40,10 @@ get "guide_assignments", to: "guide_assignments#index"
 get "day_off_report", to: "day_off_report#index"
 post "assign_day_off", to: "day_off_report#assign_day_off"
 post "remove_day_off", to: "day_off_report#remove_day_off"
+
+resources :buses
+resources :bus_assignments, only: [:create, :destroy]
+
 
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

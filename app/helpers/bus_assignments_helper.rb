@@ -1,0 +1,2 @@
+module BusAssignmentsHelper
+end

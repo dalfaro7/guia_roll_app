@@ -1,0 +1,73 @@
+<div class="card mt-3">
+
+    <div class="card-header bg-secondary text-white">
+        <strong><%= location %></strong>
+    </div>
+
+    <div class="card-body">
+
+        <p>
+            Capacity: <strong><%= work_day.bus_capacity_for(location) %></strong> |
+            Assigned: <strong><%= work_day.seats_assigned_for(location) %></strong> |
+            Remaining:
+            <strong class="<%= 'text-danger fw-bold' if work_day.seats_remaining_for(location) < 0 %>">
+                <%= work_day.seats_remaining_for(location) %>
+            </strong>
+
+            <% if work_day.seats_remaining_for(location) < 0 %>
+            <span class="badge bg-danger ms-2">
+                Need more buses
+            </span>
+            <% end %>
+
+        </p>
+
+        <ul class="list-group mb-3">
+
+            <% work_day.buses_for(location).each do |assignment| %>
+
+            <li class="list-group-item d-flex justify-content-between">
+
+                <span>
+                    <strong><%= assignment.bus.alias %></strong>
+                    (<%= assignment.bus.plate %>)
+                    — seats: <%= assignment.seats_assigned %>
+                </span>
+
+                <%= link_to "remove",
+            bus_assignment_path(assignment),
+            method: :delete,
+            class: "btn btn-sm btn-outline-danger",
+            data: { confirm: "Remove bus?" } %>
+
+            </li>
+
+            <% end %>
+
+        </ul>
+
+        <%= form_with model: BusAssignment.new, class: "row g-2" do |f| %>
+
+        <%= f.hidden_field :work_day_id, value: work_day.id %>
+        <%= f.hidden_field :location, value: location %>
+
+        <div class="col-md-5">
+            <%= f.collection_select :bus_id, Bus.all, :id, :alias,
+        {}, { class: "form-select" } %>
+        </div>
+
+        <div class="col-md-3">
+            <%= f.number_field :seats_assigned,
+        placeholder: "Seats",
+        class: "form-control" %>
+        </div>
+
+        <div class="col-md-4">
+            <%= f.submit "Add Bus", class: "btn btn-primary w-100" %>
+        </div>
+
+        <% end %>
+
+    </div>
+
+</div>
