@@ -168,7 +168,7 @@ class WorkDaysController < ApplicationController
     work_day = WorkDay.find(params[:id])
 
     begin
-      RoleGeneratorV2.new(work_day).generate!
+      work_day.generate_roles!
       flash[:notice] = "Generated"
     rescue => e
       flash[:alert] = e.message
