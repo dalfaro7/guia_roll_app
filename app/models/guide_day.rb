@@ -30,28 +30,28 @@ class GuideDay < ApplicationRecord
   }
 
   scope :ordered_for_display, -> {
-    joins(:guide).order(
-      Arel.sql("
-        CASE guide_days.status
-          WHEN 0 THEN 1
-          WHEN 4 THEN 2
-          WHEN 1 THEN 3
-          WHEN 5 THEN 4
-          ELSE 5
-        END
-      "),
-      Arel.sql("
-        CASE guide_days.location
-          WHEN 'Sara-3&4' THEN 1
-          WHEN 'Balsa' THEN 2
-          WHEN 'Privado' THEN 3
-          WHEN 'PM' THEN 4
-          ELSE 5
-        END
-      "),
-      "guides.priority ASC"
-    )
-  }
+  joins(:guide).order(
+    Arel.sql("
+      CASE guide_days.status
+        WHEN 0 THEN 1
+        WHEN 4 THEN 2
+        WHEN 1 THEN 3
+        WHEN 5 THEN 4
+        ELSE 5
+      END
+    "),
+    Arel.sql("
+      CASE guide_days.location
+        WHEN 'Sara-3&4' THEN 1
+        WHEN 'Balsa' THEN 2
+        WHEN 'Privado' THEN 3
+        WHEN 'PM' THEN 4
+        ELSE 5
+      END
+    "),
+    "guides.priority ASC"
+  )
+}
 
   def counts_as_worked_for_roll?
     worked? || penalized?
