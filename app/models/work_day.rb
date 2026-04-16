@@ -20,10 +20,6 @@ class WorkDay < ApplicationRecord
     published: 2
   }
 
-  def assigned_roll_count
-  guide_days.counts_as_worked_for_roll.count
-  end
-
   def buses_for(location)
     bus_assignments.includes(:bus).where(location: location)
   end
@@ -57,6 +53,14 @@ class WorkDay < ApplicationRecord
   end
 
   def calculated_guides_requested
+    location_slots.count
+  end
+
+  def assigned_roll_count
+  guide_days.where(status: :worked).count
+  end
+
+  def required_roll_count
     location_slots.count
   end
 

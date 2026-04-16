@@ -99,7 +99,7 @@ class GuideDay < ApplicationRecord
   end
 
   def apply_day_off_balance
-    old_status = status_before_last_save || status_was
+    old_status = status_in_database || status_before_last_save || status_was
     new_status = status
 
     return unless new_status == "day_off"

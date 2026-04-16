@@ -4,7 +4,6 @@ class RoleResetService
     @month = @work_day.date.beginning_of_month
   end
 
-  # RESET COMPLETO DEL ROLL
   def call
     ActiveRecord::Base.transaction do
       restore_day_off_balances
@@ -20,8 +19,6 @@ class RoleResetService
     end
   end
 
-  # USADO POR UNPUBLISH
-  # SOLO REVIERTE BALANCES SIN LIMPIAR ROLES
   def revert_only_balances
     ActiveRecord::Base.transaction do
       restore_day_off_balances
@@ -31,7 +28,6 @@ class RoleResetService
 
   private
 
-  # DEVOLVER DAY OFF CONSUMIDOS
   def restore_day_off_balances
     @work_day.guide_days
              .where(status: :day_off, day_off_consumed: true)
@@ -50,8 +46,6 @@ class RoleResetService
     end
   end
 
-  # REVERTIR WORKED DAYS DEL ROLL
-  # worked + penalized cuentan igual para equidad
   def revert_balances
     @work_day.guide_days
              .counts_as_worked_for_roll
@@ -62,13 +56,13 @@ class RoleResetService
     end
   end
 
-  # LIMPIAR ROLES Y STATUS
   def clear_worked_assignments
     @work_day.guide_days.find_each do |guide_day|
       next if guide_day.day_off? || guide_day.vacation?
 
       guide_day.update!(
         status: :standby,
+        status_note: nil,
         role_primary: nil,
         role_secondary: nil,
         location: nil,
