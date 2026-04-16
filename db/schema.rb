@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_221009) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_15_235537) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,6 +45,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_221009) do
     t.string "role_primary"
     t.string "role_secondary"
     t.integer "status"
+    t.text "status_note"
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
     t.index ["guide_id"], name: "index_guide_days_on_guide_id"

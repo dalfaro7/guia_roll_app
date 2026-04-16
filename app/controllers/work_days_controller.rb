@@ -115,19 +115,24 @@ class WorkDaysController < ApplicationController
   # UPDATE availability
   # =====================================
   def update_availability
-    @work_day = WorkDay.find(params[:id])
+  @work_day = WorkDay.find(params[:id])
 
-    params[:availability]&.each do |guide_day_id, status|
+  ActiveRecord::Base.transaction do
+    params[:availability]&.each do |guide_day_id, data|
       guide_day = @work_day.guide_days.find(guide_day_id)
 
       guide_day.update!(
-        status: status,
+        status: data[:status],
+        status_note: data[:status_note],
         manually_modified: true
       )
     end
-
-    redirect_to @work_day, notice: "Availability updated."
   end
+
+  redirect_to @work_day, notice: "Availability updated."
+rescue ActiveRecord::RecordInvalid => e
+  redirect_to @work_day, alert: e.record.errors.full_messages.to_sentence
+end
 
   # =====================================
   # UPDATE roles
@@ -186,9 +191,9 @@ class WorkDaysController < ApplicationController
       return
     end
 
-    worked_count = @work_day.guide_days.worked.count
+    worked_count = @work_day.guide_days.counts_as_worked_for_roll.count
 
-    if worked_count != @work_day.guides_requested
+  if assigned_roll_count != @work_day.guides_requested
       redirect_to @work_day, alert: "Assignments incomplete."
       return
     end
@@ -218,7 +223,7 @@ class WorkDaysController < ApplicationController
     ActiveRecord::Base.transaction do
       month = @work_day.date.beginning_of_month
 
-      @work_day.guide_days.worked.includes(:guide).each do |guide_day|
+      @work_day.guide_days.counts_as_worked_for_roll.includes(:guide).each do |guide_day|
         guide = guide_day.guide
 
         balance = guide.monthly_balances.find_by(month: month)

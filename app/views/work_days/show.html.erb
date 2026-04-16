@@ -179,7 +179,7 @@
                                     <!-- Day Off o Vacation del roll -->
                                     <% @work_day.guide_days
       .includes(:guide)
-      .where(status: [:vacation, :day_off])
+      .where(status: [:vacation, :day_off, :assigned_task, :penalized])
       .joins(:guide)
       .order("guides.priority ASC")
       .each do |gd| %>
@@ -188,11 +188,19 @@
                                         <td><%= gd.guide.name %></td>
 
                                         <td>
+                                        <td>
                                             <% if gd.vacation? %>
                                             <span class="badge bg-danger">Vacation</span>
                                             <% elsif gd.day_off? %>
                                             <span class="badge bg-warning text-dark">Day Off</span>
+                                            <% elsif gd.assigned_task? %>
+                                            <span class="badge bg-info text-dark">Assigned Task</span>
+                                            <small class="text-muted d-block"><%= gd.status_note %></small>
+                                            <% elsif gd.penalized? %>
+                                            <span class="badge bg-dark">Penalized</span>
+                                            <small class="text-muted d-block"><%= gd.status_note %></small>
                                             <% end %>
+                                        </td>
                                         </td>
                                     </tr>
 
@@ -329,8 +337,28 @@
                 <td><%= gd.guide.name %></td>
 
                 <td>
-                    <%= select_tag "availability[#{gd.id}]",
-options_for_select(GuideDay.statuses.keys, gd.status) %>
+                    <%= select_tag "availability[#{gd.id}][status]",
+    options_for_select(
+      [
+        ["Standby", "standby"],
+        ["Worked", "worked"],
+        ["Day Off", "day_off"],
+        ["Vacation", "vacation"],
+        ["Penalized", "penalized"],
+        ["Assigned Task", "assigned_task"]
+      ],
+      gd.status
+    ),
+    class: "form-select form-select-sm availability-status",
+    data: { guide_day_id: gd.id }
+  %>
+
+                    <%= text_field_tag "availability[#{gd.id}][status_note]",
+    gd.status_note,
+    placeholder: "Required for Penalized or Assigned Task",
+    class: "form-control form-control-sm mt-1 availability-note",
+    id: "status_note_#{gd.id}"
+  %>
                 </td>
                 <td class="<%= 'text-danger fw-bold' if gd.guide.day_off_balance < 0 %>">
                     <%= gd.guide.day_off_balance %>
@@ -376,7 +404,7 @@ options_for_select(GuideDay.statuses.keys, gd.status) %>
             <% secondary_roles = ["Head Guide", "Bus Guide", "Driver", "Bus Guide & SendPhotos", "SendPhotos"] %>
             <% locations = ["Balsa","Sara-3&4","PM","Privado"] %>
 
-            <% @guide_days.worked.ordered_for_display.each do |gd| %>
+            <% @guide_days.counts_as_worked_for_roll.ordered_for_display.each do |gd| %>
 
             <tr>
 
@@ -549,7 +577,7 @@ class: "btn btn-warning" %>
 
             <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
 
-            <tr class="<%= guide_day.worked? ? guide_day.location_css_class : '' %>">
+            <tr class="<%= guide_day.counts_as_worked_for_roll? ? guide_day.location_css_class : '' %>">
 
                 <td><%= guide_day.guide.name %></td>
 
@@ -560,7 +588,7 @@ class: "btn btn-warning" %>
                 <td><%= guide_day.role_secondary %></td>
 
                 <td>
-                    <%= guide_day.worked? ? guide_day.location : "-" %>
+                    <%= guide_day.counts_as_worked_for_roll? ? guide_day.location : "-" %>
                 </td>
 
             </tr>
@@ -586,3 +614,33 @@ data: { turbo: false, confirm: "This will permanently delete the Work Day and re
 
     </div>
 </div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function toggleStatusNote(select) {
+            const guideDayId = select.dataset.guideDayId;
+            const noteField = document.getElementById(`status_note_${guideDayId}`);
+            if (!noteField) return;
+
+            const requiresNote = ["penalized", "assigned_task"].includes(select.value);
+
+            noteField.style.display = requiresNote ? "block" : "none";
+
+            if (requiresNote) {
+                noteField.setAttribute("required", "required");
+            } else {
+                noteField.removeAttribute("required");
+                noteField.value = "";
+            }
+        }
+
+        document.querySelectorAll(".availability-status").forEach((select) => {
+            toggleStatusNote(select);
+
+            select.addEventListener("change", function() {
+                toggleStatusNote(select);
+            });
+        });
+    });
+</script>

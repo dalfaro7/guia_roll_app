@@ -1,5 +1,4 @@
 class RoleResetService
-
   def initialize(work_day)
     @work_day = work_day
     @month = @work_day.date.beginning_of_month
@@ -8,11 +7,8 @@ class RoleResetService
   # RESET COMPLETO DEL ROLL
   def call
     ActiveRecord::Base.transaction do
-
       restore_day_off_balances
-
       revert_balances
-
       clear_worked_assignments
 
       @work_day.work_day_versions.destroy_all
@@ -21,7 +17,6 @@ class RoleResetService
         status: :draft,
         published_at: nil
       )
-
     end
   end
 
@@ -29,11 +24,8 @@ class RoleResetService
   # SOLO REVIERTE BALANCES SIN LIMPIAR ROLES
   def revert_only_balances
     ActiveRecord::Base.transaction do
-
       restore_day_off_balances
-
       revert_balances
-
     end
   end
 
@@ -41,7 +33,6 @@ class RoleResetService
 
   # DEVOLVER DAY OFF CONSUMIDOS
   def restore_day_off_balances
-
     @work_day.guide_days
              .where(status: :day_off, day_off_consumed: true)
              .includes(:guide)
@@ -56,29 +47,25 @@ class RoleResetService
       guide_day.update!(
         day_off_consumed: false
       )
-
     end
-
   end
 
-  # REVERTIR WORKED DAYS
+  # REVERTIR WORKED DAYS DEL ROLL
+  # worked + penalized cuentan igual para equidad
   def revert_balances
-
     @work_day.guide_days
-             .worked
+             .counts_as_worked_for_roll
              .includes(:guide)
              .find_each do |guide_day|
 
       decrement_balance(guide_day.guide)
-
     end
-
   end
 
   # LIMPIAR ROLES Y STATUS
   def clear_worked_assignments
-
     @work_day.guide_days.find_each do |guide_day|
+      next if guide_day.day_off? || guide_day.vacation?
 
       guide_day.update!(
         status: :standby,
@@ -89,13 +76,10 @@ class RoleResetService
         modified_by_id: nil,
         day_off_consumed: false
       )
-
     end
-
   end
 
   def decrement_balance(guide)
-
     balance = guide.monthly_balances.find_by(month: @month)
     return unless balance
 
@@ -108,7 +92,5 @@ class RoleResetService
     if guide.total_worked_days.to_i > 0
       guide.decrement!(:total_worked_days)
     end
-
   end
-
 end
