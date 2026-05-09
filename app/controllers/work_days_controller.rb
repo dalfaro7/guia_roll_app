@@ -100,25 +100,56 @@ class WorkDaysController < ApplicationController
     end
   end
 
-  def update_availability
-    @work_day = WorkDay.find(params[:id])
+ def update_availability
+  @work_day = WorkDay.find(params[:id])
 
-    ActiveRecord::Base.transaction do
-      params[:availability]&.each do |guide_day_id, data|
-        guide_day = @work_day.guide_days.find(guide_day_id)
+  ActiveRecord::Base.transaction do
+    params[:availability]&.each do |guide_day_id, data|
+      guide_day = @work_day.guide_days.find(guide_day_id)
 
-        guide_day.update!(
-          status: data[:status],
-          status_note: data[:status_note],
-          manually_modified: true
-        )
-      end
+      before_values = guide_day.slice(
+        "status",
+        "status_note",
+        "location",
+        "role_primary",
+        "role_secondary",
+        "manually_modified"
+      )
+
+      guide_day.update!(
+        status: data[:status],
+        status_note: data[:status_note],
+        manually_modified: true
+      )
+
+      after_values = guide_day.slice(
+        "status",
+        "status_note",
+        "location",
+        "role_primary",
+        "role_secondary",
+        "manually_modified"
+      )
+
+      next if before_values == after_values
+
+      audit!(
+        action: "update_availability",
+        auditable: guide_day,
+        work_day: @work_day,
+        metadata: {
+          guide_name: guide_day.guide.name,
+          before: before_values,
+          after: after_values
+        }
+      )
     end
-
-    redirect_to @work_day, notice: "Availability updated."
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to @work_day, alert: e.record.errors.full_messages.to_sentence
   end
+
+  redirect_to @work_day, notice: "Availability updated."
+rescue ActiveRecord::RecordInvalid => e
+  redirect_to @work_day, alert: e.record.errors.full_messages.to_sentence
+end
 
   def update_roles
     @work_day = WorkDay.find(params[:id])

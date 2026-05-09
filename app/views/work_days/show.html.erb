@@ -318,6 +318,8 @@
     <h2>Set Availability</h2>
 
     <%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
+    <%= hidden_field_tag :audit_screen, "work_day_show" %>
+    <%= hidden_field_tag :audit_component, "set_availability_form" %>
 
     <table class="table table-bordered">
 

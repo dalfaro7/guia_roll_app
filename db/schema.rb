@@ -10,9 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_15_235537) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_09_183900) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "action"
+    t.bigint "auditable_id"
+    t.string "auditable_type"
+    t.datetime "created_at", null: false
+    t.jsonb "metadata"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.bigint "work_day_id", null: false
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
+    t.index ["work_day_id"], name: "index_audit_logs_on_work_day_id"
+  end
 
   create_table "bus_assignments", force: :cascade do |t|
     t.bigint "bus_id", null: false
@@ -151,6 +164,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_15_235537) do
     t.index ["date"], name: "index_work_days_on_date", unique: true
   end
 
+  add_foreign_key "audit_logs", "users"
+  add_foreign_key "audit_logs", "work_days"
   add_foreign_key "bus_assignments", "buses"
   add_foreign_key "bus_assignments", "work_days"
   add_foreign_key "guide_days", "guides"

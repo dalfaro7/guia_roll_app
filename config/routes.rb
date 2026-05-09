@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "audit_logs/index"
   get "bus_assignments/create"
   get "bus_assignments/destroy"
   get "buses/index"
@@ -43,6 +44,7 @@ post "remove_day_off", to: "day_off_report#remove_day_off"
 
 resources :buses
 resources :bus_assignments, only: [:create, :destroy]
+resources :audit_logs, only: [:index]
 
 
 

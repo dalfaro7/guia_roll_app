@@ -10,4 +10,27 @@ class ApplicationController < ActionController::Base
   render plain: "OK"
   end
 
+  private
+
+def audit!(action:, auditable:, work_day: nil, metadata: {})
+  AuditLog.create!(
+    user: current_user,
+    action: action,
+    auditable_type: auditable.class.name,
+    auditable_id: auditable.id,
+    work_day: work_day,
+    metadata: {
+      screen: params[:audit_screen],
+      component: params[:audit_component],
+      controller: controller_name,
+      controller_action: action_name,
+      request_method: request.method,
+      path: request.fullpath,
+      ip: request.remote_ip,
+      user_agent: request.user_agent,
+      performed_at: Time.current
+    }.merge(metadata)
+  )
+end
+
 end
