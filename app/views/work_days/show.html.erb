@@ -325,6 +325,7 @@
 
         <thead>
             <tr>
+                <th>#</th>
                 <th>Guide</th>
                 <th>Status</th>
                 <th>Day Off Balance</th>
@@ -332,10 +333,10 @@
         </thead>
 
         <tbody>
-
-            <% @guide_days.ordered_for_display.each do |gd| %>
+            <% @guide_days.ordered_for_display.each_with_index do |gd, index| %>
 
             <tr>
+                <td><%= index + 1 %></td>
                 <td><%= gd.guide.name %></td>
 
                 <td>
@@ -390,6 +391,7 @@
 
         <thead>
             <tr>
+                <th>#</th>
                 <th>Guide</th>
                 <th>Current Primary</th>
                 <th>New Primary</th>
@@ -406,10 +408,13 @@
             <% secondary_roles = ["Head Guide", "Bus Guide", "Driver", "Bus Guide & SendPhotos", "SendPhotos"] %>
             <% locations = ["Balsa","Sara-3&4","PM","Privado"] %>
 
+            <% location_counters = Hash.new(0) %>
             <% @guide_days.counts_as_worked_for_roll.ordered_for_display.each do |gd| %>
 
             <tr>
-
+                <td>
+                    <%= location_counters[gd.location.presence || "NO_LOCATION"] += 1 %>
+                </td>
                 <td>
                     <strong><%= gd.guide.name %></strong>
                 </td>
@@ -567,6 +572,7 @@ class: "btn btn-warning" %>
 
         <thead>
             <tr>
+                <th>#</th>
                 <th>Guide</th>
                 <th>Status</th>
                 <th>Primary Role</th>
@@ -576,11 +582,16 @@ class: "btn btn-warning" %>
         </thead>
 
         <tbody>
-
+            <% location_counters = Hash.new(0) %>
             <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
 
             <tr class="<%= guide_day.counts_as_worked_for_roll? ? guide_day.location_css_class : '' %>">
 
+                <td>
+                    <%= location_counters[
+        guide_day.location.presence || "NO_LOCATION"
+      ] += 1 %>
+                </td>
                 <td><%= guide_day.guide.name %></td>
 
                 <td><%= guide_day.status %></td>
