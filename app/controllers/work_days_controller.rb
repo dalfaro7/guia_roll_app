@@ -107,40 +107,35 @@ class WorkDaysController < ApplicationController
     params[:availability]&.each do |guide_day_id, data|
       guide_day = @work_day.guide_days.find(guide_day_id)
 
-      before_values = guide_day.slice(
-        "status",
-        "status_note",
-        "location",
-        "role_primary",
-        "role_secondary",
-        "manually_modified"
-      )
+      old_status = guide_day.status
+      old_status_note = guide_day.status_note.to_s.strip
+
+      new_status = data[:status].to_s
+      new_status_note = data[:status_note].to_s.strip
+
+      next if old_status == new_status && old_status_note == new_status_note
 
       guide_day.update!(
-        status: data[:status],
-        status_note: data[:status_note],
+        status: new_status,
+        status_note: new_status_note,
         manually_modified: true
       )
-
-      after_values = guide_day.slice(
-        "status",
-        "status_note",
-        "location",
-        "role_primary",
-        "role_secondary",
-        "manually_modified"
-      )
-
-      next if before_values == after_values
 
       audit!(
         action: "update_availability",
         auditable: guide_day,
         work_day: @work_day,
         metadata: {
+          guide_id: guide_day.guide_id,
           guide_name: guide_day.guide.name,
-          before: before_values,
-          after: after_values
+          before: {
+            status: old_status,
+            status_note: old_status_note
+          },
+          after: {
+            status: guide_day.status,
+            status_note: guide_day.status_note
+          }
         }
       )
     end
