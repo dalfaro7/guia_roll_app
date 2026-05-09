@@ -9,6 +9,7 @@
                 <th>Action</th>
                 <th>Model</th>
                 <th>Work Day</th>
+                <th>Guide</th>
                 <th>Screen</th>
                 <th>Component</th>
                 <th>Details</th>
@@ -19,10 +20,11 @@
             <% @audit_logs.each do |log| %>
             <tr>
                 <td><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></td>
-                <td><%= log.user&.email || "System" %></td>
+                <td><%= log.user&.name || log.user&.username || "System" %></td>
                 <td><%= log.action %></td>
                 <td><%= "#{log.auditable_type} ##{log.auditable_id}" %></td>
                 <td><%= log.work_day&.date || "-" %></td>
+                <td><%= log.metadata&.dig("guide_name") || "-" %></td>
                 <td><%= log.metadata&.dig("screen") || "-" %></td>
                 <td><%= log.metadata&.dig("component") || "-" %></td>
                 <td>
