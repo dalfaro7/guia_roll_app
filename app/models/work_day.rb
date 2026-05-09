@@ -143,4 +143,21 @@ class WorkDay < ApplicationRecord
     return if date.blank?
     errors.add(:date, "cannot be in the past") if date < Date.today
   end
+
+
+
+  def force_delete!
+  ActiveRecord::Base.transaction do
+
+    RoleResetService.new(self).call rescue nil
+
+    work_day_versions.delete_all
+    guide_days.delete_all
+    location_slots.delete_all
+
+    AuditLog.where(work_day_id: id).delete_all
+
+    destroy!
+  end
+end
 end
