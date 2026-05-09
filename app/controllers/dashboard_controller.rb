@@ -1,9 +1,5 @@
 class DashboardController < ApplicationController
   def index
-    # =====================================
-    # 1️⃣ Determinar mes seleccionado
-    # =====================================
-
     if params[:month].present?
       begin
         year, month = params[:month].split("-").map(&:to_i)
@@ -17,73 +13,52 @@ class DashboardController < ApplicationController
 
     month_date = @month.beginning_of_month
 
-    # =====================================
-    # 2️⃣ Cargar guías activos
-    # =====================================
-
     @guides = Guide.active.order(:name)
 
-    # =====================================
-    # 3️⃣ Garantizar balances del mes
-    # =====================================
-
     @balances = MonthlyBalance
-              .where(guide: @guides, month: month_date)
-              .includes(:guide)
+                  .where(guide: @guides, month: month_date)
+                  .includes(:guide)
 
-    # =====================================
-    # 4️⃣ Métricas generales (blindadas contra nil)
-    # =====================================
+    balances_by_guide_id = @balances.index_by(&:guide_id)
 
-    @total_worked = @balances.sum { |b| b.worked_days.to_i }
+    @total_worked = @guides.sum do |guide|
+      balances_by_guide_id[guide.id]&.worked_days.to_i
+    end
 
     @average =
-      if @balances.any?
-        @balances.sum { |b| b.worked_days.to_i }.to_f / @balances.size
+      if @guides.any?
+        @total_worked.to_f / @guides.size
       else
         0
       end
 
-    # =====================================
-    # 5️⃣ Datos principales del dashboard
-    # =====================================
+    @dashboard_data = @guides.map do |guide|
+      balance = balances_by_guide_id[guide.id]
+      worked = balance&.worked_days.to_i
 
-    @dashboard_data = @balances.map do |balance|
-      worked = balance.worked_days.to_i
       percentage =
         @total_worked > 0 ? (worked.to_f / @total_worked * 100).round(2) : 0
+
       deviation = (worked - @average).round(2)
 
       {
-        guide: balance.guide,
+        guide: guide,
         worked: worked,
         percentage: percentage,
         deviation: deviation
       }
-    end.sort_by { |d| -d[:worked] }
-
-    # =====================================
-    # 6️⃣ Datos para gráfico principal
-    # =====================================
+    end.sort_by { |data| [-data[:worked], data[:guide].name] }
 
     @chart_data = @dashboard_data.map do |data|
       [data[:guide].name, data[:worked]]
     end
 
-    # =====================================
-    # 7️⃣ Selección de guía específica
-    # =====================================
-
     @selected_guide =
       if params[:guide_id].present?
-        @guides.find { |g| g.id == params[:guide_id].to_i }
+        @guides.find { |g| g.id == params[:guide_id].to_i } || @guides.first
       else
         @guides.first
       end
-
-    # =====================================
-    # 8️⃣ Histórico del guía seleccionado
-    # =====================================
 
     @historical_data =
       if @selected_guide.present?
@@ -99,6 +74,5 @@ class DashboardController < ApplicationController
       else
         []
       end
-
   end
 end
