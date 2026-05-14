@@ -13,7 +13,7 @@ class DayOffReportController < ApplicationController
 
     @calendar_days = (start_date..end_date).to_a
 
-    @guides = Guide.where(priority: 1).order(:name)
+    @guides = Guide.where(priority: 2).order(:name)
 
     @work_days =
       WorkDay.where(date: start_date..end_date)

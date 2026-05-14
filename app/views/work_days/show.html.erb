@@ -568,16 +568,16 @@ class: "btn btn-warning" %>
 
     <h3>Assigned Guides</h3>
 
-    <table class="table table-bordered">
+    <table class="table table-bordered w-auto">
 
         <thead>
             <tr>
                 <th>#</th>
                 <th>Guide</th>
-                <th>Status</th>
+                <th>Location</th>
                 <th>Primary Role</th>
                 <th>Secondary Role</th>
-                <th>Location</th>
+                <th>Status</th>
             </tr>
         </thead>
 
@@ -593,16 +593,15 @@ class: "btn btn-warning" %>
       ] += 1 %>
                 </td>
                 <td><%= guide_day.guide.name %></td>
-
-                <td><%= guide_day.status %></td>
+                <td>
+                    <%= guide_day.counts_as_worked_for_roll? ? guide_day.location : "-" %>
+                </td>
 
                 <td><%= guide_day.role_primary %></td>
 
                 <td><%= guide_day.role_secondary %></td>
 
-                <td>
-                    <%= guide_day.counts_as_worked_for_roll? ? guide_day.location : "-" %>
-                </td>
+                <td><%= guide_day.status %></td>
 
             </tr>
 
