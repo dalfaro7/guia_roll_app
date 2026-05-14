@@ -8,19 +8,19 @@
 
         <p>
 
-            Passengers:
+            Total Passengers:
             <strong>
                 <%= work_day.passengers_for(location) %>
             </strong>
 
-            |
+            <br>
 
-            Bus Capacity:
+            Total Bus Capacity:
             <strong>
                 <%= work_day.bus_capacity_for(location) %>
             </strong>
 
-            |
+            <br>
 
             Remaining Seats:
             <strong class="<%= 'text-danger fw-bold' if work_day.seats_remaining_for(location) < 0 %>">
@@ -44,8 +44,9 @@
 
                 <span>
                     <strong><%= assignment.bus.alias %></strong>
-                    (<%= assignment.bus.plate %>)
-                    — seats used: <%= assignment.seats_assigned %>
+                    <br>
+                    - Seats used: <%= assignment.seats_assigned %> <br>
+                    - Remaining seats: <%= assignment.bus.capacity - assignment.seats_assigned%>
                 </span>
 
                 <%= link_to "Remove",
@@ -77,7 +78,7 @@
 
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
 
             <%= f.number_field :seats_assigned,
             placeholder: "Seats",
@@ -85,9 +86,9 @@
 
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
 
-            <%= f.submit "Add Bus",
+            <%= f.submit "Add",
             class: "btn btn-primary w-100" %>
 
         </div>

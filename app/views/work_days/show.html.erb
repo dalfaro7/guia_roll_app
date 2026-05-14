@@ -333,7 +333,11 @@
         </thead>
 
         <tbody>
-            <% @guide_days.ordered_for_display.each_with_index do |gd, index| %>
+            <% manual_off_guide_ids = ManualDayOff.where(date: @work_day.date).pluck(:guide_id) %>
+            <% @guide_days
+     .ordered_for_display
+     .reject { |gd| manual_off_guide_ids.include?(gd.guide_id) }
+     .each_with_index do |gd, index| %>
 
             <tr>
                 <td><%= index + 1 %></td>
@@ -344,7 +348,6 @@
     options_for_select(
       [
         ["Standby", "standby"],
-        ["Worked", "worked"],
         ["Day Off", "day_off"],
         ["Vacation", "vacation"],
         ["Penalized", "penalized"],
