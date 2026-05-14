@@ -1,4 +1,8 @@
 class GuidesController < ApplicationController
+
+  before_action :require_admin!
+
+  
   def index
   @guides = Guide.includes(:skills)
 
