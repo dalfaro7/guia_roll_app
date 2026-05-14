@@ -13,6 +13,11 @@ class ApplicationController < ActionController::Base
 
   private
 
+  def require_admin!
+    redirect_to root_path, alert: "Access denied" unless current_user.admin?
+  end
+
+
 def audit!(action:, auditable:, work_day: nil, metadata: {})
   AuditLog.create!(
     user: current_user,

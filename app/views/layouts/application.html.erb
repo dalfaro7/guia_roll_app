@@ -38,7 +38,11 @@
 
 <body>
     <nav style="padding:15px; background:#f8f9fa; margin-bottom:20px;">
-        <span class="m-3">Arenal Rafting RH</span>
+        <span class="m-3">Arenal Rafting RH | <% if user_signed_in? %>
+            User: <%= current_user.name %>
+            <% else %>
+            User:
+            <% end %></span>
         <%= link_to "Work Days", work_days_path %> |
         <%= link_to "Guide_assignments", guide_assignments_path %> |
         <%= link_to "Guides", guides_path %> |
@@ -46,7 +50,15 @@
         <%= link_to "Buses", buses_path %> |
         <%= link_to "Dashboard", dashboard_path %>
         <%= link_to "Audit Logs", audit_logs_path %>
+
+        <span class="ms-3 d-inline-block">
+            <%= button_to "Log Out",
+            destroy_user_session_path,
+            method: :delete,
+            class: "btn btn-sm btn-outline-secondary d-inline-block" %>
+        </span>
     </nav>
+
     <%= yield %>
 </body>
 
