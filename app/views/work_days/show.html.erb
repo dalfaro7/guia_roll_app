@@ -592,32 +592,37 @@ class: "btn btn-warning" %>
             <tr class="<%= guide_day.counts_as_worked_for_roll? ? guide_day.location_css_class : '' %>">
 
                 <td>
+                    <% unless guide_day.day_off? %>
                     <%= location_counters[
-                    guide_day.location.presence || "NO_LOCATION"
-                ] += 1 %>
+                guide_day.location.presence || "NO_LOCATION"
+            ] += 1 %>
+                    <% end %>
                 </td>
 
                 <td><%= guide_day.guide.name %></td>
 
                 <td>
-                    <%= guide_day.counts_as_worked_for_roll? ? guide_day.location : "-" %>
+                    <%= guide_day.day_off? ? "-" : (guide_day.counts_as_worked_for_roll? ? guide_day.location : "-") %>
                 </td>
 
-                <td><%= guide_day.role_primary %></td>
+                <td>
+                    <%= guide_day.day_off? ? "-" : guide_day.role_primary %>
+                </td>
 
-                <td><%= guide_day.role_secondary %></td>
+                <td><%= guide_day.day_off? ? "-" : guide_day.role_secondary %></td>
 
                 <td>
+
                     <%=
-    case guide_day.status
-    when "day_off"
-      "Libre"
-    when "assigned_task"
-      "Assigned Task"
-    else
-      guide_day.status.humanize
-    end
-  %>
+            case guide_day.status
+            when "day_off"
+                "Libre"
+            when "assigned_task"
+                "Assigned Task"
+            else
+                guide_day.status.humanize
+            end
+        %>
                 </td>
 
             </tr>
@@ -633,13 +638,13 @@ class: "btn btn-warning" %>
              .each do |manual_off| %>
 
             <tr>
-                <td>-</td>
+                <td></td>
                 <td><%= manual_off.guide.name %></td>
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
                 <td>
-                    <span class="">libre</span>
+                    <span class="">LIBRE </span>
                 </td>
             </tr>
 
