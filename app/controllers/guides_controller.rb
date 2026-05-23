@@ -1,6 +1,6 @@
 class GuidesController < ApplicationController
 
-  before_action :require_admin!
+  #before_action :require_admin!
 
   
   def index
