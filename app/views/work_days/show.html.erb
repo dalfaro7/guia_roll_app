@@ -592,10 +592,10 @@ class: "btn btn-warning" %>
             <tr class="<%= guide_day.counts_as_worked_for_roll? ? guide_day.location_css_class : '' %>">
 
                 <td>
-                    <% unless guide_day.day_off? %>
+                    <% if guide_day.worked? %>
                     <%= location_counters[
-                guide_day.location.presence || "NO_LOCATION"
-            ] += 1 %>
+      guide_day.location.presence || "NO_LOCATION"
+    ] += 1 %>
                     <% end %>
                 </td>
 
