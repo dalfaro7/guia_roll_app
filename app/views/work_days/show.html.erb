@@ -618,7 +618,11 @@ class: "btn btn-warning" %>
             when "day_off"
                 "Libre"
             when "assigned_task"
-                "Assigned Task"
+                "Tarea Asignada"
+            when "worked"
+                "Trabaja"
+            when "stand_by"
+                "En espera"
             else
                 guide_day.status.humanize
             end
