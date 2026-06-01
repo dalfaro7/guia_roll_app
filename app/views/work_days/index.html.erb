@@ -1,11 +1,37 @@
 <div class="container text-center">
     <h1>Work Days</h1>
-    <div class="text-center">
+
+    <div class="text-center mb-3">
         <%= link_to "New Work Day",
               new_work_day_path,
               class: "btn btn-primary" %>
     </div>
-    <br>
+
+    <%= form_with url: work_days_path, method: :get, local: true do |f| %>
+    <div class="row justify-content-center mb-3">
+        <div class="col-md-3">
+            <%= f.label :start_date, "From" %>
+            <%= f.date_field :start_date,
+                value: params[:start_date],
+                class: "form-control" %>
+        </div>
+
+        <div class="col-md-3">
+            <%= f.label :end_date, "To" %>
+            <%= f.date_field :end_date,
+                value: params[:end_date],
+                class: "form-control" %>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end gap-2">
+            <%= f.submit "Search", class: "btn btn-info" %>
+            <%= link_to "Last 7 Days",
+                work_days_path,
+                class: "btn btn-secondary" %>
+        </div>
+    </div>
+    <% end %>
+
     <table class="table" border="1" cellpadding="8">
         <tr>
             <th>Date</th>
@@ -20,13 +46,21 @@
             <td><%= day.guides_requested %></td>
             <td><%= day.status %></td>
             <td>
-                <div class="btn-group" role="group" aria-label="Basic mixed styles example">
-                    <%= link_to "View", work_day_path(day), type: "button",class: "btn btn-info" %>
+                <div class="btn-group" role="group">
+                    <%= link_to "View", work_day_path(day), class: "btn btn-info" %>
+
                     <% if day.draft? %>
-                    <%= button_to "Generate", generate_roles_work_day_path(day), method: :patch, type: "button", class: "btn btn-warning" %>
+                    <%= button_to "Generate",
+                            generate_roles_work_day_path(day),
+                            method: :patch,
+                            class: "btn btn-warning" %>
                     <% end %>
+
                     <% if day.generated? %>
-                    <%= button_to "Publish", publish_work_day_path(day), method: :post, type: "button", class:"btn btn-success" %>
+                    <%= button_to "Publish",
+                            publish_work_day_path(day),
+                            method: :post,
+                            class: "btn btn-success" %>
                     <% end %>
                 </div>
             </td>

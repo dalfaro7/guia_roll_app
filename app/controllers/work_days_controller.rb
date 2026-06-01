@@ -9,8 +9,16 @@ class WorkDaysController < ApplicationController
   ]
 
   def index
-    @work_days = WorkDay.order(date: :desc)
+  if params[:start_date].present? && params[:end_date].present?
+    @work_days = WorkDay.where(
+      date: params[:start_date]..params[:end_date]
+    ).order(date: :desc)
+  else
+    @work_days = WorkDay.where(
+      date: 7.days.ago.to_date..Date.current
+    ).order(date: :desc)
   end
+end
 
   def show
     @guide_days = @work_day.guide_days.includes(:guide)
