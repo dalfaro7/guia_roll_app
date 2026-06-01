@@ -35,8 +35,8 @@ class GuideDay < ApplicationRecord
       CASE guide_days.status
         WHEN 0 THEN 1
         WHEN 5 THEN 2
-        WHEN 4 THEN 3
-        WHEN 1 THEN 4
+        WHEN 4 THEN 4
+        WHEN 1 THEN 3
         ELSE 5
       END
     "),
