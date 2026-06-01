@@ -593,9 +593,15 @@ class: "btn btn-warning" %>
 
                 <td>
                     <% if guide_day.worked? %>
+
                     <%= location_counters[
       guide_day.location.presence || "NO_LOCATION"
     ] += 1 %>
+
+                    <% elsif guide_day.penalized? %>
+
+                    X
+
                     <% end %>
                 </td>
 
