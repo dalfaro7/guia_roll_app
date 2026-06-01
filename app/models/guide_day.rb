@@ -26,7 +26,7 @@ class GuideDay < ApplicationRecord
   }
 
   scope :counts_as_worked_for_roll, -> {
-    where(status: [:worked, :penalized])
+    where(status: :worked)
   }
 
   scope :ordered_for_display, -> {
@@ -54,7 +54,7 @@ class GuideDay < ApplicationRecord
 }
 
   def counts_as_worked_for_roll?
-    worked? || penalized?
+    worked? 
   end
 
   def counts_as_standby_for_roll?
