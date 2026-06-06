@@ -15,7 +15,7 @@ class WorkDaysController < ApplicationController
     ).order(date: :desc)
   else
     @work_days = WorkDay.where(
-      date: (Date.current - 6.days)..(Date.current + 1.day)
+      date: (Date.current - 7.days)..(Date.current + 1.day)
     ).order(date: :desc)
   end
 end
@@ -194,7 +194,8 @@ end
     redirect_to work_day_path(work_day)
   end
 
-  def publish
+
+   def publish
     unless @work_day.generated?
       redirect_to @work_day, alert: "Only generated days can be published."
       return
@@ -207,7 +208,10 @@ end
     end
 
     @work_day.publish!
-    redirect_to @work_day, notice: "Work day published."
+
+    #ExternalRollSender.send_work_day(@work_day)
+
+    redirect_to @work_day, notice: "Work day published and sent to external system."
   end
 
   def unpublish

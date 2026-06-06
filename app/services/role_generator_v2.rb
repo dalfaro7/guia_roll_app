@@ -153,11 +153,14 @@ end
   # =====================================
   # EQUIDAD
   # =====================================
-  def worked_days_for(guide)
-
-    @balances[guide.id]&.worked_days.to_i
-
-  end
+ def worked_days_for(guide)
+  GuideDay.joins(:work_day)
+    .where(guide: guide, status: :worked)
+    .where(work_days: {
+      date: @work_day.date.beginning_of_month..@work_day.date.end_of_month
+    })
+    .count
+end
 
 
   def increment_balance(guide)
