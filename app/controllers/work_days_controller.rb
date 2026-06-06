@@ -9,24 +9,24 @@ class WorkDaysController < ApplicationController
   ]
 
   def index
-  if params[:start_date].present? && params[:end_date].present?
-    @work_days = WorkDay.where(
-      date: params[:start_date]..params[:end_date]
-    ).order(date: :desc)
-  else
-    @work_days = WorkDay.where(
-      date: (Date.current - 7.days)..(Date.current + 1.day)
-    ).order(date: :desc)
+    if params[:start_date].present? && params[:end_date].present?
+      @work_days = WorkDay.where(
+        date: params[:start_date]..params[:end_date]
+      ).order(date: :desc)
+    else
+      @work_days = WorkDay.where(
+        date: (Date.current - 7.days)..(Date.current + 1.day)
+      ).order(date: :desc)
+    end
   end
-end
 
   def show
     @guide_days = @work_day.guide_days.includes(:guide)
 
     @location_counts = @work_day
-                         .location_slots
-                         .group(:location)
-                         .count
+                       .location_slots
+                       .group(:location)
+                       .count
 
     @passenger_counts = @work_day.location_slots
                                  .pluck(:location, :passengers)
@@ -87,11 +87,11 @@ end
     skill_ids = (params[:skills] || []).map(&:to_i)
 
     candidates = GuideDay
-                  .available_for_date(work_day.date)
-                  .where(work_day: work_day)
-                  .includes(guide: :skills)
-                  .joins(:guide)
-                  .order("guides.priority ASC")
+                 .available_for_date(work_day.date)
+                 .where(work_day: work_day)
+                 .includes(guide: :skills)
+                 .joins(:guide)
+                 .order("guides.priority ASC")
 
     guide_day = candidates.find do |gd|
       guide_skill_ids = gd.guide.skills.pluck(:id)
@@ -108,51 +108,51 @@ end
     end
   end
 
- def update_availability
-  @work_day = WorkDay.find(params[:id])
+  def update_availability
+    @work_day = WorkDay.find(params[:id])
 
-  ActiveRecord::Base.transaction do
-    params[:availability]&.each do |guide_day_id, data|
-      guide_day = @work_day.guide_days.find(guide_day_id)
+    ActiveRecord::Base.transaction do
+      params[:availability]&.each do |guide_day_id, data|
+        guide_day = @work_day.guide_days.find(guide_day_id)
 
-      old_status = guide_day.status
-      old_status_note = guide_day.status_note.to_s.strip
+        old_status = guide_day.status
+        old_status_note = guide_day.status_note.to_s.strip
 
-      new_status = data[:status].to_s
-      new_status_note = data[:status_note].to_s.strip
+        new_status = data[:status].to_s
+        new_status_note = data[:status_note].to_s.strip
 
-      next if old_status == new_status && old_status_note == new_status_note
+        next if old_status == new_status && old_status_note == new_status_note
 
-      guide_day.update!(
-        status: new_status,
-        status_note: new_status_note,
-        manually_modified: true
-      )
+        guide_day.update!(
+          status: new_status,
+          status_note: new_status_note,
+          manually_modified: true
+        )
 
-      audit!(
-        action: "update_availability",
-        auditable: guide_day,
-        work_day: @work_day,
-        metadata: {
-          guide_id: guide_day.guide_id,
-          guide_name: guide_day.guide.name,
-          before: {
-            status: old_status,
-            status_note: old_status_note
-          },
-          after: {
-            status: guide_day.status,
-            status_note: guide_day.status_note
+        audit!(
+          action: "update_availability",
+          auditable: guide_day,
+          work_day: @work_day,
+          metadata: {
+            guide_id: guide_day.guide_id,
+            guide_name: guide_day.guide.name,
+            before: {
+              status: old_status,
+              status_note: old_status_note
+            },
+            after: {
+              status: guide_day.status,
+              status_note: guide_day.status_note
+            }
           }
-        }
-      )
+        )
+      end
     end
-  end
 
-  redirect_to @work_day, notice: "Availability updated."
-rescue ActiveRecord::RecordInvalid => e
-  redirect_to @work_day, alert: e.record.errors.full_messages.to_sentence
-end
+    redirect_to @work_day, notice: "Availability updated."
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to @work_day, alert: e.record.errors.full_messages.to_sentence
+  end
 
   def update_roles
     @work_day = WorkDay.find(params[:id])
@@ -163,17 +163,9 @@ end
       role_data = params[:roles][guide_day.id.to_s]
       updates = {}
 
-      if role_data["role_primary"].present?
-        updates[:role_primary] = role_data["role_primary"]
-      end
-
-      if role_data["role_secondary"].present?
-        updates[:role_secondary] = role_data["role_secondary"]
-      end
-
-      if role_data["location"].present?
-        updates[:location] = role_data["location"]
-      end
+      updates[:role_primary] = role_data["role_primary"] if role_data["role_primary"].present?
+      updates[:role_secondary] = role_data["role_secondary"] if role_data["role_secondary"].present?
+      updates[:location] = role_data["location"] if role_data["location"].present?
 
       guide_day.update(updates) if updates.any?
     end
@@ -194,8 +186,7 @@ end
     redirect_to work_day_path(work_day)
   end
 
-
-   def publish
+  def publish
     unless @work_day.generated?
       redirect_to @work_day, alert: "Only generated days can be published."
       return
@@ -209,9 +200,9 @@ end
 
     @work_day.publish!
 
-    #ExternalRollSender.send_work_day(@work_day)
+    # ExternalRollSender.send_work_day(@work_day)
 
-    redirect_to @work_day, notice: "Work day published and sent to external system."
+    redirect_to @work_day, notice: "Work day published."
   end
 
   def unpublish
@@ -227,28 +218,13 @@ end
     @work_day = WorkDay.find(params[:id])
 
     ActiveRecord::Base.transaction do
-      month = @work_day.date.beginning_of_month
-
-      @work_day.guide_days.counts_as_worked_for_roll.includes(:guide).each do |guide_day|
-        guide = guide_day.guide
-        balance = guide.monthly_balances.find_by(month: month)
-
-        if balance&.worked_days.to_i > 0
-          balance.decrement!(:worked_days)
-        end
-
-        if guide.total_worked_days.to_i > 0
-          guide.decrement!(:total_worked_days)
-        end
-      end
-
       @work_day.work_day_versions.delete_all
       @work_day.guide_days.delete_all
       @work_day.destroy!
     end
 
     redirect_to work_days_path,
-                notice: "Work Day deleted and balances restored."
+                notice: "Work Day deleted."
   end
 
   def reset_roll
@@ -260,9 +236,9 @@ end
     @work_day = WorkDay.find(params[:id])
 
     @location_counts = @work_day
-                         .location_slots
-                         .group(:location)
-                         .count
+                       .location_slots
+                       .group(:location)
+                       .count
 
     @passenger_counts = @work_day.location_slots
                                  .pluck(:location, :passengers)

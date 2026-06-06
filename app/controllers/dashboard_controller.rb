@@ -11,18 +11,19 @@ class DashboardController < ApplicationController
       @month = Date.today.beginning_of_month
     end
 
-    month_date = @month.beginning_of_month
+    month_range = @month.beginning_of_month..@month.end_of_month
 
     @guides = Guide.active.order(:name)
 
-    @balances = MonthlyBalance
-                  .where(guide: @guides, month: month_date)
-                  .includes(:guide)
-
-    balances_by_guide_id = @balances.index_by(&:guide_id)
+    worked_days_by_guide_id = GuideDay
+      .joins(:work_day)
+      .where(guide: @guides, status: :worked)
+      .where(work_days: { date: month_range })
+      .group(:guide_id)
+      .count
 
     @total_worked = @guides.sum do |guide|
-      balances_by_guide_id[guide.id]&.worked_days.to_i
+      worked_days_by_guide_id[guide.id].to_i
     end
 
     @average =
@@ -33,8 +34,7 @@ class DashboardController < ApplicationController
       end
 
     @dashboard_data = @guides.map do |guide|
-      balance = balances_by_guide_id[guide.id]
-      worked = balance&.worked_days.to_i
+      worked = worked_days_by_guide_id[guide.id].to_i
 
       percentage =
         @total_worked > 0 ? (worked.to_f / @total_worked * 100).round(2) : 0
@@ -62,13 +62,16 @@ class DashboardController < ApplicationController
 
     @historical_data =
       if @selected_guide.present?
-        MonthlyBalance
-          .where(guide: @selected_guide)
-          .order(:month)
-          .map do |balance|
+        GuideDay
+          .joins(:work_day)
+          .where(guide: @selected_guide, status: :worked)
+          .group("DATE_TRUNC('month', work_days.date)")
+          .order("DATE_TRUNC('month', work_days.date)")
+          .count
+          .map do |month_date, worked_days|
             [
-              balance.month.strftime("%Y-%m"),
-              balance.worked_days.to_i
+              month_date.strftime("%Y-%m"),
+              worked_days.to_i
             ]
           end
       else

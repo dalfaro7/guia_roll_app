@@ -1,13 +1,11 @@
 class RoleResetService
   def initialize(work_day)
     @work_day = work_day
-    @month = @work_day.date.beginning_of_month
   end
 
   def call
     ActiveRecord::Base.transaction do
       restore_day_off_balances
-      revert_balances
       clear_worked_assignments
 
       @work_day.work_day_versions.destroy_all
@@ -22,7 +20,6 @@ class RoleResetService
   def revert_only_balances
     ActiveRecord::Base.transaction do
       restore_day_off_balances
-      revert_balances
     end
   end
 
@@ -46,16 +43,6 @@ class RoleResetService
     end
   end
 
-  def revert_balances
-    @work_day.guide_days
-             .counts_as_worked_for_roll
-             .includes(:guide)
-             .find_each do |guide_day|
-
-      decrement_balance(guide_day.guide)
-    end
-  end
-
   def clear_worked_assignments
     @work_day.guide_days.find_each do |guide_day|
       next if guide_day.day_off? || guide_day.vacation?
@@ -70,21 +57,6 @@ class RoleResetService
         modified_by_id: nil,
         day_off_consumed: false
       )
-    end
-  end
-
-  def decrement_balance(guide)
-    balance = guide.monthly_balances.find_by(month: @month)
-    return unless balance
-
-    new_value = balance.worked_days.to_i - 1
-
-    balance.update!(
-      worked_days: [new_value, 0].max
-    )
-
-    if guide.total_worked_days.to_i > 0
-      guide.decrement!(:total_worked_days)
     end
   end
 end

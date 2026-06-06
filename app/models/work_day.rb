@@ -58,7 +58,7 @@ class WorkDay < ApplicationRecord
   end
 
   def assigned_roll_count
-  guide_days.where(status: :worked).count
+    guide_days.where(status: :worked).count
   end
 
   def required_roll_count
@@ -83,11 +83,12 @@ class WorkDay < ApplicationRecord
 
     previous_status = status
 
-    ActiveRecord::Base.transaction do
-      RoleResetService.new(self).revert_only_balances
-      update!(status: :generated, published_at: nil)
-      log_event("unpublish", previous_status, "generated")
-    end
+    update!(
+      status: :generated,
+      published_at: nil
+    )
+
+    log_event("unpublish", previous_status, "generated")
   end
 
   def reset_roll!
@@ -124,6 +125,18 @@ class WorkDay < ApplicationRecord
     end
   end
 
+  def force_delete!
+    ActiveRecord::Base.transaction do
+      work_day_versions.delete_all
+      guide_days.delete_all
+      location_slots.delete_all
+      bus_assignments.delete_all
+      AuditLog.where(work_day_id: id).delete_all
+
+      destroy!
+    end
+  end
+
   private
 
   def log_event(event, previous_status, new_status, previous_count = nil, new_count = nil)
@@ -142,23 +155,7 @@ class WorkDay < ApplicationRecord
 
   def date_cannot_be_in_the_past
     return if date.blank?
+
     errors.add(:date, "cannot be in the past") if date < Date.today
   end
-
-
-
-  def force_delete!
-  ActiveRecord::Base.transaction do
-
-    RoleResetService.new(self).call rescue nil
-
-    work_day_versions.delete_all
-    guide_days.delete_all
-    location_slots.delete_all
-
-    AuditLog.where(work_day_id: id).delete_all
-
-    destroy!
-  end
-end
 end

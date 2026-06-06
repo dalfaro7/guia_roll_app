@@ -9,131 +9,86 @@ class RoleGeneratorV2
 
   def initialize(work_day)
     @work_day = work_day
-    @month    = work_day.date.beginning_of_month
     @assigned_guides = []
 
     preload_data
   end
 
-
   def generate!
     raise "WorkDay must be draft" unless @work_day.draft?
 
     ActiveRecord::Base.transaction do
-Rails.logger.debug "ORDERED SLOTS:"
-ordered_slots.each do |s|
-  Rails.logger.debug "#{s.location} - #{s.skills.map(&:name).join(", ")}"
-end
       ordered_slots.each do |slot|
-
         guide = select_guide_for_slot(slot)
 
         raise diagnostic_message(slot) unless guide
 
         assign_guide(slot, guide)
-
       end
 
       @work_day.update!(status: :generated)
-
     end
   end
 
-
   private
 
-
-  # =====================================
-  # PRELOAD
-  # =====================================
   def preload_data
-
     @guide_days = @work_day.guide_days
                            .includes(:guide)
                            .index_by(&:guide_id)
-
-    @balances = MonthlyBalance
-                  .where(month: @month)
-                  .index_by(&:guide_id)
-
   end
 
-
-
-  # =====================================
-  # PRIORIDAD LOCATION
-  # =====================================
   def location_priority(location)
-
     case location
     when "Privado"   then 0
     when "Sara-3&4"  then 1
     when "PM"        then 2
     else                  3
     end
-
   end
 
-
-  # =====================================
-  # ORDEN DE SLOTS
-  # =====================================
   def ordered_slots
-
-  @work_day.location_slots
-           .includes(:skills)
-           .to_a
-           .sort_by do |slot|
-
-    [
-      location_priority(slot.location),
-      -slot.skills.count
-    ]
-
+    @work_day.location_slots
+             .includes(:skills)
+             .to_a
+             .sort_by do |slot|
+      [
+        location_priority(slot.location),
+        -slot.skills.count
+      ]
+    end
   end
 
-end
-
-
-  # =====================================
-  # SELECCIÓN DE GUÍA
-  # =====================================
   def select_guide_for_slot(slot)
+    required_skill_ids = slot.skills.map(&:id)
+    allowed = PRIORITY_ALLOWED[slot.location] || []
 
-  required_skill_ids = slot.skills.map(&:id)
+    candidates = GuideDay
+                 .available_for_date(@work_day.date)
+                 .where(work_day: @work_day)
+                 .joins(guide: :skills)
+                 .where(guides: { priority: allowed })
+                 .where(skills: { id: required_skill_ids })
+                 .group("guide_days.id, guides.id")
+                 .having("COUNT(DISTINCT skills.id) = ?", required_skill_ids.size)
+                 .includes(:guide)
 
-  allowed = PRIORITY_ALLOWED[slot.location] || []
+    candidates = candidates.reject do |gd|
+      @assigned_guides.include?(gd.guide_id)
+    end
 
-  candidates = GuideDay
-               .available_for_date(@work_day.date)
-               .where(work_day: @work_day)
-               .joins(guide: :skills)
-               .where(guides: { priority: allowed })
-               .where(skills: { id: required_skill_ids })
-               .group("guide_days.id, guides.id")
-               .having("COUNT(DISTINCT skills.id) = ?", required_skill_ids.size)
-               .includes(:guide)
+    selected = candidates.sort_by do |gd|
+      [
+        gd.guide.priority || 999,
+        worked_days_for(gd.guide),
+        gd.guide.name
+      ]
+    end.first
 
-  candidates = candidates.reject do |gd|
-    @assigned_guides.include?(gd.guide_id)
+    selected&.guide
   end
 
-  selected = candidates.sort_by do |gd|
-    [
-      gd.guide.priority || 999,
-      worked_days_for(gd.guide)
-    ]
-  end.first
-
-  selected&.guide
-
-end
-
-  # =====================================
-  # ASIGNAR GUÍA
-  # =====================================
   def assign_guide(slot, guide)
-
     guide_day = @guide_days[guide.id]
 
     guide_day.update!(
@@ -143,78 +98,41 @@ end
       role_secondary: nil
     )
 
-    increment_balance(guide)
-
     @assigned_guides << guide.id
-
   end
 
-
-  # =====================================
-  # EQUIDAD
-  # =====================================
- def worked_days_for(guide)
-  GuideDay.joins(:work_day)
-    .where(guide: guide, status: :worked)
-    .where(work_days: {
-      date: @work_day.date.beginning_of_month..@work_day.date.end_of_month
-    })
-    .count
-end
-
-
-  def increment_balance(guide)
-
-    balance = @balances[guide.id]
-
-    unless balance
-
-      balance = MonthlyBalance.create!(
-        guide: guide,
-        month: @month,
-        worked_days: 0
-      )
-
-      @balances[guide.id] = balance
-
-    end
-
-    balance.update!(
-      worked_days: balance.worked_days + 1
-    )
-
+  def worked_days_for(guide)
+    GuideDay.joins(:work_day)
+            .where(guide: guide, status: :worked)
+            .where(work_days: {
+              date: @work_day.date.beginning_of_month..@work_day.date.end_of_month
+            })
+            .count
   end
 
-
-  # =====================================
-  # DIAGNÓSTICO
-  # =====================================
   def diagnostic_message(slot)
-
     required_names = slot.skills.pluck(:name)
 
-    guides_with_skills = Guide.active
-      .joins(:skills)
-      .where(skills: { id: slot.skills.pluck(:id) })
-      .group("guides.id")
-      .having("COUNT(DISTINCT skills.id) = ?", slot.skills.count)
+    guides_with_skills = Guide
+                         .joins(:skills)
+                         .where(skills: { id: slot.skills.pluck(:id) })
+                         .group("guides.id")
+                         .having("COUNT(DISTINCT skills.id) = ?", slot.skills.count)
 
     available = []
     unavailable = []
 
     guides_with_skills.each do |guide|
-
       gd = @guide_days[guide.id]
 
-if gd && gd.standby?
-  available << guide.name
-else
-  location = gd&.location || "none"
-  status   = gd&.status || "not_in_roll"
+      if gd && gd.standby?
+        available << guide.name
+      else
+        location = gd&.location || "none"
+        status   = gd&.status || "not_in_roll"
 
-  unavailable << "#{guide.name} (#{status} at #{location})"
-end
-
+        unavailable << "#{guide.name} (#{status} at #{location})"
+      end
     end
 
     [
@@ -232,7 +150,6 @@ end
       "Unavailable:",
       (unavailable.presence || ["none"]).join(", ")
     ].join("\n")
-
   end
 
 end

@@ -5,7 +5,6 @@ class ForceAssignmentService
     @work_day = work_day
     @location = location
     @required_skill_ids = Array(skills).reject(&:blank?).map(&:to_i)
-    @month = work_day.date.beginning_of_month
   end
 
   def call
@@ -32,8 +31,6 @@ class ForceAssignmentService
         role_primary: "River Guide",
         manually_modified: true
       )
-
-      increment_balance(@guide)
     end
   end
 
@@ -41,11 +38,11 @@ class ForceAssignmentService
 
   def next_available_guide_day
     candidates = GuideDay
-                  .available_for_date(@work_day.date)
-                  .where(work_day: @work_day)
-                  .includes(guide: :skills)
-                  .joins(:guide)
-                  .order("guides.priority ASC")
+                 .available_for_date(@work_day.date)
+                 .where(work_day: @work_day)
+                 .includes(guide: :skills)
+                 .joins(:guide)
+                 .order("guides.priority ASC")
 
     candidates.find do |gd|
       guide_skill_ids = gd.guide.skills.pluck(:id)
@@ -57,18 +54,5 @@ class ForceAssignmentService
     return if @required_skill_ids.empty?
 
     slot.skills = Skill.where(id: @required_skill_ids)
-  end
-
-  def increment_balance(guide)
-    balance = MonthlyBalance.find_or_create_by(
-      guide: guide,
-      month: @month
-    )
-
-    balance.update!(
-      worked_days: balance.worked_days.to_i + 1
-    )
-
-    guide.increment!(:total_worked_days)
   end
 end
