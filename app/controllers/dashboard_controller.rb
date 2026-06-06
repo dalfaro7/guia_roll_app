@@ -61,21 +61,21 @@ class DashboardController < ApplicationController
       end
 
     @historical_data =
-      if @selected_guide.present?
-        GuideDay
-          .joins(:work_day)
-          .where(guide: @selected_guide, status: :worked)
-          .group("DATE_TRUNC('month', work_days.date)")
-          .order("DATE_TRUNC('month', work_days.date)")
-          .count
-          .map do |month_date, worked_days|
-            [
-              month_date.strftime("%Y-%m"),
-              worked_days.to_i
-            ]
-          end
-      else
-        []
+  if @selected_guide.present?
+    GuideDay
+      .joins(:work_day)
+      .where(guide: @selected_guide, status: :worked)
+      .group(Arel.sql("DATE_TRUNC('month', work_days.date)"))
+      .order(Arel.sql("DATE_TRUNC('month', work_days.date)"))
+      .count
+      .map do |month_date, worked_days|
+        [
+          month_date.strftime("%Y-%m"),
+          worked_days.to_i
+        ]
       end
+  else
+    []
+  end
   end
 end
