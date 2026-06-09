@@ -583,71 +583,125 @@ class: "btn btn-warning" %>
                 <th>Status</th>
             </tr>
         </thead>
-
         <tbody>
             <% location_counters = Hash.new(0) %>
 
-            <% @work_day.guide_days.ordered_for_display.each do |guide_day| %>
+            <% @work_day.guide_days
+        .where(status: :worked)
+        .ordered_for_display
+        .each do |guide_day| %>
 
-            <tr class="<%= guide_day.counts_as_worked_for_roll? ? guide_day.location_css_class : '' %>">
-
+            <tr class="<%= guide_day.location_css_class %>">
                 <td>
-                    <% if guide_day.worked? %>
-
                     <%= location_counters[
-      guide_day.location.presence || "NO_LOCATION"
-    ] += 1 %>
-
-                    <% elsif guide_day.penalized? %>
-
-                    X
-
-                    <% end %>
+                    guide_day.location.presence || "NO_LOCATION"
+                ] += 1 %>
                 </td>
 
                 <td><%= guide_day.guide.name %></td>
-
-                <td>
-                    <%= guide_day.day_off? ? "-" : (guide_day.counts_as_worked_for_roll? ? guide_day.location : "-") %>
-                </td>
-
-                <td>
-                    <%= guide_day.day_off? ? "-" : guide_day.role_primary %>
-                </td>
-
-                <td><%= guide_day.day_off? ? "-" : guide_day.role_secondary %></td>
-
-                <td>
-
-                    <%=
-            case guide_day.status
-            when "day_off"
-                "Libre"
-            when "assigned_task"
-                "Tarea Asignada"
-            when "worked"
-                "Trabaja"
-            when "standby"
-                "En espera"
-            when "penalized"
-                "PENALIZADO"
-            else
-                guide_day.status.humanize
-            end
-        %>
-                </td>
-
+                <td><%= guide_day.location.presence || "-" %></td>
+                <td><%= guide_day.role_primary.presence || "-" %></td>
+                <td><%= guide_day.role_secondary.presence || "-" %></td>
+                <td>Trabaja</td>
             </tr>
 
             <% end %>
 
-            <%# CHANGED: show guides marked as Manual Day Off, because they are not in guide_days %>
+            <% @work_day.standby_guides_for_published_roll.each do |guide_day| %>
+            <tr>
+                <td></td>
+                <td><%= guide_day.guide.name %></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>En espera</td>
+            </tr>
+            <% end %>
+
+            <% @work_day.guide_days
+        .where(status: :assigned_task)
+        .joins(:guide)
+        .order("guides.priority ASC", "guides.name ASC")
+        .each do |guide_day| %>
+
+            <tr>
+                <td></td>
+                <td><%= guide_day.guide.name %></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>
+                    Tarea Asignada
+                    <% if guide_day.status_note.present? %>
+                    <small class="text-muted d-block"><%= guide_day.status_note %></small>
+                    <% end %>
+                </td>
+            </tr>
+
+            <% end %>
+
+            <% @work_day.guide_days
+        .where(status: :day_off)
+        .joins(:guide)
+        .order("guides.priority ASC", "guides.name ASC")
+        .each do |guide_day| %>
+
+            <tr>
+                <td></td>
+                <td><%= guide_day.guide.name %></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Libre</td>
+            </tr>
+
+            <% end %>
+
+            <% @work_day.guide_days
+        .where(status: :penalized)
+        .joins(:guide)
+        .order("guides.priority ASC", "guides.name ASC")
+        .each do |guide_day| %>
+
+            <tr>
+                <td>X</td>
+                <td><%= guide_day.guide.name %></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>
+                    PENALIZADO
+                    <% if guide_day.status_note.present? %>
+                    <small class="text-muted d-block"><%= guide_day.status_note %></small>
+                    <% end %>
+                </td>
+            </tr>
+
+            <% end %>
+
+            <% @work_day.guide_days
+        .where(status: :vacation)
+        .joins(:guide)
+        .order("guides.priority ASC", "guides.name ASC")
+        .each do |guide_day| %>
+
+            <tr>
+                <td></td>
+                <td><%= guide_day.guide.name %></td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Vacation</td>
+            </tr>
+
+            <% end %>
+
             <% ManualDayOff
-             .includes(:guide)
-             .where(date: @work_day.date)
-             .joins(:guide)
-             .order("guides.priority ASC")
-             .each do |manual_off| %>
+        .includes(:guide)
+        .where(date: @work_day.date)
+        .joins(:guide)
+        .order("guides.priority ASC", "guides.name ASC")
+        .each do |manual_off| %>
 
             <tr>
                 <td></td>
@@ -655,13 +709,10 @@ class: "btn btn-warning" %>
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
-                <td>
-                    <span class="">LIBRE </span>
-                </td>
+                <td>LIBRE MANUAL</td>
             </tr>
 
             <% end %>
-
         </tbody>
     </table>
 

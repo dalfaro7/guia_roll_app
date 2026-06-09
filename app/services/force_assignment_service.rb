@@ -37,18 +37,11 @@ class ForceAssignmentService
   private
 
   def next_available_guide_day
-    candidates = GuideDay
-                 .available_for_date(@work_day.date)
-                 .where(work_day: @work_day)
-                 .includes(guide: :skills)
-                 .joins(:guide)
-                 .order("guides.priority ASC")
-
-    candidates.find do |gd|
-      guide_skill_ids = gd.guide.skills.pluck(:id)
-      (@required_skill_ids - guide_skill_ids).empty?
-    end
-  end
+  GuideCandidateRanker.new(
+    work_day: @work_day,
+    skill_ids: @required_skill_ids
+  ).next_candidate
+end
 
   def assign_skills_to_slot(slot)
     return if @required_skill_ids.empty?

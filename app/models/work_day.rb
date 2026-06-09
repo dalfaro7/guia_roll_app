@@ -21,6 +21,13 @@ class WorkDay < ApplicationRecord
     published: 2
   }
 
+  def standby_guides_for_published_roll
+  GuideCandidateRanker.new(
+    work_day: self,
+    skill_ids: []
+  ).standby_candidates
+  end
+
   def buses_for(location)
     bus_assignments.includes(:bus).where(location: location)
   end
