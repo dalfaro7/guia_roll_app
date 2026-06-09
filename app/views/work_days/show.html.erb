@@ -530,38 +530,45 @@ class: "btn btn-warning" %>
 
     </div>
     <script>
-        function updateGuidePreview() {
+        document.addEventListener("DOMContentLoaded", function() {
+            const forceSkills = document.getElementById("force_skills");
+            const preview = document.getElementById("preview_guide");
 
-            const skills = Array.from(
-                document.getElementById("force_skills").selectedOptions
-            ).map(o => o.value)
+            if (!forceSkills || !preview) return;
 
-            fetch("/work_days/<%= @work_day.id %>/preview_force_assign?skills[]=" + skills.join("&skills[]="))
-                .then(r => r.json())
-                .then(data => {
+            function updateGuidePreview() {
+                const skills = Array.from(forceSkills.selectedOptions).map(option => option.value);
 
-                    const preview = document.getElementById("preview_guide")
+                const params = new URLSearchParams();
 
-                    if (data.name) {
-
-                        preview.innerHTML =
-                            data.name + " (priority " + data.priority + ")"
-
-                    } else {
-
-                        preview.innerHTML =
-                            "No standby guide meets requirements"
-
+                skills.forEach(skillId => {
+                    if (skillId) {
+                        params.append("skills[]", skillId);
                     }
+                });
 
-                })
+                fetch("/work_days/<%= @work_day.id %>/preview_force_assign?" + params.toString())
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.name) {
+                            preview.innerHTML =
+                                data.name +
+                                " | priority: " + data.priority +
+                                " | worked this month: " + data.monthly_worked_days;
+                        } else {
+                            preview.innerHTML = "No standby guide meets requirements";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Preview error:", error);
+                        preview.innerHTML = "Error loading preview";
+                    });
+            }
 
-        }
+            forceSkills.addEventListener("change", updateGuidePreview);
 
-        document.getElementById("force_skills")
-            .addEventListener("change", updateGuidePreview)
-
-        document.addEventListener("DOMContentLoaded", updateGuidePreview)
+            updateGuidePreview();
+        });
     </script>
     <% end %>
 

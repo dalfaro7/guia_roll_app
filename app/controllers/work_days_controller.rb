@@ -83,30 +83,29 @@ class WorkDaysController < ApplicationController
   end
 
   def preview_force_assign
-    work_day = WorkDay.find(params[:id])
-    skill_ids = (params[:skills] || []).map(&:to_i)
+  work_day = WorkDay.find(params[:id])
+  skill_ids = Array(params[:skills]).reject(&:blank?).map(&:to_i)
 
-    candidates = GuideDay
-                 .available_for_date(work_day.date)
-                 .where(work_day: work_day)
-                 .includes(guide: :skills)
-                 .joins(:guide)
-                 .order("guides.priority ASC")
+  guide_day = GuideCandidateRanker.new(
+    work_day: work_day,
+    skill_ids: skill_ids
+  ).next_candidate
 
-    guide_day = candidates.find do |gd|
-      guide_skill_ids = gd.guide.skills.pluck(:id)
-      (skill_ids - guide_skill_ids).empty?
-    end
+  if guide_day
+    guide = guide_day.guide
 
-    if guide_day
-      render json: {
-        name: guide_day.guide.name,
-        priority: guide_day.guide.priority
-      }
-    else
-      render json: { name: nil }
-    end
+    render json: {
+      name: guide.name,
+      priority: guide.priority,
+      monthly_worked_days: guide.monthly_balances
+                                .find_by(month: work_day.date.beginning_of_month)
+                                &.worked_days
+                                .to_i
+    }
+  else
+    render json: { name: nil }
   end
+end
 
   def update_availability
     @work_day = WorkDay.find(params[:id])
