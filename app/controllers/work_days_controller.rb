@@ -199,7 +199,7 @@ end
 
     @work_day.publish!
 
-    # ExternalRollSender.send_work_day(@work_day)
+     ExternalRollSender.send_work_day(@work_day)
 
     redirect_to @work_day, notice: "Work day published."
   end
