@@ -5,7 +5,8 @@ class WorkDaysController < ApplicationController
     :generate_roles,
     :publish,
     :unpublish,
-    :reset_roll
+    :reset_roll,
+    :move_assigned_task_to_roll
   ]
 
   def index
@@ -276,6 +277,54 @@ end
   def edit_slots
     @work_day = WorkDay.find(params[:id])
   end
+
+  def move_assigned_task_to_roll
+  @work_day = WorkDay.find(params[:id])
+  guide_day = @work_day.guide_days.find(params[:guide_day_id])
+  location = params[:location]
+
+  unless guide_day.assigned_task?
+    redirect_to @work_day, alert: "Only assigned task guides can be moved to roll."
+    return
+  end
+
+  ActiveRecord::Base.transaction do
+    slot = @work_day.location_slots.create!(
+      location: location
+    )
+
+    default_skill = Skill.find_by(name: "ClassIII")
+    slot.skills << default_skill if default_skill
+
+    guide_day.update!(
+      status: :worked,
+      status_note: nil,
+      location: location,
+      role_primary: "River Guide",
+      manually_modified: true
+    )
+
+    @work_day.update!(
+      guides_requested: @work_day.location_slots.count
+    )
+
+    month = @work_day.date.beginning_of_month
+
+    balance = MonthlyBalance.find_or_create_by!(
+      guide: guide_day.guide,
+      month: month
+    )
+
+    balance.update!(
+      worked_days: balance.worked_days.to_i + 1
+    )
+
+    guide_day.guide.increment!(:total_worked_days)
+  end
+
+  redirect_to @work_day,
+              notice: "#{guide_day.guide.name} moved from Assigned Task to Roll."
+end
 
   private
 

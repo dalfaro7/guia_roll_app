@@ -185,9 +185,31 @@
       .each do |gd| %>
 
                                     <tr>
-                                        <td><%= gd.guide.name %></td>
-
                                         <td>
+                                            <strong><%= gd.guide.name %></strong>
+
+                                            <% if @work_day.generated? && gd.assigned_task? %>
+                                            <div class="mt-1">
+                                                <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
+                    method: :post,
+                    local: true do %>
+
+                                                <%= hidden_field_tag :guide_day_id, gd.id %>
+
+                                                <%= select_tag :location,
+          options_for_select(["Balsa", "Sara-3&4", "Privado", "PM"]),
+          class: "form-select form-select-sm mb-1" %>
+
+                                                <%= submit_tag "Mover de tarea asignada a roll",
+          class: "btn btn-warning btn-sm",
+          data: {
+            turbo: false,
+            confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
+          } %>
+                                                <% end %>
+                                            </div>
+                                            <% end %>
+                                        </td>
                                         <td>
                                             <% if gd.vacation? %>
                                             <span class="badge bg-danger">Vacation</span>

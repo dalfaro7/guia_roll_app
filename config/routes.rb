@@ -28,8 +28,10 @@ resources :work_days do
     get :edit_slots
     post :force_assign
     get :preview_force_assign
+    post :move_assigned_task_to_roll
   end
 end
+
 
 resources :location_slots do
   patch :update_skills, on: :member
