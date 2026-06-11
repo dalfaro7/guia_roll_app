@@ -150,29 +150,82 @@
                                         </td>
 
                                         <td>
+                                        <td>
                                             <% if @work_day.generated? && gd.assigned_task? %>
-                                            <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
-                                        method: :post,
-                                        local: true do %>
-
-                                            <%= hidden_field_tag :guide_day_id, gd.id %>
-
-                                            <%= select_tag :location,
-                              options_for_select(["Balsa", "Sara-3&4", "Privado", "PM"]),
-                              class: "form-select form-select-sm mb-1" %>
-
-                                            <%= submit_tag "Mover a roll",
-                              class: "btn btn-warning btn-sm",
-                              data: {
-                                turbo: false,
-                                confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
-                              } %>
-                                            <% end %>
+                                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#moveAssignedTaskModal_<%= gd.id %>">
+                                                Mover
+                                            </button>
                                             <% else %>
                                             -
                                             <% end %>
                                         </td>
+                                        </td>
                                     </tr>
+                                    <% if @work_day.generated? && gd.assigned_task? %>
+                                    <div class="modal fade" id="moveAssignedTaskModal_<%= gd.id %>" tabindex="-1" aria-hidden="true">
+
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+
+                                                <div class="modal-header bg-warning">
+                                                    <h5 class="modal-title">
+                                                        Mover de tarea asignada a roll
+                                                    </h5>
+
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    <p>
+                                                        <strong>Guía:</strong>
+                                                        <%= gd.guide.name %>
+                                                    </p>
+
+                                                    <p>
+                                                        <strong>Estado actual:</strong>
+                                                        Tarea Asignada
+                                                    </p>
+
+                                                    <% if gd.status_note.present? %>
+                                                    <p>
+                                                        <strong>Nota:</strong>
+                                                        <%= gd.status_note %>
+                                                    </p>
+                                                    <% end %>
+
+                                                    <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
+                        method: :post,
+                        local: true do %>
+
+                                                    <%= hidden_field_tag :guide_day_id, gd.id %>
+
+                                                    <div class="mb-3">
+                                                        <%= label_tag :location, "Location" %>
+
+                                                        <%= select_tag :location,
+                options_for_select(["Balsa", "Sara-3&4", "Privado", "PM"]),
+                class: "form-select" %>
+                                                    </div>
+
+                                                    <div class="text-end">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            Cancelar
+                                                        </button>
+
+                                                        <%= submit_tag "Mover a roll",
+                class: "btn btn-warning",
+                data: {
+                  turbo: false,
+                  confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
+                } %>
+                                                    </div>
+                                                    <% end %>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% end %>
                                     <% end %>
 
                                     <% ManualDayOff
