@@ -26,8 +26,8 @@ class GuideCandidateRanker
         guide = guide_day.guide
 
         [
-          worked_days_for_month(guide),
           guide.priority.to_i,
+          worked_days_for_month(guide),
           guide.name.to_s
         ]
       end
