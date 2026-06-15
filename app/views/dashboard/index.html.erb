@@ -1,10 +1,16 @@
-<div class="container-fluid p-4">
+<div class="container-fluid py-4">
 
-    <!-- HEADER / FILTRO DE MES -->
+    <!-- ======================================================
+       HEADER / FILTRO PRINCIPAL DE MES
+       Este formulario conserva también los filtros actuales
+       de rol especial y guía seleccionada.
+       ====================================================== -->
     <div class="d-flex justify-content-between align-items-end flex-wrap mb-4">
         <div>
-            <h1>Equity Dashboard</h1>
-            <p class="text-muted mb-0"><%= @month.strftime("%B %Y") %></p>
+            <h1 class="mb-1">Equity Dashboard</h1>
+            <p class="text-muted mb-0">
+                <%= @month.strftime("%B %Y") %>
+            </p>
         </div>
 
         <%= form_with url: dashboard_path, method: :get, local: true, class: "d-flex gap-2 align-items-end" do %>
@@ -20,37 +26,43 @@
         <% end %>
     </div>
 
-    <!-- KPIS -->
+    <!-- ======================================================
+       KPI CARDS
+       Resumen operativo del mes seleccionado.
+       ====================================================== -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Días del mes con asignación</small>
-                    <h3><%= @worked_month_days %></h3>
+                    <h3 class="mb-0"><%= @worked_month_days %></h3>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Puestos de trabajo asignados</small>
-                    <h3><%= @assigned_work_slots %></h3>
+                    <h3 class="mb-0"><%= @assigned_work_slots %></h3>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Promedio de puestos por guía</small>
-                    <h3><%= @average.round(2) %></h3>
+                    <h3 class="mb-0"><%= @average.to_f.round(2) %></h3>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- GRAFICO PRINCIPAL -->
+    <!-- ======================================================
+       GRÁFICO PRINCIPAL DE EQUIDAD
+       Muestra distribución de asignaciones por guía.
+       ====================================================== -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
             Worked Days Distribution
@@ -67,7 +79,10 @@
         </div>
     </div>
 
-    <!-- TABLA EQUIDAD -->
+    <!-- ======================================================
+       TABLA PRINCIPAL DE EQUIDAD
+       Incluye todos los guías, incluso con 0 asignaciones.
+       ====================================================== -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-secondary text-white">
             Guide Equity Detail
@@ -86,7 +101,7 @@
 
                 <tbody>
                     <% @dashboard_data.each do |data| %>
-                    <tr class="<%= 'table-danger' if data[:deviation] > 1 %> <%= 'table-success' if data[:deviation] < -1 %>">
+                    <tr class="<%= 'table-danger' if data[:deviation].to_f > 1 %> <%= 'table-success' if data[:deviation].to_f < -1 %>">
                         <td><%= data[:guide].name %></td>
                         <td><%= data[:worked] %></td>
                         <td><%= data[:percentage] %>%</td>
@@ -98,7 +113,11 @@
         </div>
     </div>
 
-    <!-- ROLES ESPECIALES -->
+    <!-- ======================================================
+       ROLES ESPECIALES
+       Control de asignaciones de Safety Kayaker,
+       Photographer y Bus Guide.
+       ====================================================== -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-info text-dark">
             Special Role Assignments
@@ -106,7 +125,8 @@
 
         <div class="card-body">
 
-            <!-- FILTRO DE FUNCION ESPECIAL -->
+            <!-- FILTRO POR FUNCIÓN ESPECIAL
+           Este formulario conserva el mes y el guía seleccionado. -->
             <%= form_with url: dashboard_path, method: :get, local: true, class: "row g-3 mb-4" do %>
             <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
             <%= hidden_field_tag :guide_id, @selected_guide&.id %>
@@ -132,19 +152,21 @@
             </div>
             <% end %>
 
-            <!-- GRAFICO ROLES ESPECIALES -->
+            <!-- GRÁFICO DE ROLES ESPECIALES
+           Usa @special_role_chart_data, que ya viene filtrado
+           desde el controller. -->
             <%= column_chart [
             {
               name: "Safety Kayaker",
-              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
+              data: @special_role_chart_data.map { |d| [d[:name], d[:"Safety Kayaker"].to_i] }
             },
             {
               name: "Photographer",
-              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
+              data: @special_role_chart_data.map { |d| [d[:name], d[:"Photographer"].to_i] }
             },
             {
               name: "Bus Guide",
-              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
+              data: @special_role_chart_data.map { |d| [d[:name], d[:"Bus Guide"].to_i] }
             }
           ],
           height: "450px",
@@ -157,7 +179,8 @@
 
             <hr>
 
-            <!-- TABLA ROLES ESPECIALES -->
+            <!-- TABLA DE ROLES ESPECIALES
+           Usa la misma data filtrada que el gráfico. -->
             <div class="table-responsive">
                 <table class="table table-bordered table-sm align-middle">
                     <thead class="table-light">
@@ -171,6 +194,7 @@
                     </thead>
 
                     <tbody>
+                        <% if @filtered_special_role_data.any? %>
                         <% @filtered_special_role_data.each do |data| %>
                         <tr>
                             <td><%= data[:guide_name] %></td>
@@ -180,6 +204,13 @@
                             <td><strong><%= data[:total] %></strong></td>
                         </tr>
                         <% end %>
+                        <% else %>
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">
+                                No special role assignments found for this filter.
+                            </td>
+                        </tr>
+                        <% end %>
                     </tbody>
                 </table>
             </div>
@@ -187,7 +218,10 @@
         </div>
     </div>
 
-    <!-- HISTORICO POR GUIA -->
+    <!-- ======================================================
+       HISTÓRICO POR GUÍA
+       Este formulario conserva el mes y el filtro de rol especial.
+       ====================================================== -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
             Historical Guide View
@@ -202,7 +236,12 @@
                 <%= label_tag :guide_id, "Select Guide", class: "form-label" %>
 
                 <%= select_tag :guide_id,
-            options_from_collection_for_select(@guides, :id, :name, @selected_guide&.id),
+            options_from_collection_for_select(
+              @guides,
+              :id,
+              :name,
+              @selected_guide&.id
+            ),
             class: "form-control" %>
             </div>
 
@@ -212,8 +251,18 @@
             <% end %>
 
             <% if @selected_guide.present? %>
-            <h5>Historical Days - <%= @selected_guide.name %></h5>
-            <%= line_chart @historical_data, xtitle: "Month", discrete: true %>
+            <h5 class="mb-3">
+                Historical Days - <%= @selected_guide.name %>
+            </h5>
+
+            <%= line_chart @historical_data,
+          xtitle: "Month",
+          discrete: true,
+          height: "350px" %>
+            <% else %>
+            <p class="text-muted">
+                No guide selected.
+            </p>
             <% end %>
         </div>
     </div>
