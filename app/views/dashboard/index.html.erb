@@ -52,6 +52,51 @@
 
             <br>
             <hr>
+
+            <h2>Special Role Assignments</h2>
+
+            <%= column_chart [
+      {
+        name: "Safety Kayaker",
+        data: @special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
+      },
+      {
+        name: "Photographer",
+        data: @special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
+      },
+      {
+        name: "Bus Guide",
+        data: @special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
+      }
+    ],
+    height: "450px",
+    stacked: true,
+    library: {
+      plugins: {
+        legend: { display: true }
+      }
+    } %>
+
+            <table border="1" cellpadding="8" class="table table-bordered">
+                <tr>
+                    <th>Guide</th>
+                    <th>Safety Kayaker</th>
+                    <th>Photographer</th>
+                    <th>Bus Guide</th>
+                    <th>Total</th>
+                </tr>
+
+                <% @special_role_data.each do |data| %>
+                <tr>
+                    <td><%= data[:guide_name] %></td>
+                    <td><%= data[:safety_kayaker] %></td>
+                    <td><%= data[:photographer] %></td>
+                    <td><%= data[:bus_guide] %></td>
+                    <td><%= data[:total] %></td>
+                </tr>
+                <% end %>
+            </table>
+            <hr>
             <div>
                 <h3>Select Guide for Historical View</h3>
                 <%= form_with url: dashboard_path, method: :get, local: true do %>

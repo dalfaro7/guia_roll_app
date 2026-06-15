@@ -85,5 +85,64 @@ class DashboardController < ApplicationController
       else
         []
       end
+
+
+      special_role_rows = GuideDay
+  .joins(:work_day, :guide)
+  .where(work_days: { date: month_range })
+  .where(status: :worked)
+  .where(
+    "guide_days.role_primary IN (?) OR guide_days.role_secondary IN (?)",
+    ["Safety Kayaker", "Photographer"],
+    ["Bus Guide", "Bus Guide & SendPhotos"]
+  )
+  .select(
+    "guides.id AS guide_id",
+    "guides.name AS guide_name",
+    "guide_days.role_primary",
+    "guide_days.role_secondary"
+  )
+
+special_role_counts = Hash.new do |hash, guide_name|
+  hash[guide_name] = {
+    guide_name: guide_name,
+    safety_kayaker: 0,
+    photographer: 0,
+    bus_guide: 0,
+    total: 0
+  }
+end
+
+special_role_rows.each do |row|
+  guide_name = row.guide_name
+  data = special_role_counts[guide_name]
+
+  if row.role_primary == "Safety Kayaker"
+    data[:safety_kayaker] += 1
+    data[:total] += 1
+  end
+
+  if row.role_primary == "Photographer"
+    data[:photographer] += 1
+    data[:total] += 1
+  end
+
+  if ["Bus Guide", "Bus Guide & SendPhotos"].include?(row.role_secondary)
+    data[:bus_guide] += 1
+    data[:total] += 1
+  end
+end
+
+@special_role_data = special_role_counts.values.sort_by { |data| -data[:total] }
+
+@special_role_chart_data = @special_role_data.map do |data|
+  {
+    name: data[:guide_name],
+    "Safety Kayaker": data[:safety_kayaker],
+    "Photographer": data[:photographer],
+    "Bus Guide": data[:bus_guide]
+  }
+end
+
   end
 end
