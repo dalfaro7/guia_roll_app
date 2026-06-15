@@ -58,25 +58,46 @@
             <%= column_chart [
       {
         name: "Safety Kayaker",
-        data: @special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
+        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
       },
       {
         name: "Photographer",
-        data: @special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
+        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
       },
       {
         name: "Bus Guide",
-        data: @special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
+        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
       }
     ],
     height: "450px",
-    stacked: true,
-    library: {
-      plugins: {
-        legend: { display: true }
-      }
-    } %>
+    stacked: true %>
 
+
+            <%= form_with url: dashboard_path, method: :get, local: true do %>
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <%= label_tag :special_role, "Filter by special role" %>
+
+                    <%= select_tag :special_role,
+        options_for_select(
+          [
+            ["All", "all"],
+            ["Safety Kayaker", "safety_kayaker"],
+            ["Photographer", "photographer"],
+            ["Bus Guide", "bus_guide"]
+          ],
+          @selected_special_role
+        ),
+        class: "form-control" %>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <%= submit_tag "Apply", class: "btn btn-primary" %>
+                </div>
+            </div>
+            <% end %>
             <table border="1" cellpadding="8" class="table table-bordered">
                 <tr>
                     <th>Guide</th>
@@ -86,7 +107,7 @@
                     <th>Total</th>
                 </tr>
 
-                <% @special_role_data.each do |data| %>
+                <% @filtered_special_role_data.each do |data| %>
                 <tr>
                     <td><%= data[:guide_name] %></td>
                     <td><%= data[:safety_kayaker] %></td>

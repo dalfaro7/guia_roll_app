@@ -12,6 +12,7 @@ class DashboardController < ApplicationController
     end
 
     month_range = @month.beginning_of_month..@month.end_of_month
+    @selected_special_role = params[:special_role].presence || "all"
     assigned_statuses = [:worked, :assigned_task]
 
     @guides = Guide.active.order(:name)
@@ -134,6 +135,17 @@ special_role_rows.each do |row|
 end
 
 @special_role_data = special_role_counts.values.sort_by { |data| -data[:total] }
+@filtered_special_role_data =
+  case @selected_special_role
+  when "safety_kayaker"
+    @special_role_data.select { |data| data[:safety_kayaker].to_i > 0 }
+  when "photographer"
+    @special_role_data.select { |data| data[:photographer].to_i > 0 }
+  when "bus_guide"
+    @special_role_data.select { |data| data[:bus_guide].to_i > 0 }
+  else
+    @special_role_data
+  end
 
 @special_role_chart_data = @special_role_data.map do |data|
   {
