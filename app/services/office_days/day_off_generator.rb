@@ -83,12 +83,12 @@ module OfficeDays
     end
 
     def employee_has_weekend_day?(employee, day_type)
-      OfficeEmployeeDay
-        .where(office_employee: employee, status: :day_off)
-        .where(date: @generation_range)
-        .where("EXTRACT(DOW FROM date) = ?", day_type == :sunday ? 0 : 6)
-        .exists?
-    end
+  OfficeEmployeeDay
+    .where(office_employee: employee, status: :day_off)
+    .where(date: @month_range)
+    .where("EXTRACT(DOW FROM date) = ?", day_type == :sunday ? 0 : 6)
+    .exists?
+end
 
     def employee_already_has_day_off_this_week?(employee, week_range)
       OfficeEmployeeDay
@@ -110,10 +110,10 @@ module OfficeDays
     end
 
     def weekend_dates(day_type)
-      @generation_range.select do |date|
-        day_type == :saturday ? date.saturday? : date.sunday?
-      end
-    end
+  @month_range.select do |date|
+    day_type == :saturday ? date.saturday? : date.sunday?
+  end
+end
 
     def weekend_date_score(employee, date)
       [
