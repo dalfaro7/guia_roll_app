@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_09_212011) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_15_202454) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -118,6 +118,57 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_09_212011) do
     t.index ["guide_id"], name: "index_monthly_balances_on_guide_id"
   end
 
+  create_table "office_day_credits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.bigint "office_employee_id", null: false
+    t.string "source"
+    t.datetime "updated_at", null: false
+    t.boolean "used", default: false, null: false
+    t.date "used_on"
+    t.index ["office_employee_id"], name: "index_office_day_credits_on_office_employee_id"
+  end
+
+  create_table "office_employee_days", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.string "day_off_source"
+    t.boolean "holiday_paid", default: false, null: false
+    t.text "notes"
+    t.bigint "office_employee_id", null: false
+    t.integer "status"
+    t.datetime "updated_at", null: false
+    t.index ["office_employee_id"], name: "index_office_employee_days_on_office_employee_id"
+  end
+
+  create_table "office_employees", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "department"
+    t.string "name"
+    t.integer "restricted_day_off_weekday"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "office_holidays", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.boolean "double_pay", default: true, null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "office_overtimes", force: :cascade do |t|
+    t.boolean "approved", default: true, null: false
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.integer "minutes", default: 0, null: false
+    t.bigint "office_employee_id", null: false
+    t.string "reason"
+    t.datetime "updated_at", null: false
+    t.index ["office_employee_id"], name: "index_office_overtimes_on_office_employee_id"
+  end
+
   create_table "skills", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -177,6 +228,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_09_212011) do
   add_foreign_key "location_slots", "work_days"
   add_foreign_key "manual_day_offs", "guides"
   add_foreign_key "monthly_balances", "guides"
+  add_foreign_key "office_day_credits", "office_employees"
+  add_foreign_key "office_employee_days", "office_employees"
+  add_foreign_key "office_overtimes", "office_employees"
   add_foreign_key "slot_skills", "location_slots"
   add_foreign_key "slot_skills", "skills"
   add_foreign_key "work_day_versions", "work_days"

@@ -1,0 +1,47 @@
+<%= form_with model: @overtime, local: true do |f| %>
+<% if @overtime.errors.any? %>
+<div class="alert alert-danger">
+    <ul>
+        <% @overtime.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+        <% end %>
+    </ul>
+</div>
+<% end %>
+
+<div class="mb-3">
+    <%= f.label :office_employee_id, "Oficinista" %>
+    <%= f.collection_select :office_employee_id,
+        OfficeEmployee.active.order(:name),
+        :id,
+        :name,
+        {},
+        class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :date, "Fecha" %>
+    <%= f.date_field :date, class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= label_tag "office_overtime_time_amount", "Tiempo extra (HH:MM)" %>
+    <%= text_field_tag "office_overtime[time_amount]",
+        @overtime.persisted? ? @overtime.formatted_time : nil,
+        placeholder: "02:30",
+        class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :reason, "Motivo" %>
+    <%= f.text_field :reason, class: "form-control" %>
+</div>
+
+<div class="form-check mb-3">
+    <%= f.check_box :approved, class: "form-check-input" %>
+    <%= f.label :approved, "Aprobado", class: "form-check-label" %>
+</div>
+
+<%= f.submit "Guardar", class: "btn btn-primary" %>
+<%= link_to "Volver", office_overtimes_path, class: "btn btn-secondary" %>
+<% end %>

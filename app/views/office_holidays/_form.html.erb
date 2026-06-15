@@ -1,0 +1,22 @@
+<%= form_with model: @holiday, local: true do |f| %>
+
+<div class="mb-3">
+    <%= f.label :date, "Fecha" %>
+    <%= f.date_field :date, class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :name, "Nombre" %>
+    <%= f.text_field :name, class: "form-control" %>
+</div>
+
+<div class="form-check mb-3">
+    <%= f.check_box :double_pay, class: "form-check-input" %>
+    <%= f.label :double_pay,
+        "Aplica pago doble",
+        class: "form-check-label" %>
+</div>
+
+<%= f.submit "Guardar", class: "btn btn-primary" %>
+
+<% end %>

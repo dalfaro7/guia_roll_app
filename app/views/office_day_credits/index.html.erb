@@ -1,0 +1,42 @@
+<div class="container mt-4">
+    <h1>Acumulados de oficina</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <div class="mb-3">
+        <%= form_with url: office_day_credits_path, method: :get, local: true do %>
+        <%= month_field_tag :month, @month.strftime("%Y-%m"),
+          class: "form-control d-inline-block",
+          style: "width: 220px;" %>
+
+        <%= submit_tag "Ver mes", class: "btn btn-secondary" %>
+        <% end %>
+    </div>
+
+    <div class="mb-3">
+        <%= button_to "Generar acumulados por feriados del mes",
+        generate_for_month_office_day_credits_path(month: @month.strftime("%Y-%m")),
+        method: :post,
+        class: "btn btn-primary" %>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Oficinista</th>
+                <th>Acumulados disponibles</th>
+                <th>Acumulados usados</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @employees.each do |employee| %>
+            <tr>
+                <td><%= employee.name %></td>
+                <td><%= employee.office_day_credits.where(used: false).count %></td>
+                <td><%= employee.office_day_credits.where(used: true).count %></td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,15 @@
+<div class="container mt-4">
+    <%= render "shared/office_menu" %>
+
+    <h1>Editar hora extra</h1>
+
+    <%= render "form" %>
+
+    <hr>
+
+    <%= button_to "Eliminar",
+      office_overtime_path(@overtime),
+      method: :delete,
+      class: "btn btn-danger",
+      data: { confirm: "¿Seguro que deseas eliminar esta hora extra?" } %>
+</div>

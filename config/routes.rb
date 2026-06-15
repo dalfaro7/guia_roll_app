@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "office_day_credits/index"
+  get "office_employee_days/index"
   get "audit_logs/index"
   get "bus_assignments/create"
   get "bus_assignments/destroy"
@@ -47,6 +49,20 @@ post "remove_day_off", to: "day_off_report#remove_day_off"
 resources :buses
 resources :bus_assignments, only: [:create, :destroy]
 resources :audit_logs, only: [:index]
+resources :office_holidays
+resources :office_overtimes
+
+resources :office_employee_days do
+  collection do
+    post :generate_month
+  end
+end
+
+resources :office_day_credits, only: [:index] do
+  collection do
+    post :generate_for_month
+  end
+end
 
 
 

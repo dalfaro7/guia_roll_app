@@ -1,0 +1,39 @@
+<div class="container mt-4">
+
+    <h1>Feriados</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <%= link_to "Nuevo feriado",
+      new_office_holiday_path,
+      class: "btn btn-primary mb-3" %>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Nombre</th>
+                <th>Pago doble</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @holidays.each do |holiday| %>
+            <tr>
+                <td><%= holiday.date %></td>
+                <td><%= holiday.name %></td>
+                <td>
+                    <%= holiday.double_pay ? "Sí" : "No" %>
+                </td>
+                <td>
+                    <%= link_to "Editar",
+                edit_office_holiday_path(holiday),
+                class: "btn btn-sm btn-warning" %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+
+</div>

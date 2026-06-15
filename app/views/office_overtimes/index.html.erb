@@ -1,0 +1,77 @@
+<div class="container mt-4">
+    <h1>Horas Extra</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <div class="mb-3">
+        <%= form_with url: office_overtimes_path, method: :get, local: true do %>
+        <%= month_field_tag :month, @month.strftime("%Y-%m"),
+          class: "form-control d-inline-block",
+          style: "width: 220px;" %>
+
+        <%= submit_tag "Ver mes", class: "btn btn-secondary" %>
+        <% end %>
+    </div>
+
+    <%= link_to "Nueva hora extra",
+      new_office_overtime_path,
+      class: "btn btn-primary mb-3" %>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Oficinista</th>
+                <th>Primera quincena</th>
+                <th>Segunda quincena</th>
+                <th>Total mensual</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @employees.each do |employee| %>
+            <% first_minutes = employee.overtime_minutes_for_range(@first_fortnight) %>
+            <% second_minutes = employee.overtime_minutes_for_range(@second_fortnight) %>
+            <% total_minutes = first_minutes + second_minutes %>
+
+            <tr>
+                <td><%= employee.name %></td>
+                <td><%= format("%02d:%02d", first_minutes / 60, first_minutes % 60) %></td>
+                <td><%= format("%02d:%02d", second_minutes / 60, second_minutes % 60) %></td>
+                <td><strong><%= format("%02d:%02d", total_minutes / 60, total_minutes % 60) %></strong></td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+
+    <h3>Detalle del mes</h3>
+
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Oficinista</th>
+                <th>Tiempo</th>
+                <th>Motivo</th>
+                <th>Aprobado</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @overtimes.each do |overtime| %>
+            <tr>
+                <td><%= overtime.date %></td>
+                <td><%= overtime.office_employee.name %></td>
+                <td><%= overtime.formatted_time %></td>
+                <td><%= overtime.reason %></td>
+                <td><%= overtime.approved ? "Sí" : "No" %></td>
+                <td>
+                    <%= link_to "Editar",
+                edit_office_overtime_path(overtime),
+                class: "btn btn-sm btn-warning" %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

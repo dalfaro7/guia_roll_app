@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  office_employee: one
+  date: 2026-06-15
+  hours: 9.99
+  reason: MyString
+  approved: false
+
+two:
+  office_employee: two
+  date: 2026-06-15
+  hours: 9.99
+  reason: MyString
+  approved: false

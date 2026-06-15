@@ -1,0 +1,2 @@
+module OfficeHolidaysHelper
+end

@@ -1,0 +1,48 @@
+<%= form_with model: @office_employee_day, local: true do |f| %>
+<% if @office_employee_day.errors.any? %>
+<div class="alert alert-danger">
+    <ul>
+        <% @office_employee_day.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+        <% end %>
+    </ul>
+</div>
+<% end %>
+
+<div class="mb-3">
+    <%= f.label :office_employee_id, "Oficinista" %>
+    <%= f.collection_select :office_employee_id,
+        OfficeEmployee.active.order(:name),
+        :id,
+        :name,
+        {},
+        class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :date, "Fecha" %>
+    <%= f.date_field :date, class: "form-control" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :status, "Estado" %>
+    <%= f.select :status,
+    OfficeEmployeeDay.statuses.keys.map { |status| [status.humanize, status] },
+    {},
+    class: "form-control" %>
+</div>
+
+
+<div class="form-check mb-3">
+    <%= f.check_box :holiday_paid, class: "form-check-input" %>
+    <%= f.label :holiday_paid, "Feriado pagado", class: "form-check-label" %>
+</div>
+
+<div class="mb-3">
+    <%= f.label :notes, "Notas" %>
+    <%= f.text_area :notes, class: "form-control", rows: 3 %>
+</div>
+
+<%= f.submit "Guardar", class: "btn btn-primary" %>
+<%= link_to "Volver", office_employee_days_path, class: "btn btn-secondary" %>
+<% end %>

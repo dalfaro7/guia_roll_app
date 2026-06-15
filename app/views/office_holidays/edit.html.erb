@@ -1,0 +1,17 @@
+<div class="container mt-4">
+
+    <%= render "shared/office_menu" %>
+
+    <h1>Editar feriado</h1>
+
+    <%= render "form" %>
+
+    <hr>
+
+    <%= button_to "Eliminar feriado",
+    office_holiday_path(@holiday),
+    method: :delete,
+    class: "btn btn-danger",
+    data: { confirm: "¿Seguro que deseas eliminar este feriado?" } %>
+
+</div>
