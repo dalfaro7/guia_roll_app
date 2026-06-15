@@ -13,7 +13,7 @@ class WorkDay < ApplicationRecord
   validates :guides_requested,
             numericality: { greater_than_or_equal_to: 0 },
             allow_nil: true
-  validate :date_cannot_be_in_the_past
+ # validate :date_cannot_be_in_the_past
 
   enum :status, {
     draft: 0,
