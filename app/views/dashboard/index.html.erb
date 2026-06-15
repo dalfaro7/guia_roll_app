@@ -1,137 +1,221 @@
-<div class="container">
-    <h1>Equity Dashboard - <%= @month.strftime("%B %Y") %></h1>
-    <h2>Worked Days Distribution</h2>
+<div class="container-fluid py-4">
 
-    <div class="text-end">
-        <h2>Select Month</h2>
-        <%= form_with url: dashboard_path, method: :get, local: true do %>
-        <%= month_field_tag :month, @month.strftime("%Y-%m") %>
-        <%= submit_tag "View", class: "btn" %>
+    <!-- HEADER / FILTRO DE MES -->
+    <div class="d-flex justify-content-between align-items-end flex-wrap mb-4">
+        <div>
+            <h1>Equity Dashboard</h1>
+            <p class="text-muted mb-0"><%= @month.strftime("%B %Y") %></p>
+        </div>
+
+        <%= form_with url: dashboard_path, method: :get, local: true, class: "d-flex gap-2 align-items-end" do %>
+        <%= hidden_field_tag :special_role, @selected_special_role %>
+        <%= hidden_field_tag :guide_id, @selected_guide&.id %>
+
+        <div>
+            <%= label_tag :month, "Select Month", class: "form-label" %>
+            <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control" %>
+        </div>
+
+        <%= submit_tag "View", class: "btn btn-primary" %>
         <% end %>
     </div>
 
-    <%= column_chart @chart_data,
-    height: "400px",
-    library: {
-      plugins: {
-        legend: { display: false }
-      }
-    } %>
-
-
-    <hr>
-    <div class="container-fluid">
-        <table border="1" cellpadding="8">
-            <tr>
-                <th>Guide</th>
-                <th>Worked Days</th>
-                <th>% Participation</th>
-                <th>Deviation</th>
-            </tr>
-
-            <% @dashboard_data.each do |data| %>
-            <tr style="
-      <% if data[:deviation] > 1 %>
-        background-color: #ffcccc;
-      <% elsif data[:deviation] < -1 %>
-        background-color: #ccffcc;
-      <% end %>
-    ">
-                <td><%= data[:guide].name %></td>
-                <td><%= data[:worked] %></td>
-                <td><%= data[:percentage] %>%</td>
-                <td><%= data[:deviation] %></td>
-            </tr>
-            <% end %>
-        </table>
-
-        <p>Días del mes con asignación: <%= @worked_month_days %></p>
-        <p>Puestos de trabajo asignados: <%= @assigned_work_slots %></p>
-        <p>Promedio de puestos por guía: <%= @average %></p>
-        <div>
-
-            <br>
-            <hr>
-
-            <h2>Special Role Assignments</h2>
-
-            <%= column_chart [
-      {
-        name: "Safety Kayaker",
-        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
-      },
-      {
-        name: "Photographer",
-        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
-      },
-      {
-        name: "Bus Guide",
-        data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
-      }
-    ],
-    height: "450px",
-    stacked: true %>
-
-
-            <%= form_with url: dashboard_path, method: :get, local: true do %>
-            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
-
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <%= label_tag :special_role, "Filter by special role" %>
-
-                    <%= select_tag :special_role,
-        options_for_select(
-          [
-            ["All", "all"],
-            ["Safety Kayaker", "safety_kayaker"],
-            ["Photographer", "photographer"],
-            ["Bus Guide", "bus_guide"]
-          ],
-          @selected_special_role
-        ),
-        class: "form-control" %>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-end">
-                    <%= submit_tag "Apply", class: "btn btn-primary" %>
+    <!-- KPIS -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Días del mes con asignación</small>
+                    <h3><%= @worked_month_days %></h3>
                 </div>
             </div>
-            <% end %>
-            <table border="1" cellpadding="8" class="table table-bordered">
-                <tr>
-                    <th>Guide</th>
-                    <th>Safety Kayaker</th>
-                    <th>Photographer</th>
-                    <th>Bus Guide</th>
-                    <th>Total</th>
-                </tr>
+        </div>
 
-                <% @filtered_special_role_data.each do |data| %>
-                <tr>
-                    <td><%= data[:guide_name] %></td>
-                    <td><%= data[:safety_kayaker] %></td>
-                    <td><%= data[:photographer] %></td>
-                    <td><%= data[:bus_guide] %></td>
-                    <td><%= data[:total] %></td>
-                </tr>
-                <% end %>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Puestos de trabajo asignados</small>
+                    <h3><%= @assigned_work_slots %></h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Promedio de puestos por guía</small>
+                    <h3><%= @average.round(2) %></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAFICO PRINCIPAL -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            Worked Days Distribution
+        </div>
+
+        <div class="card-body">
+            <%= column_chart @chart_data,
+        height: "400px",
+        library: {
+          plugins: {
+            legend: { display: false }
+          }
+        } %>
+        </div>
+    </div>
+
+    <!-- TABLA EQUIDAD -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            Guide Equity Detail
+        </div>
+
+        <div class="card-body table-responsive">
+            <table class="table table-bordered table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Guide</th>
+                        <th>Worked Days</th>
+                        <th>% Participation</th>
+                        <th>Deviation</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <% @dashboard_data.each do |data| %>
+                    <tr class="<%= 'table-danger' if data[:deviation] > 1 %> <%= 'table-success' if data[:deviation] < -1 %>">
+                        <td><%= data[:guide].name %></td>
+                        <td><%= data[:worked] %></td>
+                        <td><%= data[:percentage] %>%</td>
+                        <td><%= data[:deviation] %></td>
+                    </tr>
+                    <% end %>
+                </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- ROLES ESPECIALES -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-dark">
+            Special Role Assignments
+        </div>
+
+        <div class="card-body">
+
+            <!-- FILTRO DE FUNCION ESPECIAL -->
+            <%= form_with url: dashboard_path, method: :get, local: true, class: "row g-3 mb-4" do %>
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+            <%= hidden_field_tag :guide_id, @selected_guide&.id %>
+
+            <div class="col-md-4">
+                <%= label_tag :special_role, "Filter by special role", class: "form-label" %>
+
+                <%= select_tag :special_role,
+            options_for_select(
+              [
+                ["All", "all"],
+                ["Safety Kayaker", "safety_kayaker"],
+                ["Photographer", "photographer"],
+                ["Bus Guide", "bus_guide"]
+              ],
+              @selected_special_role
+            ),
+            class: "form-control" %>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <%= submit_tag "Apply", class: "btn btn-primary w-100" %>
+            </div>
+            <% end %>
+
+            <!-- GRAFICO ROLES ESPECIALES -->
+            <%= column_chart [
+            {
+              name: "Safety Kayaker",
+              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:safety_kayaker]] }
+            },
+            {
+              name: "Photographer",
+              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:photographer]] }
+            },
+            {
+              name: "Bus Guide",
+              data: @filtered_special_role_data.map { |d| [d[:guide_name], d[:bus_guide]] }
+            }
+          ],
+          height: "450px",
+          stacked: true,
+          library: {
+            plugins: {
+              legend: { display: true }
+            }
+          } %>
+
             <hr>
-            <div>
-                <h3>Select Guide for Historical View</h3>
-                <%= form_with url: dashboard_path, method: :get, local: true do %>
-                <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
 
-                <%= select_tag :guide_id,
-        options_from_collection_for_select(@guides, :id, :name, @selected_guide.id) %>
+            <!-- TABLA ROLES ESPECIALES -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Guide</th>
+                            <th>Safety Kayaker</th>
+                            <th>Photographer</th>
+                            <th>Bus Guide</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
 
-                <%= submit_tag "View Guide" %>
-                <% end %>
-
-                <h2>Historical Days - <%= @selected_guide.name %></h2>
-
-                <%= line_chart @historical_data, xtitle: "Month", discrete: true %>
+                    <tbody>
+                        <% @filtered_special_role_data.each do |data| %>
+                        <tr>
+                            <td><%= data[:guide_name] %></td>
+                            <td><%= data[:safety_kayaker] %></td>
+                            <td><%= data[:photographer] %></td>
+                            <td><%= data[:bus_guide] %></td>
+                            <td><strong><%= data[:total] %></strong></td>
+                        </tr>
+                        <% end %>
+                    </tbody>
+                </table>
             </div>
 
         </div>
+    </div>
+
+    <!-- HISTORICO POR GUIA -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            Historical Guide View
+        </div>
+
+        <div class="card-body">
+            <%= form_with url: dashboard_path, method: :get, local: true, class: "row g-3 mb-4" do %>
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+            <%= hidden_field_tag :special_role, @selected_special_role %>
+
+            <div class="col-md-5">
+                <%= label_tag :guide_id, "Select Guide", class: "form-label" %>
+
+                <%= select_tag :guide_id,
+            options_from_collection_for_select(@guides, :id, :name, @selected_guide&.id),
+            class: "form-control" %>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <%= submit_tag "View Guide", class: "btn btn-primary w-100" %>
+            </div>
+            <% end %>
+
+            <% if @selected_guide.present? %>
+            <h5>Historical Days - <%= @selected_guide.name %></h5>
+            <%= line_chart @historical_data, xtitle: "Month", discrete: true %>
+            <% end %>
+        </div>
+    </div>
+
+</div>
