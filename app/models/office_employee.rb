@@ -23,8 +23,10 @@ end
   case name
   when "Fiorela Mena"
     date.wednesday?
-  when "Yoselin Marin"
-    date.friday? || date.wednesday?
+  when "Yoseline Marin"
+    date.wednesday? || date.friday?
+  when "Priscilla Matarrita"
+    date.wednesday?
   else
     false
   end
