@@ -33,6 +33,7 @@ class OfficeEmployeeDaysController < ApplicationController
       .index_by(&:date)
 end
 
+
   def new
     @office_employee_day = OfficeEmployeeDay.new(
       date: params[:date],
