@@ -2,29 +2,30 @@ class OfficeEmployeeDaysController < ApplicationController
   before_action :set_office_employee_day, only: [:edit, :update, :destroy]
 
   def index
-  @month = selected_month
+    @month = selected_month
 
-  @month_range = @month.beginning_of_month..@month.end_of_month
+    @month_range =
+      @month.beginning_of_month..@month.end_of_month
 
-  @calendar_range =
-    @month.beginning_of_month.beginning_of_week(:monday)..
-    @month.end_of_month.end_of_week(:monday)
+    @calendar_range =
+      @month.beginning_of_month.beginning_of_week(:monday)..
+      @month.end_of_month.end_of_week(:monday)
 
-  @range = @month_range
+    @range = @month_range
 
-  @employees = OfficeEmployee.active.order(:name)
+    @employees = OfficeEmployee.active.order(:name)
 
-  @employee_days =
-    OfficeEmployeeDay
-      .includes(:office_employee)
-      .where(date: @calendar_range)
-      .index_by { |day| [day.office_employee_id, day.date] }
+    @employee_days =
+      OfficeEmployeeDay
+        .includes(:office_employee)
+        .where(date: @calendar_range)
+        .index_by { |day| [day.office_employee_id, day.date] }
 
-  @holidays =
-    OfficeHoliday
-      .where(date: @calendar_range)
-      .index_by(&:date)
-end
+    @holidays =
+      OfficeHoliday
+        .where(date: @calendar_range)
+        .index_by(&:date)
+  end
 
   def new
     @office_employee_day = OfficeEmployeeDay.new(
@@ -43,8 +44,9 @@ end
     if @office_employee_day.save
       generate_holiday_credit_for(@office_employee_day)
 
-      redirect_to office_employee_days_path(month: @office_employee_day.date.strftime("%Y-%m")),
-                  notice: "Registro creado correctamente."
+      redirect_to office_employee_days_path(
+        month: @office_employee_day.date.strftime("%Y-%m")
+      ), notice: "Registro creado correctamente."
     else
       render :new, status: :unprocessable_entity
     end
@@ -55,14 +57,19 @@ end
 
   def update
     if @office_employee_day.update(office_employee_day_params)
-      if @office_employee_day.day_off? && @office_employee_day.day_off_source.blank?
-        @office_employee_day.update!(day_off_source: "manual")
+      if @office_employee_day.day_off? &&
+         @office_employee_day.day_off_source.blank?
+
+        @office_employee_day.update!(
+          day_off_source: "manual"
+        )
       end
 
       generate_holiday_credit_for(@office_employee_day)
 
-      redirect_to office_employee_days_path(month: @office_employee_day.date.strftime("%Y-%m")),
-                  notice: "Registro actualizado correctamente."
+      redirect_to office_employee_days_path(
+        month: @office_employee_day.date.strftime("%Y-%m")
+      ), notice: "Registro actualizado correctamente."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -70,6 +77,7 @@ end
 
   def destroy
     month = @office_employee_day.date.strftime("%Y-%m")
+
     @office_employee_day.destroy
 
     redirect_to office_employee_days_path(month: month),
@@ -81,14 +89,16 @@ end
 
     OfficeDays::DayOffGenerator.new(month: month).call
 
-    redirect_to office_employee_days_path(month: month.strftime("%Y-%m")),
-                notice: "Libres del mes generados correctamente."
+    redirect_to office_employee_days_path(
+      month: month.strftime("%Y-%m")
+    ), notice: "Libres del mes generados correctamente."
   end
 
   private
 
   def set_office_employee_day
-    @office_employee_day = OfficeEmployeeDay.find(params[:id])
+    @office_employee_day =
+      OfficeEmployeeDay.find(params[:id])
   end
 
   def generate_holiday_credit_for(employee_day)
