@@ -4,8 +4,7 @@ class OfficeEmployeeDaysController < ApplicationController
   def index
   @month = selected_month
 
-  @month_range =
-    @month.beginning_of_month..@month.end_of_month
+  @month_range = @month.beginning_of_month..@month.end_of_month
 
   @calendar_range =
     @month.beginning_of_month.beginning_of_week(:monday)..
