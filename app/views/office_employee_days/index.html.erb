@@ -20,42 +20,50 @@
         class: "btn btn-primary" %>
     </div>
 
+    <% quincenas = [
+    ["Primera quincena", @range.select { |date| date.day <= 15 }],
+    ["Segunda quincena", @range.select { |date| date.day >= 16 }]
+  ] %>
+
+    <% quincenas.each do |title, dates| %>
+    <h3 class="mt-4"><%= title %></h3>
+
     <table class="table table-bordered table-sm align-middle">
         <thead>
             <tr>
-                <th>Oficinista</th>
+                <th style="width: 140px;">Fecha</th>
 
-                <% @range.each do |date| %>
-                <% holiday = @holidays[date] %>
-
-                <th class="text-center <%= 'table-warning' if holiday.present? %>">
-                    <%= date.day %><br>
-                    <small><%= I18n.l(date, format: "%a") %></small>
-
-                    <% if holiday.present? %>
-                    <br>
-                    <small><strong>Feriado</strong></small>
-                    <% end %>
+                <% @employees.each do |employee| %>
+                <th class="text-center">
+                    <%= employee.name %><br>
+                    <small><%= employee.department.presence || "Sin departamento" %></small>
                 </th>
                 <% end %>
             </tr>
         </thead>
 
         <tbody>
-            <% @employees.each do |employee| %>
-            <tr>
-                <td style="min-width: 180px;">
-                    <strong><%= employee.name %></strong><br>
-                    <small><%= employee.department.presence || "Sin departamento" %></small>
+            <% dates.each do |date| %>
+            <% holiday = @holidays[date] %>
+
+            <tr class="<%= 'table-warning' if holiday.present? %>">
+                <td>
+                    <strong><%= date.day %></strong>
+                    <small><%= I18n.l(date, format: "%a") %></small>
+
+                    <% if holiday.present? %>
+                    <br>
+                    <small><strong>Feriado</strong></small>
+                    <% end %>
                 </td>
 
-                <% @range.each do |date| %>
+                <% @employees.each do |employee| %>
                 <% day = @employee_days[[employee.id, date]] %>
 
-                <td class="text-center" style="min-width: 90px;">
+                <td class="text-center">
                     <% if day.present? %>
                     <%= link_to edit_office_employee_day_path(day),
-                    class: "text-decoration-none" do %>
+                      class: "text-decoration-none" do %>
 
                     <% if day.day_off? %>
                     <span class="badge bg-success">Libre</span>
@@ -78,23 +86,16 @@
                     <% end %>
                     <% else %>
                     <%= link_to new_office_employee_day_path(
-        office_employee_id: employee.id,
-        date: date
-      ),
-      class: "text-decoration-none" do %>
-
-                    <% holiday = @holidays[date] %>
+                        office_employee_id: employee.id,
+                        date: date
+                      ),
+                      class: "text-decoration-none" do %>
 
                     <% if holiday.present? %>
-                    <span class="badge bg-warning text-dark">
-                        Trabaja / Feriado
-                    </span>
+                    <span class="badge bg-warning text-dark">Trabaja / Feriado</span>
                     <% else %>
-                    <span class="badge bg-secondary">
-                        Trabaja
-                    </span>
+                    <span class="badge bg-secondary">Trabaja</span>
                     <% end %>
-
                     <% end %>
                     <% end %>
                 </td>
@@ -103,4 +104,5 @@
             <% end %>
         </tbody>
     </table>
+    <% end %>
 </div>
