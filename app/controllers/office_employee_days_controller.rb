@@ -105,7 +105,7 @@ end
   OfficeDays::MonthHolidayCreditSyncer.new(month: month).call
 
   redirect_to office_employee_days_path(month: month.strftime("%Y-%m")),
-              notice: "Libres del mes generados y acumulados de feriados sincronizados."
+              notice: "Calendario generado y acumulados sincronizados correctamente."
 end
 
   private

@@ -7,48 +7,40 @@ module OfficeDays
     end
 
     def call
-      double_pay_holidays.find_each do |holiday|
+      OfficeHoliday.where(date: @month_range, double_pay: true).find_each do |holiday|
         @employees.each do |employee|
-          next if employee_is_not_working_on?(employee, holiday.date)
-          next if holiday_paid_record?(employee, holiday.date)
-
-          OfficeDayCredit.find_or_create_by!(
-            office_employee: employee,
-            date: holiday.date,
-            source: "holiday_worked"
-          ) do |credit|
-            credit.used = false
-          end
+          sync_employee_holiday(employee, holiday.date)
         end
       end
     end
 
     private
 
-    def double_pay_holidays
-      OfficeHoliday.where(date: @month_range, double_pay: true)
-    end
-
-    def employee_is_not_working_on?(employee, date)
-      OfficeEmployeeDay.exists?(
+    def sync_employee_holiday(employee, date)
+      employee_day = OfficeEmployeeDay.find_by(
         office_employee: employee,
-        date: date,
-        status: [
-          OfficeEmployeeDay.statuses[:day_off],
-          OfficeEmployeeDay.statuses[:vacation],
-          OfficeEmployeeDay.statuses[:sick_leave],
-          OfficeEmployeeDay.statuses[:unjustified_absence]
-        ]
+        date: date
       )
-    end
 
-    def holiday_paid_record?(employee, date)
-      OfficeEmployeeDay.exists?(
-        office_employee: employee,
-        date: date,
-        status: :holiday_worked,
-        holiday_paid: true
-      )
+      should_accumulate =
+        employee_day.blank? ||
+        employee_day.holiday_worked? && !employee_day.holiday_paid?
+
+      if should_accumulate
+        OfficeDayCredit.find_or_create_by!(
+          office_employee: employee,
+          date: date,
+          source: "holiday_worked"
+        ) do |credit|
+          credit.used = false
+        end
+      else
+        OfficeDayCredit.where(
+          office_employee: employee,
+          date: date,
+          source: "holiday_worked"
+        ).destroy_all
+      end
     end
   end
 end
