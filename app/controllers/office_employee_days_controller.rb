@@ -92,14 +92,21 @@ end
   end
 
   def generate_month
-    month = selected_month
+  month = selected_month
+  range = month.beginning_of_month..month.end_of_month
 
-    OfficeDays::DayOffGenerator.new(month: month).call
-
-    redirect_to office_employee_days_path(
-      month: month.strftime("%Y-%m")
-    ), notice: "Libres del mes generados correctamente."
+  if OfficeHoliday.where(date: range, double_pay: true).none?
+    redirect_to office_holidays_path,
+                alert: "Antes de generar el calendario, registre los feriados de pago doble del mes."
+    return
   end
+
+  OfficeDays::DayOffGenerator.new(month: month).call
+  OfficeDays::MonthHolidayCreditSyncer.new(month: month).call
+
+  redirect_to office_employee_days_path(month: month.strftime("%Y-%m")),
+              notice: "Libres del mes generados y acumulados de feriados sincronizados."
+end
 
   private
 
