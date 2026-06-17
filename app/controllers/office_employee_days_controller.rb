@@ -2,21 +2,30 @@ class OfficeEmployeeDaysController < ApplicationController
   before_action :set_office_employee_day, only: [:edit, :update, :destroy]
 
   def index
-    @month = selected_month
-    @range = @month.beginning_of_month..@month.end_of_month
-    @employees = OfficeEmployee.active.order(:name)
+  @month = selected_month
 
-    @employee_days =
-      OfficeEmployeeDay
-        .includes(:office_employee)
-        .where(date: @range)
-        .index_by { |day| [day.office_employee_id, day.date] }
+  @month_range =
+    @month.beginning_of_month..@month.end_of_month
 
-    @holidays =
-      OfficeHoliday
-        .where(date: @range)
-        .index_by(&:date)
-  end
+  @calendar_range =
+    @month.beginning_of_month.beginning_of_week(:monday)..
+    @month.end_of_month.end_of_week(:monday)
+
+  @range = @month_range
+
+  @employees = OfficeEmployee.active.order(:name)
+
+  @employee_days =
+    OfficeEmployeeDay
+      .includes(:office_employee)
+      .where(date: @calendar_range)
+      .index_by { |day| [day.office_employee_id, day.date] }
+
+  @holidays =
+    OfficeHoliday
+      .where(date: @calendar_range)
+      .index_by(&:date)
+end
 
   def new
     @office_employee_day = OfficeEmployeeDay.new(
