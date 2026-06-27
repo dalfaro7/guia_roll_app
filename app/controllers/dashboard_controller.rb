@@ -154,10 +154,10 @@ class DashboardController < ApplicationController
       .where(work_days: { date: month_range })
       .where(status: :worked)
       .where(
-        "guide_days.role_primary IN (?) OR guide_days.role_secondary IN (?)",
-        ["Safety Kayaker", "Photographer"],
-        ["Bus Guide", "Bus Guide & SendPhotos"]
-      )
+  "guide_days.role_primary IN (?) OR guide_days.role_secondary LIKE ?",
+  ["Safety Kayaker", "Photographer"],
+  "Bus Guide%"
+)
       .select(
         "guides.id AS guide_id",
         "guides.name AS guide_name",
@@ -189,10 +189,10 @@ class DashboardController < ApplicationController
         data[:total] += 1
       end
 
-      if ["Bus Guide", "Bus Guide & SendPhotos"].include?(row.role_secondary)
-        data[:bus_guide] += 1
-        data[:total] += 1
-      end
+      if row.role_secondary.to_s.start_with?("Bus Guide")
+  data[:bus_guide] += 1
+  data[:total] += 1
+end
     end
 
     special_role_counts.values.sort_by { |data| -data[:total] }
