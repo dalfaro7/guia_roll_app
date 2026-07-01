@@ -62,7 +62,13 @@ class: "form-control" %>
 
         <% active_index = 0 %>
 
-        <% @guides.sort_by { |guide| [guide.active? ? 0 : 1, guide.name] }.each do |guide| %>
+        <% @guides.sort_by { |guide|
+     [
+       guide.active? ? 0 : 1,
+       guide.priority || 999,
+       guide.name
+     ]
+   }.each do |guide| %>
         <% active_index += 1 if guide.active? %>
 
         <tr class="<%= 'table-secondary text-muted' unless guide.active? %>">
