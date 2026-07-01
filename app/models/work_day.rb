@@ -52,6 +52,7 @@ class WorkDay < ApplicationRecord
       )
     end
   end
+  
 
   def generate_roles!
     raise "WorkDay must be draft" unless draft?
