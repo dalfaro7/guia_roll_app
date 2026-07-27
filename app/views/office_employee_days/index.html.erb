@@ -14,11 +14,48 @@
         <% end %>
     </div>
 
-    <div class="mb-3">
-        <%= button_to "Generar libres del mes",
-        generate_month_office_employee_days_path(month: @month.strftime("%Y-%m")),
-        method: :post,
-        class: "btn btn-primary" %>
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Generar calendario</h5>
+
+            <%= form_with url: generate_month_office_employee_days_path,
+                  method: :post,
+                  local: true do %>
+
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+
+            <p class="mb-2">
+                ¿Este mes tiene feriados de pago doble?
+            </p>
+
+            <div class="form-check">
+                <%= radio_button_tag :has_double_pay_holidays,
+            "yes",
+            false,
+            id: "has_holidays_yes",
+            class: "form-check-input" %>
+
+                <%= label_tag "has_holidays_yes",
+            "Sí, este mes tiene feriados",
+            class: "form-check-label" %>
+            </div>
+
+            <div class="form-check mb-3">
+                <%= radio_button_tag :has_double_pay_holidays,
+            "no",
+            false,
+            id: "has_holidays_no",
+            class: "form-check-input" %>
+
+                <%= label_tag "has_holidays_no",
+            "No, este mes no tiene feriados",
+            class: "form-check-label" %>
+            </div>
+
+            <%= submit_tag "Generar libres del mes",
+          class: "btn btn-primary" %>
+            <% end %>
+        </div>
     </div>
 
     <table class="table table-bordered align-middle">

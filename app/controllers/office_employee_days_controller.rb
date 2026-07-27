@@ -95,17 +95,49 @@ end
   month = selected_month
   range = month.beginning_of_month..month.end_of_month
 
-  if OfficeHoliday.where(date: range, double_pay: true).none?
-    redirect_to office_holidays_path,
-                alert: "Antes de generar el calendario, registre los feriados de pago doble del mes."
+  holiday_answer = params[:has_double_pay_holidays]
+
+  unless %w[yes no].include?(holiday_answer)
+    redirect_to office_employee_days_path(
+      month: month.strftime("%Y-%m")
+    ), alert: "Indique si el mes tiene feriados de pago doble."
+
+    return
+  end
+
+  holidays =
+    OfficeHoliday.where(
+      date: range,
+      double_pay: true
+    )
+
+  if holiday_answer == "yes" && holidays.none?
+    redirect_to new_office_holiday_path(
+      month: month.strftime("%Y-%m")
+    ), alert: "Registre los feriados de pago doble antes de generar el calendario."
+
+    return
+  end
+
+  if holiday_answer == "no" && holidays.exists?
+    redirect_to office_employee_days_path(
+      month: month.strftime("%Y-%m")
+    ), alert: "Este mes ya tiene feriados de pago doble registrados. Seleccione «Sí» o revise la lista de feriados."
+
     return
   end
 
   OfficeDays::DayOffGenerator.new(month: month).call
-  OfficeDays::MonthHolidayCreditSyncer.new(month: month).call
 
-  redirect_to office_employee_days_path(month: month.strftime("%Y-%m")),
-              notice: "Calendario generado y acumulados sincronizados correctamente."
+  if holiday_answer == "yes"
+    OfficeDays::MonthHolidayCreditSyncer
+      .new(month: month)
+      .call
+  end
+
+  redirect_to office_employee_days_path(
+    month: month.strftime("%Y-%m")
+  ), notice: "Calendario generado correctamente."
 end
 
   private
