@@ -24,9 +24,9 @@ end
   when "Fiorela Mena"
     date.wednesday?
   when "Yoselin Marin"
-    date.wednesday? || date.friday?
+    date.friday?
   when "Priscilla Matarrita"
-    date.wednesday?
+    date.friday?
   else
     false
   end
