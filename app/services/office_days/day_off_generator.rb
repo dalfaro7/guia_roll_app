@@ -21,6 +21,14 @@ module OfficeDays
 
     private
 
+    def employees_randomized_for(week_range)
+  seed = @month.year * 10_000 +
+         @month.month * 100 +
+         week_range.begin.day
+
+  @employees.shuffle(random: Random.new(seed))
+end
+
     def generate_required_saturdays
       generate_required_weekend_day(:saturday)
     end
@@ -41,17 +49,17 @@ module OfficeDays
     end
 
     def generate_remaining_weekly_days
-      weeks_in_month.each do |week_range|
-        @employees.each do |employee|
-          next if employee_already_has_day_off_this_week?(employee, week_range)
+  weeks_in_month.each do |week_range|
+    employees_randomized_for(week_range).each do |employee|
+      next if employee_already_has_day_off_this_week?(employee, week_range)
 
-          date = best_available_weekday_for(employee, week_range)
-          next unless date
+      date = best_available_weekday_for(employee, week_range)
+      next unless date
 
-          create_day_off(employee, date)
-        end
-      end
+      create_day_off(employee, date)
     end
+  end
+end
 
     def create_day_off(employee, date)
       OfficeEmployeeDay.create!(
@@ -116,21 +124,30 @@ end
 end
 
     def weekend_date_score(employee, date)
-      [
-        day_offs_on_date(date),
-        total_generation_day_offs(employee),
-        date
-      ]
-    end
+  [
+    day_offs_on_date(date),
+    total_generation_day_offs(employee),
+    random_date_value(employee, date)
+  ]
+end
 
     def weekday_score(employee, date)
-      [
-        same_weekday_count(employee, date),
-        day_offs_on_date(date),
-        total_generation_day_offs(employee),
-        date
-      ]
-    end
+  [
+    same_weekday_count(employee, date),
+    day_offs_on_date(date),
+    total_generation_day_offs(employee),
+    random_date_value(employee, date)
+  ]
+end
+
+def random_date_value(employee, date)
+  seed =
+    employee.id * 100_000 +
+    date.year * 1_000 +
+    date.yday
+
+  Random.new(seed).rand
+end
 
     def same_weekday_count(employee, date)
       OfficeEmployeeDay

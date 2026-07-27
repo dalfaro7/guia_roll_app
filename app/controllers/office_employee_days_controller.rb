@@ -19,7 +19,7 @@ class OfficeEmployeeDaysController < ApplicationController
     current += 1.week
   end
 
-  @employees = OfficeEmployee.active.order(:name)
+  @employees = OfficeEmployee.active.to_a
 
   @employee_days =
     OfficeEmployeeDay
