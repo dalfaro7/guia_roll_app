@@ -58,7 +58,7 @@ resources :office_employee_days do
   end
 end
 
-resources :office_day_credits, only: [:index] do
+resources :office_day_credits, only: [:index, :new, :create, :destroy] do
   collection do
     post :generate_for_month
   end

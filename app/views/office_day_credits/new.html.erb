@@ -1,0 +1,68 @@
+<div class="container mt-4">
+    <h1>Registrar acumulados históricos</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <% if @credit.errors.any? %>
+    <div class="alert alert-danger">
+        <ul>
+            <% @credit.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+            <% end %>
+        </ul>
+    </div>
+    <% end %>
+
+    <%= form_with model: @credit,
+                url: office_day_credits_path,
+                local: true do |f| %>
+
+    <div class="mb-3">
+        <%= f.label :office_employee_id, "Oficinista" %>
+
+        <%= f.collection_select :office_employee_id,
+          OfficeEmployee.active.order(:name),
+          :id,
+          :name,
+          {},
+          class: "form-control" %>
+    </div>
+
+    <div class="mb-3">
+        <%= label_tag :quantity, "Cantidad de días acumulados" %>
+
+        <%= number_field_tag :quantity,
+          1,
+          min: 1,
+          class: "form-control" %>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :date, "Fecha de registro o referencia" %>
+
+        <%= f.date_field :date,
+          value: Date.current,
+          class: "form-control" %>
+
+        <div class="form-text">
+            Si no se conoce la fecha real, utilice la fecha en que se incorpora el saldo al sistema.
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :notes, "Observación" %>
+
+        <%= f.text_area :notes,
+          placeholder: "Saldo acumulado anterior a la implementación del sistema",
+          rows: 3,
+          class: "form-control" %>
+    </div>
+
+    <%= f.submit "Registrar acumulados",
+        class: "btn btn-primary" %>
+
+    <%= link_to "Volver",
+        office_day_credits_path,
+        class: "btn btn-secondary" %>
+    <% end %>
+</div>

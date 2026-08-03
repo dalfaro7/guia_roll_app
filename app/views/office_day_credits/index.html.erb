@@ -39,4 +39,63 @@
             <% end %>
         </tbody>
     </table>
+
+    <h3 class="mt-4">Detalle de acumulados</h3>
+
+    <table class="table table-bordered table-sm">
+        <thead>
+            <tr>
+                <th>Empleado</th>
+                <th>Fecha</th>
+                <th>Origen</th>
+                <th>Estado</th>
+                <th>Observación</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @credits.each do |credit| %>
+            <tr>
+
+                <td>
+                    <%= credit.office_employee.name %>
+                </td>
+
+                <td>
+                    <%= credit.date %>
+                </td>
+
+                <td>
+                    <%= credit.source == "legacy" ? "Histórico" : "Feriado trabajado" %>
+                </td>
+
+                <td>
+                    <%= credit.used? ? "Usado" : "Disponible" %>
+                </td>
+
+                <td>
+                    <%= credit.notes.presence || "-" %>
+                </td>
+
+                <td>
+                    <% unless credit.used? %>
+                    <%= button_to "Eliminar",
+                        office_day_credit_path(credit),
+                        method: :delete,
+                        class: "btn btn-sm btn-danger",
+                        data: {
+                            turbo_confirm: "¿Eliminar este acumulado?"
+                        } %>
+                    <% end %>
+                </td>
+
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+
+    <%= link_to "Agregar acumulados históricos",
+    new_office_day_credit_path,
+    class: "btn btn-success mb-3" %>
 </div>
