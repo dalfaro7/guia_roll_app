@@ -1,19 +1,17 @@
-class OfficeDayCreditsController < ApplicationController
+class OfficeVacationCreditsController < ApplicationController
   before_action :set_credit, only: [:destroy]
 
   def index
-    @month = selected_month
-    @range = @month.beginning_of_month..@month.end_of_month
     @employees = OfficeEmployee.active.order(:name)
 
     @credits =
-      OfficeDayCredit
+      OfficeVacationCredit
         .includes(:office_employee)
         .order(used: :asc, date: :asc, id: :asc)
   end
 
   def new
-    @credit = OfficeDayCredit.new(
+    @credit = OfficeVacationCredit.new(
       date: Date.current,
       source: "legacy",
       used: false
@@ -21,24 +19,24 @@ class OfficeDayCreditsController < ApplicationController
   end
 
   def create
-    @credit = OfficeDayCredit.new(
-      office_day_credit_params
+    @credit = OfficeVacationCredit.new(
+      office_vacation_credit_params
     )
 
     quantity = params[:quantity].to_i
     quantity = 1 if quantity < 1
 
     employee = OfficeEmployee.find(
-      office_day_credit_params[:office_employee_id]
+      office_vacation_credit_params[:office_employee_id]
     )
 
     base_date = Date.parse(
-      office_day_credit_params[:date]
+      office_vacation_credit_params[:date]
     )
 
-    OfficeDayCredit.transaction do
+    OfficeVacationCredit.transaction do
       quantity.times do |index|
-        OfficeDayCredit.create!(
+        OfficeVacationCredit.create!(
           office_employee: employee,
           date: available_legacy_date(
             employee: employee,
@@ -47,13 +45,13 @@ class OfficeDayCreditsController < ApplicationController
           ),
           source: "legacy",
           used: false,
-          notes: office_day_credit_params[:notes]
+          notes: office_vacation_credit_params[:notes]
         )
       end
     end
 
-    redirect_to office_day_credits_path,
-                notice: "#{quantity} acumulado(s) histórico(s) registrados correctamente."
+    redirect_to office_vacation_credits_path,
+                notice: "#{quantity} día(s) de vacaciones registrados correctamente."
 
   rescue ActiveRecord::RecordInvalid => error
     @credit.errors.add(
@@ -85,33 +83,21 @@ class OfficeDayCreditsController < ApplicationController
 
   def destroy
     if @credit.used?
-      redirect_to office_day_credits_path,
-                  alert: "No se puede eliminar un acumulado que ya fue utilizado."
+      redirect_to office_vacation_credits_path,
+                  alert: "No se puede eliminar un día de vacaciones que ya fue utilizado."
       return
     end
 
     @credit.destroy!
 
-    redirect_to office_day_credits_path,
-                notice: "Acumulado eliminado correctamente."
-  end
-
-  def generate_for_month
-    month = selected_month
-
-    OfficeDays::MonthHolidayCreditSyncer
-      .new(month: month)
-      .call
-
-    redirect_to office_day_credits_path(
-      month: month.strftime("%Y-%m")
-    ), notice: "Acumulados de feriados sincronizados correctamente."
+    redirect_to office_vacation_credits_path,
+                notice: "Día de vacaciones eliminado correctamente."
   end
 
   private
 
   def set_credit
-    @credit = OfficeDayCredit.find(
+    @credit = OfficeVacationCredit.find(
       params[:id]
     )
   end
@@ -119,7 +105,7 @@ class OfficeDayCreditsController < ApplicationController
   def available_legacy_date(employee:, base_date:, offset:)
     candidate_date = base_date + offset.days
 
-    while OfficeDayCredit.exists?(
+    while OfficeVacationCredit.exists?(
       office_employee: employee,
       date: candidate_date,
       source: "legacy"
@@ -130,26 +116,13 @@ class OfficeDayCreditsController < ApplicationController
     candidate_date
   end
 
-  def office_day_credit_params
+  def office_vacation_credit_params
     params.require(
-      :office_day_credit
+      :office_vacation_credit
     ).permit(
       :office_employee_id,
       :date,
       :notes
     )
-  end
-
-  def selected_month
-    if params[:month].present?
-      Date.strptime(
-        params[:month],
-        "%Y-%m"
-      )
-    else
-      Date.current.beginning_of_month
-    end
-  rescue ArgumentError
-    Date.current.beginning_of_month
   end
 end

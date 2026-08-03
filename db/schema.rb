@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_03_225153) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_03_233536) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -136,10 +136,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_225153) do
     t.string "day_off_source"
     t.boolean "holiday_paid", default: false, null: false
     t.text "notes"
+    t.bigint "office_day_credit_id", null: false
     t.bigint "office_employee_id", null: false
+    t.bigint "office_vacation_credit_id", null: false
     t.integer "status"
     t.datetime "updated_at", null: false
+    t.index ["office_day_credit_id"], name: "index_office_employee_days_on_office_day_credit_id"
     t.index ["office_employee_id"], name: "index_office_employee_days_on_office_employee_id"
+    t.index ["office_vacation_credit_id"], name: "index_office_employee_days_on_office_vacation_credit_id"
   end
 
   create_table "office_employees", force: :cascade do |t|
@@ -168,6 +172,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_225153) do
     t.string "reason"
     t.datetime "updated_at", null: false
     t.index ["office_employee_id"], name: "index_office_overtimes_on_office_employee_id"
+  end
+
+  create_table "office_vacation_credits", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "date", null: false
+    t.text "notes"
+    t.bigint "office_employee_id", null: false
+    t.string "source", default: "legacy", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "used", default: false, null: false
+    t.date "used_on"
+    t.index ["office_employee_id", "date", "source"], name: "idx_office_vacation_credits_unique", unique: true
+    t.index ["office_employee_id", "used"], name: "index_office_vacation_credits_on_office_employee_id_and_used"
+    t.index ["office_employee_id"], name: "index_office_vacation_credits_on_office_employee_id"
   end
 
   create_table "skills", force: :cascade do |t|
@@ -230,8 +248,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_225153) do
   add_foreign_key "manual_day_offs", "guides"
   add_foreign_key "monthly_balances", "guides"
   add_foreign_key "office_day_credits", "office_employees"
+  add_foreign_key "office_employee_days", "office_day_credits"
   add_foreign_key "office_employee_days", "office_employees"
+  add_foreign_key "office_employee_days", "office_vacation_credits"
   add_foreign_key "office_overtimes", "office_employees"
+  add_foreign_key "office_vacation_credits", "office_employees"
   add_foreign_key "slot_skills", "location_slots"
   add_foreign_key "slot_skills", "skills"
   add_foreign_key "work_day_versions", "work_days"

@@ -1,6 +1,4 @@
 Rails.application.routes.draw do
-  get "office_day_credits/index"
-  get "office_employee_days/index"
   get "audit_logs/index"
   get "bus_assignments/create"
   get "bus_assignments/destroy"
@@ -8,73 +6,68 @@ Rails.application.routes.draw do
   get "buses/show"
   get "buses/new"
   get "buses/edit"
- 
+
   devise_for :users
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-  resources :guides
+
   root "dashboard#index"
   get "dashboard", to: "dashboard#index"
 
+  resources :guides
 
-resources :work_days do
-  member do
-    patch :generate_roles
-    post :publish
-    post :unpublish
-    post :reset_roll
-    patch :update_availability
-    patch :update_roles
-    delete :delete_with_reset 
-    get :locations
-    post :create_slots
-    get :edit_slots
-    post :force_assign
-    get :preview_force_assign
-    post :move_assigned_task_to_roll
+  resources :work_days do
+    member do
+      patch :generate_roles
+      post :publish
+      post :unpublish
+      post :reset_roll
+      patch :update_availability
+      patch :update_roles
+      delete :delete_with_reset
+      get :locations
+      post :create_slots
+      get :edit_slots
+      post :force_assign
+      get :preview_force_assign
+      post :move_assigned_task_to_roll
+    end
   end
-end
 
-
-resources :location_slots do
-  patch :update_skills, on: :member
-  patch :update_all, on: :collection
-end
-
-resources :guide_days, only: [:update]
-get "guide_assignments", to: "guide_assignments#index"
-get "day_off_report", to: "day_off_report#index"
-post "assign_day_off", to: "day_off_report#assign_day_off"
-post "remove_day_off", to: "day_off_report#remove_day_off"
-
-resources :buses
-resources :bus_assignments, only: [:create, :destroy]
-resources :audit_logs, only: [:index]
-resources :office_holidays
-resources :office_overtimes
-
-resources :office_employee_days do
-  collection do
-    post :generate_month
+  resources :location_slots do
+    patch :update_skills, on: :member
+    patch :update_all, on: :collection
   end
-end
 
-resources :office_day_credits, only: [:index, :new, :create, :destroy] do
-  collection do
-    post :generate_for_month
+  resources :guide_days, only: [:update]
+
+  get "guide_assignments", to: "guide_assignments#index"
+
+  get "day_off_report", to: "day_off_report#index"
+  post "assign_day_off", to: "day_off_report#assign_day_off"
+  post "remove_day_off", to: "day_off_report#remove_day_off"
+
+  resources :buses
+  resources :bus_assignments, only: [:create, :destroy]
+  resources :audit_logs, only: [:index]
+
+  resources :office_holidays
+  resources :office_overtimes
+
+  resources :office_employee_days do
+    collection do
+      post :generate_month
+    end
   end
-end
 
+  resources :office_day_credits,
+            only: [:index, :new, :create, :destroy] do
+    collection do
+      post :generate_for_month
+    end
+  end
 
+  resources :office_vacation_credits,
+            only: [:index, :new, :create, :destroy]
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
-
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
-
-  # Defines the root path route ("/")
-  # root "posts#index"
-
+  get "up" => "rails/health#show",
+      as: :rails_health_check
 end

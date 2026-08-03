@@ -1,0 +1,111 @@
+<div class="container mt-4">
+    <h1>Vacaciones acumuladas</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <div class="mb-3">
+        <%= link_to "Agregar vacaciones históricas",
+                new_office_vacation_credit_path,
+                class: "btn btn-success" %>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Oficinista</th>
+                <th>Vacaciones disponibles</th>
+                <th>Vacaciones utilizadas</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @employees.each do |employee| %>
+            <tr>
+                <td>
+                    <%= employee.name %>
+                </td>
+
+                <td class="text-center">
+                    <span class="badge bg-success">
+                        <%= employee.office_vacation_credits.available.count %>
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    <span class="badge bg-secondary">
+                        <%= employee.office_vacation_credits.used.count %>
+                    </span>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h3>Detalle de vacaciones</h3>
+
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>Oficinista</th>
+                <th>Fecha</th>
+                <th>Origen</th>
+                <th>Estado</th>
+                <th>Usado el</th>
+                <th>Notas</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% @credits.each do |credit| %>
+            <tr>
+                <td>
+                    <%= credit.office_employee.name %>
+                </td>
+
+                <td>
+                    <%= l credit.date %>
+                </td>
+
+                <td>
+                    <%= credit.source.humanize %>
+                </td>
+
+                <td>
+                    <% if credit.used? %>
+                    <span class="badge bg-secondary">
+                        Utilizado
+                    </span>
+                    <% else %>
+                    <span class="badge bg-success">
+                        Disponible
+                    </span>
+                    <% end %>
+                </td>
+
+                <td>
+                    <%= l(credit.used_on) if credit.used_on.present? %>
+                </td>
+
+                <td>
+                    <%= credit.notes %>
+                </td>
+
+                <td class="text-end">
+                    <% unless credit.used? %>
+                    <%= button_to "Eliminar",
+                            office_vacation_credit_path(credit),
+                            method: :delete,
+                            class: "btn btn-sm btn-danger",
+                            data: {
+                              turbo_confirm: "¿Eliminar este día de vacaciones?"
+                            } %>
+                    <% end %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
+    </table>
+</div>

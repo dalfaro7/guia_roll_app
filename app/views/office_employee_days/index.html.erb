@@ -4,13 +4,19 @@
     <%= render "shared/office_menu" %>
 
     <div class="mb-3">
-        <%= form_with url: office_employee_days_path, method: :get, local: true do %>
-        <%= month_field_tag :month,
-          @month.strftime("%Y-%m"),
-          class: "form-control d-inline-block",
-          style: "width: 220px;" %>
+        <%= form_with url: office_employee_days_path,
+                  method: :get,
+                  local: true do %>
 
-        <%= submit_tag "Ver mes", class: "btn btn-secondary" %>
+        <%= month_field_tag(
+            :month,
+            @month.strftime("%Y-%m"),
+            class: "form-control d-inline-block",
+            style: "width: 220px;"
+          ) %>
+
+        <%= submit_tag "Ver mes",
+          class: "btn btn-secondary" %>
         <% end %>
     </div>
 
@@ -19,126 +25,185 @@
             <h5 class="card-title">Generar calendario</h5>
 
             <%= form_with url: generate_month_office_employee_days_path,
-                  method: :post,
-                  local: true do %>
+                    method: :post,
+                    local: true do %>
 
-            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+            <%= hidden_field_tag(
+              :month,
+              @month.strftime("%Y-%m")
+            ) %>
 
             <p class="mb-2">
                 ¿Este mes tiene feriados de pago doble?
             </p>
 
             <div class="form-check">
-                <%= radio_button_tag :has_double_pay_holidays,
-            "yes",
-            false,
-            id: "has_holidays_yes",
-            class: "form-check-input" %>
+                <%= radio_button_tag(
+                :has_double_pay_holidays,
+                "yes",
+                false,
+                id: "has_holidays_yes",
+                class: "form-check-input"
+              ) %>
 
-                <%= label_tag "has_holidays_yes",
-            "Sí, este mes tiene feriados",
-            class: "form-check-label" %>
+                <%= label_tag(
+                "has_holidays_yes",
+                "Sí, este mes tiene feriados",
+                class: "form-check-label"
+              ) %>
             </div>
 
             <div class="form-check mb-3">
-                <%= radio_button_tag :has_double_pay_holidays,
-            "no",
-            false,
-            id: "has_holidays_no",
-            class: "form-check-input" %>
+                <%= radio_button_tag(
+                :has_double_pay_holidays,
+                "no",
+                false,
+                id: "has_holidays_no",
+                class: "form-check-input"
+              ) %>
 
-                <%= label_tag "has_holidays_no",
-            "No, este mes no tiene feriados",
-            class: "form-check-label" %>
+                <%= label_tag(
+                "has_holidays_no",
+                "No, este mes no tiene feriados",
+                class: "form-check-label"
+              ) %>
             </div>
 
-            <%= submit_tag "Generar libres del mes",
-          class: "btn btn-primary" %>
+            <%= submit_tag(
+              "Generar libres del mes",
+              class: "btn btn-primary"
+            ) %>
             <% end %>
         </div>
     </div>
 
-    <table class="table table-bordered align-middle">
-        <thead>
-            <tr>
-                <% ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"].each do |day_name| %>
-                <th class="text-center" style="width: 14.28%;">
-                    <%= day_name %>
-                </th>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <% [
+            "Lunes",
+            "Martes",
+            "Miércoles",
+            "Jueves",
+            "Viernes",
+            "Sábado",
+            "Domingo"
+          ].each do |day_name| %>
+
+                    <th class="text-center" style="width: 14.28%;">
+                        <%= day_name %>
+                    </th>
+                    <% end %>
+                </tr>
+            </thead>
+
+            <tbody>
+                <% @weeks.each do |week_range| %>
+                <tr>
+                    <% week_range.each do |date| %>
+                    <% holiday = @holidays[date] %>
+                    <% outside_month = !@month_range.cover?(date) %>
+
+                    <td class="<%= 'table-warning' if holiday.present? %> <%= 'table-light' if outside_month %>" style="height: 170px; vertical-align: top;">
+                        <div class="d-flex justify-content-between">
+                            <strong>
+                                <%= date.day %>
+                            </strong>
+
+                            <% if outside_month %>
+                            <small class="text-muted">
+                                <%= date.strftime("%b") %>
+                            </small>
+                            <% end %>
+                        </div>
+
+                        <% if holiday.present? %>
+                        <div class="mb-1">
+                            <span class="badge bg-warning text-dark">
+                                Feriado
+                            </span>
+                        </div>
+                        <% end %>
+
+                        <% @employees.each do |employee| %>
+                        <% day = @employee_days[[employee.id, date]] %>
+
+                        <% if day.present? %>
+                        <div class="mb-1">
+                            <%= link_to(
+                            edit_office_employee_day_path(day),
+                            class: "text-decoration-none"
+                          ) do %>
+
+                            <% if day.day_off? %>
+                            <% if day.uses_credit? %>
+                            <span class="badge bg-primary">
+                                Libre x acumulado
+                            </span>
+                            <% elsif day.day_off_source == "automatic" %>
+                            <span class="badge bg-success">
+                                Libre automático
+                            </span>
+                            <% else %>
+                            <span class="badge bg-success">
+                                Libre
+                            </span>
+                            <% end %>
+
+                            <% elsif day.vacation? %>
+                            <% if day.uses_vacation_credit? %>
+                            <span class="badge bg-info text-dark">
+                                Vacaciones
+                            </span>
+                            <% else %>
+                            <span class="badge bg-danger">
+                                Vacaciones sin crédito
+                            </span>
+                            <% end %>
+
+                            <% elsif day.sick_leave? %>
+                            <span class="badge bg-warning text-dark">
+                                Incap.
+                            </span>
+
+                            <% elsif day.unjustified_absence? %>
+                            <span class="badge bg-danger">
+                                Aus.
+                            </span>
+
+                            <% elsif day.holiday_worked? %>
+                            <span class="badge bg-primary">
+                                Feriado trab.
+                            </span>
+                            <% end %>
+
+                            <small class="text-dark">
+                                <%= employee.name.split.first %>
+                            </small>
+
+                            <% if day.holiday_paid? %>
+                            <small class="text-dark">
+                                Pagado
+                            </small>
+                            <% end %>
+                            <% end %>
+                        </div>
+                        <% end %>
+                        <% end %>
+
+                        <div class="mt-2">
+                            <%= link_to(
+                        "+ registro",
+                        new_office_employee_day_path(date: date),
+                        class: "btn btn-sm btn-outline-secondary w-100"
+                      ) %>
+                        </div>
+                    </td>
+                    <% end %>
+                </tr>
                 <% end %>
-            </tr>
-        </thead>
-
-        <tbody>
-            <% @weeks.each do |week_range| %>
-            <tr>
-                <% week_range.each do |date| %>
-                <% holiday = @holidays[date] %>
-                <% outside_month = !@month_range.cover?(date) %>
-
-                <td class="<%= 'table-warning' if holiday.present? %> <%= 'table-light' if outside_month %>" style="height: 160px; vertical-align: top;">
-
-                    <div class="d-flex justify-content-between">
-                        <strong>
-                            <%= date.day %>
-                        </strong>
-
-                        <% if outside_month %>
-                        <small class="text-muted">
-                            <%= date.strftime("%b") %>
-                        </small>
-                        <% end %>
-                    </div>
-
-                    <% if holiday.present? %>
-                    <div class="mb-1">
-                        <span class="badge bg-warning text-dark">
-                            Feriado
-                        </span>
-                    </div>
-                    <% end %>
-
-                    <% @employees.each do |employee| %>
-                    <% day = @employee_days[[employee.id, date]] %>
-
-                    <% if day.present? %>
-                    <div class="mb-1">
-                        <%= link_to edit_office_employee_day_path(day),
-                        class: "text-decoration-none" do %>
-
-                        <% if day.day_off? %>
-                        <span class="badge bg-success">Libre</span>
-                        <% elsif day.vacation? %>
-                        <span class="badge bg-info text-dark">Vac.</span>
-                        <% elsif day.sick_leave? %>
-                        <span class="badge bg-warning text-dark">Incap.</span>
-                        <% elsif day.unjustified_absence? %>
-                        <span class="badge bg-danger">Aus.</span>
-                        <% elsif day.holiday_worked? %>
-                        <span class="badge bg-primary">Feriado Trab.</span>
-                        <% end %>
-
-                        <small>
-                            <%= employee.name.split.first %>
-                        </small>
-
-                        <% if day.holiday_paid? %>
-                        <small>Pagado</small>
-                        <% end %>
-                        <% end %>
-                    </div>
-                    <% end %>
-                    <% end %>
-
-                    <div class="mt-2">
-                        <%= link_to "+ registro",
-                    new_office_employee_day_path(date: date),
-                    class: "btn btn-sm btn-outline-secondary w-100" %>
-                    </div>
-                </td>
-                <% end %>
-            </tr>
-            <% end %>
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>

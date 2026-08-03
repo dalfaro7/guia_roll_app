@@ -1,5 +1,7 @@
 class OfficeEmployeeDay < ApplicationRecord
   belongs_to :office_employee
+  belongs_to :office_day_credit, optional: true
+  belongs_to :office_vacation_credit, optional: true
 
   enum :status, {
     day_off: 1,
@@ -17,6 +19,13 @@ class OfficeEmployeeDay < ApplicationRecord
   end
 
   def uses_credit?
-    day_off? && day_off_source == "credit"
+    day_off? &&
+      day_off_source == "credit" &&
+      office_day_credit_id.present?
+  end
+
+  def uses_vacation_credit?
+    vacation? &&
+      office_vacation_credit_id.present?
   end
 end

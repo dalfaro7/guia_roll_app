@@ -1,7 +1,7 @@
 <%= form_with model: @office_employee_day, local: true do |f| %>
 <% if @office_employee_day.errors.any? %>
 <div class="alert alert-danger">
-    <ul>
+    <ul class="mb-0">
         <% @office_employee_day.errors.full_messages.each do |message| %>
         <li><%= message %></li>
         <% end %>
@@ -9,40 +9,205 @@
 </div>
 <% end %>
 
+<% employee = @office_employee_day.office_employee %>
+
+<% available_day_credits =
+       employee.present? ? employee.office_day_credits.available.count : 0 %>
+
+<% effective_day_credits =
+       available_day_credits +
+       (@office_employee_day.uses_credit? ? 1 : 0) %>
+
+<% available_vacation_credits =
+       employee.present? ? employee.office_vacation_credits.available.count : 0 %>
+
+<% effective_vacation_credits =
+       available_vacation_credits +
+       (@office_employee_day.uses_vacation_credit? ? 1 : 0) %>
+
 <div class="mb-3">
-    <%= f.label :office_employee_id, "Oficinista" %>
-    <%= f.collection_select :office_employee_id,
-        OfficeEmployee.active.order(:name),
-        :id,
-        :name,
-        {},
-        class: "form-control" %>
+    <%= f.label :office_employee_id,
+                "Oficinista",
+                class: "form-label" %>
+
+    <%= f.collection_select(
+          :office_employee_id,
+          OfficeEmployee.active.order(:name),
+          :id,
+          :name,
+          {},
+          class: "form-control"
+        ) %>
 </div>
 
 <div class="mb-3">
-    <%= f.label :date, "Fecha" %>
-    <%= f.date_field :date, class: "form-control" %>
+    <%= f.label :date,
+                "Fecha",
+                class: "form-label" %>
+
+    <%= f.date_field :date,
+                     class: "form-control" %>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Saldos disponibles</h5>
+
+        <% if employee.present? %>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <strong>Días acumulados:</strong>
+                <span class="badge bg-primary">
+                    <%= effective_day_credits %>
+                </span>
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <strong>Días de vacaciones:</strong>
+                <span class="badge bg-info text-dark">
+                    <%= effective_vacation_credits %>
+                </span>
+            </div>
+        </div>
+        <% else %>
+        <p class="text-muted mb-0">
+            Seleccione un oficinista para consultar sus saldos.
+        </p>
+        <% end %>
+    </div>
 </div>
 
 <div class="mb-3">
-    <%= f.label :status, "Estado" %>
-    <%= f.select :status,
-    OfficeEmployeeDay.statuses.keys.map { |status| [status.humanize, status] },
-    {},
-    class: "form-control" %>
+    <%= f.label :status,
+                "Estado",
+                class: "form-label" %>
+
+    <% status_options = [
+      ["Libre", "day_off"],
+      ["Vacaciones", "vacation"],
+      ["Incapacidad", "sick_leave"],
+      ["Ausencia injustificada", "unjustified_absence"],
+      ["Feriado trabajado", "holiday_worked"]
+    ] %>
+
+    <% disabled_statuses = [] %>
+
+    <% if effective_vacation_credits.zero? &&
+          !@office_employee_day.vacation? %>
+    <% disabled_statuses << "vacation" %>
+    <% end %>
+
+    <%= f.select(
+          :status,
+          options_for_select(
+            status_options,
+            @office_employee_day.status
+          ),
+          {},
+          class: "form-control"
+        ) %>
+
+    <% if effective_vacation_credits.zero? &&
+          !@office_employee_day.uses_vacation_credit? %>
+    <div class="form-text text-danger">
+        Este oficinista no tiene días de vacaciones disponibles.
+        El servidor rechazará cualquier intento de registrar vacaciones.
+    </div>
+    <% else %>
+    <div class="form-text">
+        Al seleccionar Vacaciones, el sistema consumirá automáticamente
+        el crédito de vacaciones disponible más antiguo.
+    </div>
+    <% end %>
 </div>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Origen del día libre</h5>
+
+        <p class="text-muted">
+            Estas opciones solo aplican cuando el estado seleccionado es
+            <strong>Libre</strong>.
+        </p>
+
+        <div class="form-check mb-2">
+            <%= radio_button_tag(
+              "office_employee_day[use_day_credit]",
+              "0",
+              !@office_employee_day.uses_credit?,
+              id: "day_off_source_manual",
+              class: "form-check-input"
+            ) %>
+
+            <%= label_tag(
+              "day_off_source_manual",
+              "Libre manual",
+              class: "form-check-label"
+            ) %>
+        </div>
+
+        <div class="form-check">
+            <%= radio_button_tag(
+              "office_employee_day[use_day_credit]",
+              "1",
+              @office_employee_day.uses_credit?,
+              id: "day_off_source_credit",
+              class: "form-check-input",
+              disabled: effective_day_credits.zero?
+            ) %>
+
+            <%= label_tag(
+              "day_off_source_credit",
+              "Libre x acumulado (#{effective_day_credits} disponibles)",
+              class: "form-check-label"
+            ) %>
+        </div>
+
+        <% if effective_day_credits.zero? %>
+        <div class="form-text text-danger">
+            Este oficinista no tiene días acumulados disponibles.
+        </div>
+        <% else %>
+        <div class="form-text">
+            Al guardar, el sistema utilizará el acumulado disponible
+            más antiguo.
+        </div>
+        <% end %>
+    </div>
+</div>
 
 <div class="form-check mb-3">
-    <%= f.check_box :holiday_paid, class: "form-check-input" %>
-    <%= f.label :holiday_paid, "Feriado pagado", class: "form-check-label" %>
+    <%= f.check_box :holiday_paid,
+                    class: "form-check-input" %>
+
+    <%= f.label :holiday_paid,
+                "Feriado pagado",
+                class: "form-check-label" %>
+
+    <div class="form-text">
+        Solo aplica cuando el estado es Feriado trabajado.
+        Si se marca como pagado, no genera un día acumulado.
+    </div>
 </div>
 
 <div class="mb-3">
-    <%= f.label :notes, "Notas" %>
-    <%= f.text_area :notes, class: "form-control", rows: 3 %>
+    <%= f.label :notes,
+                "Notas",
+                class: "form-label" %>
+
+    <%= f.text_area :notes,
+                    class: "form-control",
+                    rows: 3 %>
 </div>
 
-<%= f.submit "Guardar", class: "btn btn-primary" %>
-<%= link_to "Volver", office_employee_days_path, class: "btn btn-secondary" %>
+<%= f.submit "Guardar",
+               class: "btn btn-primary" %>
+
+<%= link_to(
+        "Volver",
+        office_employee_days_path(
+          month: @office_employee_day.date&.strftime("%Y-%m")
+        ),
+        class: "btn btn-secondary"
+      ) %>
 <% end %>
