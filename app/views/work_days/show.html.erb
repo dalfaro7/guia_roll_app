@@ -542,16 +542,45 @@
         <tbody>
             <% location_counters = Hash.new(0) %>
 
-            <% @work_day.guide_days.where(status: :worked).ordered_for_display.each do |guide_day| %>
+            <%
+  special_primary_roles = ["Photographer", "Safety Kayaker"]
+
+  worked_guide_days = @work_day.guide_days
+    .where(status: :worked)
+    .ordered_for_display
+    .to_a
+
+  regular_worked_guides, special_worked_guides =
+    worked_guide_days.partition do |guide_day|
+      !special_primary_roles.include?(guide_day.role_primary)
+    end
+
+  published_worked_guides =
+    regular_worked_guides + special_worked_guides
+%>
+
+            <% published_worked_guides.each do |guide_day| %>
             <tr class="<%= guide_day.location_css_class %>">
                 <td>
-                    <%= location_counters[guide_day.location.presence || "NO_LOCATION"] += 1 %>
+                    <%= location_counters[
+          guide_day.location.presence || "NO_LOCATION"
+        ] += 1 %>
                 </td>
 
                 <td><%= guide_day.guide.name %></td>
-                <td><%= guide_day.location.presence || "-" %></td>
-                <td><%= guide_day.role_primary.presence || "-" %></td>
-                <td><%= guide_day.role_secondary.presence || "-" %></td>
+
+                <td>
+                    <%= guide_day.location.presence || "-" %>
+                </td>
+
+                <td>
+                    <%= guide_day.role_primary.presence || "-" %>
+                </td>
+
+                <td>
+                    <%= guide_day.role_secondary.presence || "-" %>
+                </td>
+
                 <td>Trabaja</td>
             </tr>
             <% end %>
