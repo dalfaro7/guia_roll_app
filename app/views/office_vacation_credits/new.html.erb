@@ -1,0 +1,79 @@
+<div class="container mt-4">
+    <h1>Agregar días de vacaciones</h1>
+
+    <%= render "shared/office_menu" %>
+
+    <% if @credit.errors.any? %>
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            <% @credit.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+            <% end %>
+        </ul>
+    </div>
+    <% end %>
+
+    <%= form_with model: @credit,
+                url: office_vacation_credits_path,
+                local: true do |f| %>
+
+    <div class="mb-3">
+        <%= f.label :office_employee_id,
+                  "Oficinista",
+                  class: "form-label" %>
+
+        <%= f.collection_select(
+            :office_employee_id,
+            OfficeEmployee.active.order(:name),
+            :id,
+            :name,
+            {},
+            class: "form-control"
+          ) %>
+    </div>
+
+    <div class="mb-3">
+        <%= label_tag :quantity,
+                    "Cantidad de días de vacaciones",
+                    class: "form-label" %>
+
+        <%= number_field_tag :quantity,
+                           1,
+                           min: 1,
+                           step: 1,
+                           class: "form-control" %>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :date,
+                  "Fecha de referencia",
+                  class: "form-label" %>
+
+        <%= f.date_field :date,
+                       value: @credit.date || Date.current,
+                       class: "form-control" %>
+
+        <div class="form-text">
+            Para saldos antiguos, puedes usar la fecha en que se registran en el sistema.
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <%= f.label :notes,
+                  "Notas",
+                  class: "form-label" %>
+
+        <%= f.text_area :notes,
+                      rows: 3,
+                      placeholder: "Ejemplo: saldo de vacaciones anterior al sistema",
+                      class: "form-control" %>
+    </div>
+
+    <%= f.submit "Agregar vacaciones",
+                 class: "btn btn-primary" %>
+
+    <%= link_to "Volver",
+                office_vacation_credits_path,
+                class: "btn btn-secondary" %>
+    <% end %>
+</div>
