@@ -40,16 +40,6 @@ class OfficeEmployeeDaysController < ApplicationController
         .index_by(&:date)
   end
 
-  def new
-  employee_id =
-    params[:office_employee_id].presence ||
-    OfficeEmployee.active.order(:name).pick(:id)
-
-  @office_employee_day = OfficeEmployeeDay.new(
-    date: params[:date],
-    office_employee_id: employee_id
-  )
-end
 
   def create
     use_day_credit =
@@ -105,7 +95,18 @@ end
     render :new, status: :unprocessable_entity
   end
 
-  def edit
+  def new
+  employee_id =
+    params[:office_employee_id].presence ||
+    OfficeEmployee.active.order(:name).pick(:id)
+
+  @office_employee_day = OfficeEmployeeDay.new(
+    date: params[:date].presence || Date.current,
+    office_employee_id: employee_id
+  )
+end
+
+def edit
   if params[:office_employee_id].present?
     @office_employee_day.office_employee_id =
       params[:office_employee_id]

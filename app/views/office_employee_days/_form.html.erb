@@ -25,23 +25,40 @@
        available_vacation_credits +
        (@office_employee_day.uses_vacation_credit? ? 1 : 0) %>
 
+<%
+  reload_date =
+    @office_employee_day.date.presence || Date.current
+
+  employee_reload_path =
+    if @office_employee_day.persisted?
+      edit_office_employee_day_path(
+        @office_employee_day,
+        date: reload_date
+      )
+    else
+      new_office_employee_day_path(
+        date: reload_date
+      )
+    end
+%>
+
 <div class="mb-3">
     <%= f.label :office_employee_id,
-                "Oficinista",
-                class: "form-label" %>
+              "Oficinista",
+              class: "form-label" %>
 
     <%= f.collection_select(
-          :office_employee_id,
-          OfficeEmployee.active.order(:name),
-          :id,
-          :name,
-          {},
-          class: "form-control",
-          id: "office-employee-selector"
-        ) %>
+        :office_employee_id,
+        OfficeEmployee.active.order(:name),
+        :id,
+        :name,
+        {},
+        class: "form-control",
+        onchange: "window.location.href='#{employee_reload_path}&office_employee_id=' + encodeURIComponent(this.value)"
+      ) %>
 
     <div class="form-text">
-        Al cambiar el oficinista, la página se actualizará para mostrar sus saldos.
+        Al cambiar el oficinista se actualizarán sus saldos.
     </div>
 </div>
 
@@ -212,36 +229,3 @@
         class: "btn btn-secondary"
       ) %>
 <% end %>
-
-<script>
-    document.addEventListener("turbo:load", function() {
-        const employeeSelector =
-            document.getElementById("office-employee-selector");
-
-        if (!employeeSelector) return;
-        if (employeeSelector.dataset.reloadConfigured === "true") return;
-
-        employeeSelector.dataset.reloadConfigured = "true";
-
-        employeeSelector.addEventListener("change", function() {
-            const dateField =
-                document.getElementById("office-employee-day-date");
-
-            const url = new URL(window.location.href);
-
-            url.searchParams.set(
-                "office_employee_id",
-                employeeSelector.value
-            );
-
-            if (dateField && dateField.value) {
-                url.searchParams.set(
-                    "date",
-                    dateField.value
-                );
-            }
-
-            window.location.href = url.toString();
-        });
-    });
-</script>
