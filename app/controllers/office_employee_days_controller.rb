@@ -41,11 +41,15 @@ class OfficeEmployeeDaysController < ApplicationController
   end
 
   def new
-    @office_employee_day = OfficeEmployeeDay.new(
-      date: params[:date],
-      office_employee_id: params[:office_employee_id]
-    )
-  end
+  employee_id =
+    params[:office_employee_id].presence ||
+    OfficeEmployee.active.order(:name).pick(:id)
+
+  @office_employee_day = OfficeEmployeeDay.new(
+    date: params[:date],
+    office_employee_id: employee_id
+  )
+end
 
   def create
     use_day_credit =
