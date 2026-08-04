@@ -1,4 +1,6 @@
 class OfficeVacationCreditsController < ApplicationController
+  before_action :require_admin!,
+              only: [:new, :create, :destroy]
   before_action :set_credit, only: [:destroy]
 
   def index
