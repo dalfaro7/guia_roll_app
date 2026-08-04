@@ -525,9 +525,6 @@
 
 
     <!-- PUBLISHED VIEW -->
-
-    <!-- PUBLISHED VIEW -->
-
     <% if @work_day.published? %>
 
     <h3>Assigned Guides</h3>
@@ -836,11 +833,8 @@
     <!-- BALSA OPERATION SUMMARY -->
 
     <%
-balsa_passengers =
-  @work_day.locations
-           .find_by(name: "Balsa")
-           &.passengers
-           .to_i
+    balsa_passengers =
+    (@passenger_counts["Balsa"] || 0).to_i
 
     actual_balsa_river_guides =
     location_counters["Balsa"].to_i
