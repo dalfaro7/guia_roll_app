@@ -523,8 +523,11 @@
     </script>
     <% end %>
 
+
     <!-- PUBLISHED VIEW -->
+
     <% if @work_day.published? %>
+
     <h3>Assigned Guides</h3>
 
     <table class="table table-bordered w-auto">
@@ -543,31 +546,41 @@
             <% location_counters = Hash.new(0) %>
 
             <%
-  special_primary_roles = ["Photographer", "Safety Kayaker"]
+          special_primary_roles = [
+            "Photographer",
+            "Safety Kayaker"
+          ]
 
-  worked_guide_days = @work_day.guide_days
-    .where(status: :worked)
-    .ordered_for_display
-    .to_a
+          worked_guide_days = @work_day.guide_days
+            .where(status: :worked)
+            .ordered_for_display
+            .to_a
 
-  regular_worked_guides, special_worked_guides =
-    worked_guide_days.partition do |guide_day|
-      !special_primary_roles.include?(guide_day.role_primary)
-    end
+          regular_worked_guides, special_worked_guides =
+            worked_guide_days.partition do |guide_day|
 
-  published_worked_guides =
-    regular_worked_guides + special_worked_guides
-%>
+              guide_day.location == "Sara-3&4" ||
+                !special_primary_roles.include?(guide_day.role_primary)
+
+            end
+
+          published_worked_guides =
+            regular_worked_guides + special_worked_guides
+        %>
 
             <% published_worked_guides.each do |guide_day| %>
+
             <tr class="<%= guide_day.location_css_class %>">
+
                 <td>
                     <%= location_counters[
-          guide_day.location.presence || "NO_LOCATION"
-        ] += 1 %>
+                  guide_day.location.presence || "NO_LOCATION"
+                ] += 1 %>
                 </td>
 
-                <td><%= guide_day.guide.name %></td>
+                <td>
+                    <%= guide_day.guide.name %>
+                </td>
 
                 <td>
                     <%= guide_day.location.presence || "-" %>
@@ -581,87 +594,190 @@
                     <%= guide_day.role_secondary.presence || "-" %>
                 </td>
 
-                <td>Trabaja</td>
+                <td>
+                    Trabaja
+                </td>
+
             </tr>
+
             <% end %>
+
+
+            <!-- STANDBY -->
 
             <% @work_day.standby_guides_for_published_roll.each do |guide_day| %>
+
             <tr>
                 <td></td>
-                <td><%= guide_day.guide.name %></td>
+
+                <td>
+                    <%= guide_day.guide.name %>
+                </td>
+
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
-                <td>En espera</td>
+
+                <td>
+                    En espera
+                </td>
             </tr>
+
             <% end %>
 
-            <% @work_day.guide_days.where(status: :assigned_task).joins(:guide).order("guides.priority ASC", "guides.name ASC").each do |guide_day| %>
+
+            <!-- ASSIGNED TASK -->
+
+            <% @work_day.guide_days
+              .where(status: :assigned_task)
+              .joins(:guide)
+              .order("guides.priority ASC", "guides.name ASC")
+              .each do |guide_day| %>
+
             <tr>
                 <td></td>
-                <td><%= guide_day.guide.name %></td>
+
+                <td>
+                    <%= guide_day.guide.name %>
+                </td>
+
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
+
                 <td>
                     Tarea Asignada
+
                     <% if guide_day.status_note.present? %>
-                    <small class="text-muted d-block"><%= guide_day.status_note %></small>
+                    <small class="text-muted d-block">
+                        <%= guide_day.status_note %>
+                    </small>
                     <% end %>
                 </td>
             </tr>
+
             <% end %>
 
-            <% @work_day.guide_days.where(status: :day_off).joins(:guide).order("guides.priority ASC", "guides.name ASC").each do |guide_day| %>
+
+            <!-- DAY OFF -->
+
+            <% @work_day.guide_days
+              .where(status: :day_off)
+              .joins(:guide)
+              .order("guides.priority ASC", "guides.name ASC")
+              .each do |guide_day| %>
+
             <tr>
                 <td></td>
-                <td><%= guide_day.guide.name %></td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
-                <td>Libre</td>
-            </tr>
-            <% end %>
 
-            <% @work_day.guide_days.where(status: :penalized).joins(:guide).order("guides.priority ASC", "guides.name ASC").each do |guide_day| %>
-            <tr>
-                <td>X</td>
-                <td><%= guide_day.guide.name %></td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
                 <td>
-                    PENALIZADO
+                    <%= guide_day.guide.name %>
+                </td>
+
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+
+                <td>
+                    Libre
+                </td>
+            </tr>
+
+            <% end %>
+
+
+            <!-- PENALIZED -->
+
+            <% @work_day.guide_days
+              .where(status: :penalized)
+              .joins(:guide)
+              .order("guides.priority ASC", "guides.name ASC")
+              .each do |guide_day| %>
+
+            <tr>
+                <td>
+                    <span class="text-danger fw-bold">X</span>
+                </td>
+
+                <td>
+                    <%= guide_day.guide.name %>
+                </td>
+
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+
+                <td>
+                    <strong>PENALIZADO</strong>
+
                     <% if guide_day.status_note.present? %>
-                    <small class="text-muted d-block"><%= guide_day.status_note %></small>
+                    <small class="text-muted d-block">
+                        <%= guide_day.status_note %>
+                    </small>
                     <% end %>
                 </td>
             </tr>
+
             <% end %>
 
-            <% @work_day.guide_days.where(status: :vacation).joins(:guide).order("guides.priority ASC", "guides.name ASC").each do |guide_day| %>
+
+            <!-- VACATION -->
+
+            <% @work_day.guide_days
+              .where(status: :vacation)
+              .joins(:guide)
+              .order("guides.priority ASC", "guides.name ASC")
+              .each do |guide_day| %>
+
             <tr>
                 <td></td>
-                <td><%= guide_day.guide.name %></td>
+
+                <td>
+                    <%= guide_day.guide.name %>
+                </td>
+
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
-                <td>Vacation</td>
+
+                <td>
+                    Vacation
+                </td>
             </tr>
+
             <% end %>
 
-            <% ManualDayOff.includes(:guide).where(date: @work_day.date).joins(:guide).order("guides.priority ASC", "guides.name ASC").each do |manual_off| %>
+
+            <!-- MANUAL DAY OFF -->
+
+            <% ManualDayOff
+              .includes(:guide)
+              .where(date: @work_day.date)
+              .joins(:guide)
+              .order("guides.priority ASC", "guides.name ASC")
+              .each do |manual_off| %>
+
             <tr>
                 <td></td>
-                <td><%= manual_off.guide.name %></td>
+
+                <td>
+                    <%= manual_off.guide.name %>
+                </td>
+
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>
-                <td>LIBRE MANUAL</td>
+
+                <td>
+                    LIBRE MANUAL
+                </td>
             </tr>
+
             <% end %>
+
         </tbody>
     </table>
+
     <% end %>
 
     <hr>
