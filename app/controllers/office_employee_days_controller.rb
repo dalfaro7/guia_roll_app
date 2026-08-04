@@ -2,6 +2,16 @@ class OfficeEmployeeDaysController < ApplicationController
   before_action :set_office_employee_day,
                 only: [:edit, :update, :destroy]
 
+  before_action :require_admin!,
+                only: [
+                  :new,
+                  :create,
+                  :edit,
+                  :update,
+                  :destroy,
+                  :generate_month
+                ]
+
   def index
     @month = selected_month
 
