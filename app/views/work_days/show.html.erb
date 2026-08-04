@@ -836,18 +836,22 @@
     <!-- BALSA OPERATION SUMMARY -->
 
     <%
-  balsa_passengers =
-    (@passenger_counts["Balsa"] || 0).to_i
+ <%
+balsa_passengers =
+  @work_day.locations
+           .find_by(name: "Balsa")
+           &.passengers
+           .to_i
 
-  actual_balsa_river_guides =
+    actual_balsa_river_guides =
     location_counters["Balsa"].to_i
 
-  recommended_balsa_guides =
+    recommended_balsa_guides =
     (balsa_passengers / 5.0).ceil
 
-  recommended_rafts =
+    recommended_rafts =
     recommended_balsa_guides + 2
-%>
+    %>
 
     <div class="card mt-4 mb-4">
         <div class="card-header bg-primary text-white">
