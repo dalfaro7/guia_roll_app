@@ -3,7 +3,7 @@ class RoleGeneratorV2
   PRIORITY_ALLOWED = {
     "Privado"   => [1,2],
     "Sara-3&4"  => [1,2,3],
-    "Balsa"     => [0,1,2,3],
+    "Balsa"     => [0,1,2,3,4],
     "PM"        => [1,2,3]
   }
 
