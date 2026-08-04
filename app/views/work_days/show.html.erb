@@ -2,7 +2,7 @@
     <div class="container px-4">
         <div class="bg-dark text-white d-flex justify-content-end align-items-center gap-2 p-2 flex-wrap">
 
-            <% if @work_day.draft? %>
+            <% if @work_day.draft? || @work.generated? %>
             <%= link_to "Configure Locations",
           locations_work_day_path(@work_day),
           class: "btn btn-outline-light" %>
