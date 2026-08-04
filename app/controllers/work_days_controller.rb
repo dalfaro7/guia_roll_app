@@ -29,9 +29,10 @@ class WorkDaysController < ApplicationController
                        .group(:location)
                        .count
 
-    @passenger_counts = @work_day.location_slots
-                                 .pluck(:location, :passengers)
-                                 .to_h
+    @passenger_counts =
+  @work_day.location_slots
+           .group(:location)
+           .maximum(:passengers)
   end
 
   def new
@@ -240,9 +241,10 @@ end
                        .group(:location)
                        .count
 
-    @passenger_counts = @work_day.location_slots
-                                 .pluck(:location, :passengers)
-                                 .to_h
+    @passenger_counts =
+  @work_day.location_slots
+           .group(:location)
+           .maximum(:passengers)
   end
 
   def create_slots
