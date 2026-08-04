@@ -106,7 +106,15 @@ end
   end
 
   def edit
+  if params[:office_employee_id].present?
+    @office_employee_day.office_employee_id =
+      params[:office_employee_id]
   end
+
+  if params[:date].present?
+    @office_employee_day.date = params[:date]
+  end
+end
 
   def update
     use_day_credit =

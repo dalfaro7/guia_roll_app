@@ -36,8 +36,13 @@
           :id,
           :name,
           {},
-          class: "form-control"
+          class: "form-control",
+          id: "office-employee-selector"
         ) %>
+
+    <div class="form-text">
+        Al cambiar el oficinista, la página se actualizará para mostrar sus saldos.
+    </div>
 </div>
 
 <div class="mb-3">
@@ -46,7 +51,8 @@
                 class: "form-label" %>
 
     <%= f.date_field :date,
-                     class: "form-control" %>
+                     class: "form-control",
+                     id: "office-employee-day-date" %>
 </div>
 
 <div class="card mb-3">
@@ -57,6 +63,7 @@
         <div class="row">
             <div class="col-md-6 mb-2">
                 <strong>Días acumulados:</strong>
+
                 <span class="badge bg-primary">
                     <%= effective_day_credits %>
                 </span>
@@ -64,6 +71,7 @@
 
             <div class="col-md-6 mb-2">
                 <strong>Días de vacaciones:</strong>
+
                 <span class="badge bg-info text-dark">
                     <%= effective_vacation_credits %>
                 </span>
@@ -90,13 +98,6 @@
       ["Feriado trabajado", "holiday_worked"]
     ] %>
 
-    <% disabled_statuses = [] %>
-
-    <% if effective_vacation_credits.zero? &&
-          !@office_employee_day.vacation? %>
-    <% disabled_statuses << "vacation" %>
-    <% end %>
-
     <%= f.select(
           :status,
           options_for_select(
@@ -109,9 +110,10 @@
 
     <% if effective_vacation_credits.zero? &&
           !@office_employee_day.uses_vacation_credit? %>
+
     <div class="form-text text-danger">
         Este oficinista no tiene días de vacaciones disponibles.
-        El servidor rechazará cualquier intento de registrar vacaciones.
+        No se permitirá guardar el estado Vacaciones.
     </div>
     <% else %>
     <div class="form-text">
@@ -169,8 +171,7 @@
         </div>
         <% else %>
         <div class="form-text">
-            Al guardar, el sistema utilizará el acumulado disponible
-            más antiguo.
+            Al guardar, el sistema utilizará el acumulado disponible más antiguo.
         </div>
         <% end %>
     </div>
@@ -211,3 +212,36 @@
         class: "btn btn-secondary"
       ) %>
 <% end %>
+
+<script>
+    document.addEventListener("turbo:load", function() {
+        const employeeSelector =
+            document.getElementById("office-employee-selector");
+
+        if (!employeeSelector) return;
+        if (employeeSelector.dataset.reloadConfigured === "true") return;
+
+        employeeSelector.dataset.reloadConfigured = "true";
+
+        employeeSelector.addEventListener("change", function() {
+            const dateField =
+                document.getElementById("office-employee-day-date");
+
+            const url = new URL(window.location.href);
+
+            url.searchParams.set(
+                "office_employee_id",
+                employeeSelector.value
+            );
+
+            if (dateField && dateField.value) {
+                url.searchParams.set(
+                    "date",
+                    dateField.value
+                );
+            }
+
+            window.location.href = url.toString();
+        });
+    });
+</script>
