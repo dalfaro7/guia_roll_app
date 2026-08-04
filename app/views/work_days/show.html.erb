@@ -573,9 +573,17 @@
             <tr class="<%= guide_day.location_css_class %>">
 
                 <td>
+                    <%
+      is_balsa_special_role =
+        guide_day.location == "Balsa" &&
+        ["Photographer", "Safety Kayaker"].include?(guide_day.role_primary)
+    %>
+
+                    <% unless is_balsa_special_role %>
                     <%= location_counters[
-                  guide_day.location.presence || "NO_LOCATION"
-                ] += 1 %>
+          guide_day.location.presence || "NO_LOCATION"
+        ] += 1 %>
+                    <% end %>
                 </td>
 
                 <td>
