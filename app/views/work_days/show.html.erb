@@ -526,6 +526,8 @@
 
     <!-- PUBLISHED VIEW -->
 
+    <!-- PUBLISHED VIEW -->
+
     <% if @work_day.published? %>
 
     <h3>Assigned Guides</h3>
@@ -551,22 +553,47 @@
             "Safety Kayaker"
           ]
 
-          worked_guide_days = @work_day.guide_days
-            .where(status: :worked)
-            .ordered_for_display
-            .to_a
-
-          regular_worked_guides, special_worked_guides =
-            worked_guide_days.partition do |guide_day|
-
-              guide_day.location == "Sara-3&4" ||
-                !special_primary_roles.include?(guide_day.role_primary)
-
-            end
+          location_order = {
+            "Sara-3&4" => 1,
+            "Balsa"    => 2,
+            "Privado"  => 3,
+            "PM"       => 4
+          }
 
           published_worked_guides =
-            regular_worked_guides + special_worked_guides
+            @work_day.guide_days
+              .where(status: :worked)
+              .includes(:guide)
+              .to_a
+              .sort_by do |guide_day|
+
+                special_role =
+                  special_primary_roles.include?(
+                    guide_day.role_primary
+                  )
+
+                special_role_order =
+                  if guide_day.location == "Sara-3&4"
+                    0
+                  elsif special_role
+                    1
+                  else
+                    0
+                  end
+
+                [
+                  location_order.fetch(
+                    guide_day.location,
+                    99
+                  ),
+                  special_role_order,
+                  guide_day.guide.priority || 999,
+                  guide_day.guide.name.to_s
+                ]
+              end
         %>
+
+            <!-- WORKED GUIDES -->
 
             <% published_worked_guides.each do |guide_day| %>
 
@@ -574,15 +601,17 @@
 
                 <td>
                     <%
-      is_balsa_special_role =
-        guide_day.location == "Balsa" &&
-        ["Photographer", "Safety Kayaker"].include?(guide_day.role_primary)
-    %>
+                  is_balsa_special_role =
+                    guide_day.location == "Balsa" &&
+                    special_primary_roles.include?(
+                      guide_day.role_primary
+                    )
+                %>
 
                     <% unless is_balsa_special_role %>
                     <%= location_counters[
-          guide_day.location.presence || "NO_LOCATION"
-        ] += 1 %>
+                      guide_day.location.presence || "NO_LOCATION"
+                    ] += 1 %>
                     <% end %>
                 </td>
 
@@ -639,7 +668,10 @@
             <% @work_day.guide_days
               .where(status: :assigned_task)
               .joins(:guide)
-              .order("guides.priority ASC", "guides.name ASC")
+              .order(
+                "guides.priority ASC",
+                "guides.name ASC"
+              )
               .each do |guide_day| %>
 
             <tr>
@@ -672,7 +704,10 @@
             <% @work_day.guide_days
               .where(status: :day_off)
               .joins(:guide)
-              .order("guides.priority ASC", "guides.name ASC")
+              .order(
+                "guides.priority ASC",
+                "guides.name ASC"
+              )
               .each do |guide_day| %>
 
             <tr>
@@ -699,12 +734,17 @@
             <% @work_day.guide_days
               .where(status: :penalized)
               .joins(:guide)
-              .order("guides.priority ASC", "guides.name ASC")
+              .order(
+                "guides.priority ASC",
+                "guides.name ASC"
+              )
               .each do |guide_day| %>
 
             <tr>
                 <td>
-                    <span class="text-danger fw-bold">X</span>
+                    <span class="text-danger fw-bold">
+                        X
+                    </span>
                 </td>
 
                 <td>
@@ -734,7 +774,10 @@
             <% @work_day.guide_days
               .where(status: :vacation)
               .joins(:guide)
-              .order("guides.priority ASC", "guides.name ASC")
+              .order(
+                "guides.priority ASC",
+                "guides.name ASC"
+              )
               .each do |guide_day| %>
 
             <tr>
@@ -762,7 +805,10 @@
               .includes(:guide)
               .where(date: @work_day.date)
               .joins(:guide)
-              .order("guides.priority ASC", "guides.name ASC")
+              .order(
+                "guides.priority ASC",
+                "guides.name ASC"
+              )
               .each do |manual_off| %>
 
             <tr>
