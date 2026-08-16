@@ -1,10 +1,9 @@
 class RoleGeneratorV2
-
   PRIORITY_ALLOWED = {
-    "Privado"   => [1,2],
-    "Sara-3&4"  => [1,2,3],
-    "Balsa"     => [0,1,2,3,4],
-    "PM"        => [1,2,3]
+    "Privado"  => [1, 2],
+    "Sara-3&4" => [1, 2, 3],
+    "Balsa"    => [0, 1, 2, 3, 4],
+    "PM"       => [1, 2, 3]
   }
 
   def initialize(work_day)
@@ -32,21 +31,29 @@ class RoleGeneratorV2
 
   private
 
+  # Precarga los GuideDay del WorkDay actual para evitar búsquedas
+  # repetidas durante la asignación.
   def preload_data
     @guide_days = @work_day.guide_days
                            .includes(:guide)
                            .index_by(&:guide_id)
   end
 
+  # Define el orden en que se procesan las diferentes ubicaciones.
+  # Los slots más sensibles se asignan primero.
   def location_priority(location)
     case location
-    when "Privado"   then 0
-    when "Sara-3&4"  then 1
-    when "PM"        then 2
-    else                  3
+    when "Privado"  then 0
+    when "Sara-3&4" then 1
+    when "PM"       then 2
+    else                 3
     end
   end
 
+  # Ordena primero por ubicación y luego por cantidad de skills requeridos.
+  #
+  # Un slot con más requisitos se procesa antes para evitar consumir
+  # prematuramente un guía que podría ser necesario en ese slot.
   def ordered_slots
     @work_day.location_slots
              .includes(:skills)
@@ -61,28 +68,35 @@ class RoleGeneratorV2
 
   def select_guide_for_slot(slot)
     required_skill_ids = slot.skills.map(&:id)
-    allowed = PRIORITY_ALLOWED[slot.location] || []
+    allowed_priorities = PRIORITY_ALLOWED[slot.location] || []
 
-    candidates = GuideDay
-                 .available_for_date(@work_day.date)
-                 .where(work_day: @work_day)
-                 .joins(guide: :skills)
-                 .where(guides: { priority: allowed })
-                 .where(skills: { id: required_skill_ids })
-                 .group("guide_days.id, guides.id")
-                 .having("COUNT(DISTINCT skills.id) = ?", required_skill_ids.size)
-                 .includes(:guide)
+    candidates =
+      GuideDay
+        .available_for_date(@work_day.date)
+        .where(work_day: @work_day)
+        .joins(guide: :skills)
+        .where(guides: { priority: allowed_priorities })
+        .where(skills: { id: required_skill_ids })
+        .group("guide_days.id, guides.id")
+        .having(
+          "COUNT(DISTINCT skills.id) = ?",
+          required_skill_ids.size
+        )
+        .includes(:guide)
 
-    candidates = candidates.reject do |gd|
-      @assigned_guides.include?(gd.guide_id)
+    # Un guía solo puede ocupar un slot dentro del mismo WorkDay.
+    candidates = candidates.reject do |guide_day|
+      @assigned_guides.include?(guide_day.guide_id)
     end
 
-    selected = candidates.sort_by do |gd|
-      [
-        gd.guide.priority || 999,
-        worked_days_for(gd.guide),
-        gd.guide.name
-      ]
+    # Toda la lógica de fairness está centralizada en
+    # RollFairnessPolicy para que generación normal, force assign
+    # y cualquier otra selección utilicen exactamente las mismas reglas.
+    selected = candidates.sort_by do |guide_day|
+      RollFairnessPolicy.ranking_key_for(
+        guide_day.guide,
+        before_date: @work_day.date
+      )
     end.first
 
     selected&.guide
@@ -98,38 +112,36 @@ class RoleGeneratorV2
       role_secondary: nil
     )
 
+    # Evita que el mismo guía vuelva a ser seleccionado
+    # para otro slot durante esta generación.
     @assigned_guides << guide.id
   end
 
-  def worked_days_for(guide)
-    GuideDay.joins(:work_day)
-            .where(guide: guide, status: :worked)
-            .where(work_days: {
-              date: @work_day.date.beginning_of_month..@work_day.date.end_of_month
-            })
-            .count
-  end
-
   def diagnostic_message(slot)
+    required_skill_ids = slot.skills.pluck(:id)
     required_names = slot.skills.pluck(:name)
 
-    guides_with_skills = Guide
-                         .joins(:skills)
-                         .where(skills: { id: slot.skills.pluck(:id) })
-                         .group("guides.id")
-                         .having("COUNT(DISTINCT skills.id) = ?", slot.skills.count)
+    guides_with_skills =
+      Guide
+        .joins(:skills)
+        .where(skills: { id: required_skill_ids })
+        .group("guides.id")
+        .having(
+          "COUNT(DISTINCT skills.id) = ?",
+          required_skill_ids.size
+        )
 
     available = []
     unavailable = []
 
     guides_with_skills.each do |guide|
-      gd = @guide_days[guide.id]
+      guide_day = @guide_days[guide.id]
 
-      if gd && gd.standby?
+      if guide_day&.standby?
         available << guide.name
       else
-        location = gd&.location || "none"
-        status   = gd&.status || "not_in_roll"
+        location = guide_day&.location || "none"
+        status = guide_day&.status || "not_in_roll"
 
         unavailable << "#{guide.name} (#{status} at #{location})"
       end
@@ -151,5 +163,4 @@ class RoleGeneratorV2
       (unavailable.presence || ["none"]).join(", ")
     ].join("\n")
   end
-
 end

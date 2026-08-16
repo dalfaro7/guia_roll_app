@@ -1,52 +1,72 @@
-<div class="container">
+<div class="container p-3">
+    <div class="card p-4">
+        <h3 class="mb-4">Edit Guide</h3>
 
-    <h1>Edit Guide</h1>
+        <%= form_with model: @guide do |f| %>
+        <div class="mb-3">
+            <%= f.label :name, class: "form-label" %>
 
-    <%= form_with model: @guide do |f| %>
+            <%= f.text_field :name,
+                         class: "form-control",
+                         required: true %>
+        </div>
 
-    <div class="mb-3">
-        <%= f.label :name %><br>
-        <%= f.text_field :name %>
-    </div>
+        <div class="mb-3">
+            <%= f.label :priority, class: "form-label" %>
 
-    <div class="mb-3">
-        <%= f.label :priority %><br>
-        <%= f.number_field :priority %>
-    </div>
+            <%= f.number_field :priority,
+                           class: "form-control",
+                           required: true %>
+        </div>
 
-    <div class="mb-3">
-        <%= f.label :day_off_balance %><br>
-        <%= f.number_field :day_off_balance %>
-    </div>
-    <small class="text-muted">
-        Last updated:
-        <%= @guide.day_off_balance_updated_at&.strftime("%Y-%m-%d %H:%M") || "never" %>
-    </small>
+        <div class="mb-3">
+            <%= f.label :day_off_balance, class: "form-label" %>
 
-    <div class="mb-3">
-        <%= f.label :active %>
-        <%= f.check_box :active %>
-    </div>
+            <%= f.number_field :day_off_balance,
+                           class: "form-control" %>
 
-    <hr>
+            <small class="text-muted">
+                Last updated:
+                <%= @guide.day_off_balance_updated_at&.strftime("%Y-%m-%d %H:%M") || "never" %>
+            </small>
+        </div>
 
-    <h3>Skills</h3>
+        <hr>
 
-    <div class="mb-3">
-        <%= collection_check_boxes(:guide, :skill_ids, Skill.order(:name), :id, :name) do |b| %>
-        <div class="form-check">
-            <%= b.check_box(class: "form-check-input") %>
-            <%= b.label(class: "form-check-label") %>
+        <h4 class="mb-3">Skills</h4>
+
+        <div class="mb-3 border rounded p-3">
+            <%= collection_check_boxes(
+              :guide,
+              :skill_ids,
+              Skill.order(:name),
+              :id,
+              :name
+            ) do |skill| %>
+
+            <div class="form-check mb-1">
+                <%= skill.check_box class: "form-check-input" %>
+                <%= skill.label class: "form-check-label" %>
+            </div>
+
+            <% end %>
+        </div>
+
+        <%#
+        El estado Active / Inactive no se modifica desde este formulario.
+
+        La activación se controla desde Guides mediante toggle_active.
+        Al activar nuevamente al guía se inicia un nuevo ciclo de fairness.
+      %>
+
+        <div class="d-flex gap-2">
+            <%= f.submit "Update Guide",
+                     class: "btn btn-primary" %>
+
+            <%= link_to "Back",
+                    guides_path,
+                    class: "btn btn-secondary" %>
         </div>
         <% end %>
     </div>
-
-    <%= f.submit "Update Guide", class: "btn btn-primary" %>
-
-    <% end %>
-
-    <br>
-
-    <%= link_to "Back", guides_path, class: "btn btn-secondary" %>
-
 </div>

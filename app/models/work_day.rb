@@ -6,13 +6,19 @@ class WorkDay < ApplicationRecord
   has_many :bus_assignments, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
 
-  accepts_nested_attributes_for :guide_days, update_only: true
+  accepts_nested_attributes_for :guide_days,
+                                update_only: true
+
   after_create :initialize_guide_days
 
   validates :date, presence: true
+
   validates :guides_requested,
-            numericality: { greater_than_or_equal_to: 0 },
+            numericality: {
+              greater_than_or_equal_to: 0
+            },
             allow_nil: true
+
   validate :date_cannot_be_in_the_past
 
   enum :status, {
@@ -21,29 +27,44 @@ class WorkDay < ApplicationRecord
     published: 2
   }
 
+  # Devuelve los guías standby del roll publicado
+  # usando exactamente la misma política de fairness
+  # que la generación y el force assign.
   def standby_guides_for_published_roll
-  GuideCandidateRanker.new(
-    work_day: self,
-    skill_ids: []
-  ).standby_candidates
+    GuideCandidateRanker.new(
+      work_day: self,
+      skill_ids: []
+    ).standby_candidates
   end
 
   def buses_for(location)
-    bus_assignments.includes(:bus).where(location: location)
+    bus_assignments
+      .includes(:bus)
+      .where(location: location)
   end
 
   def passengers_for(location)
-    location_slots.find_by(location: location)&.passengers.to_i
+    location_slots
+      .find_by(location: location)
+      &.passengers
+      .to_i
   end
 
   def bus_capacity_for(location)
-    buses_for(location).joins(:bus).sum("buses.capacity")
+    buses_for(location)
+      .joins(:bus)
+      .sum("buses.capacity")
   end
 
   def seats_remaining_for(location)
-    bus_capacity_for(location) - passengers_for(location)
+    bus_capacity_for(location) -
+      passengers_for(location)
   end
 
+  # Al crear un WorkDay solo se incluyen guías activos.
+  #
+  # Esto es importante porque un guía inactivo no debe
+  # entrar en disponibilidad ni competir por fairness.
   def initialize_guide_days
     Guide.active.find_each do |guide|
       guide_days.create!(
@@ -52,21 +73,35 @@ class WorkDay < ApplicationRecord
       )
     end
   end
-  
 
+  # Genera el roll utilizando RoleGeneratorV2.
+  #
+  # Toda la lógica de fairness se encuentra centralizada
+  # en RollFairnessPolicy.
   def generate_roles!
     raise "WorkDay must be draft" unless draft?
 
     RoleGeneratorV2.new(self).generate!
-    log_event("generate_roles", "draft", "generated")
+
+    log_event(
+      "generate_roles",
+      "draft",
+      "generated"
+    )
   end
 
   def calculated_guides_requested
     location_slots.count
   end
 
+  # Solo worked ocupa una posición real dentro del roll.
+  #
+  # assigned_task puede representar trabajo realizado,
+  # pero no ocupa un LocationSlot del roll normal.
   def assigned_roll_count
-    guide_days.where(status: :worked).count
+    guide_days
+      .where(status: :worked)
+      .count
   end
 
   def required_roll_count
@@ -83,7 +118,11 @@ class WorkDay < ApplicationRecord
       published_at: Time.current
     )
 
-    log_event("publish", previous_status, "published")
+    log_event(
+      "publish",
+      previous_status,
+      "published"
+    )
   end
 
   def unpublish!
@@ -96,7 +135,11 @@ class WorkDay < ApplicationRecord
       published_at: nil
     )
 
-    log_event("unpublish", previous_status, "generated")
+    log_event(
+      "unpublish",
+      previous_status,
+      "generated"
+    )
   end
 
   def reset_roll!
@@ -109,17 +152,21 @@ class WorkDay < ApplicationRecord
     raise "Cannot regenerate draft days" if draft?
 
     new_count = new_count.to_i
+
     previous_status = status
-    previous_count  = guides_requested
+    previous_count = guides_requested
 
     if new_count != location_slots.count
-      raise ArgumentError, "new_count must match location_slots.count"
+      raise ArgumentError,
+            "new_count must match location_slots.count"
     end
 
     ActiveRecord::Base.transaction do
       RoleResetService.new(self).call
 
-      update!(guides_requested: new_count)
+      update!(
+        guides_requested: new_count
+      )
 
       log_event(
         "regenerate_with_new_count",
@@ -139,7 +186,10 @@ class WorkDay < ApplicationRecord
       guide_days.delete_all
       location_slots.delete_all
       bus_assignments.delete_all
-      AuditLog.where(work_day_id: id).delete_all
+
+      AuditLog
+        .where(work_day_id: id)
+        .delete_all
 
       destroy!
     end
@@ -147,7 +197,13 @@ class WorkDay < ApplicationRecord
 
   private
 
-  def log_event(event, previous_status, new_status, previous_count = nil, new_count = nil)
+  def log_event(
+    event,
+    previous_status,
+    new_status,
+    previous_count = nil,
+    new_count = nil
+  )
     WorkDayVersion.create!(
       work_day: self,
       snapshot: {
@@ -164,6 +220,11 @@ class WorkDay < ApplicationRecord
   def date_cannot_be_in_the_past
     return if date.blank?
 
-    errors.add(:date, "cannot be in the past") if date < Date.today
+    if date < Date.current
+      errors.add(
+        :date,
+        "cannot be in the past"
+      )
+    end
   end
 end

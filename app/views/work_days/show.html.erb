@@ -4,50 +4,63 @@
 
             <% if @work_day.draft? || @work_day.generated? %>
             <%= link_to "Configure Locations",
-          locations_work_day_path(@work_day),
-          class: "btn btn-outline-light" %>
+                    locations_work_day_path(@work_day),
+                    class: "btn btn-outline-light" %>
             <% end %>
-            <% if @work_day.draft?%>
+
+            <% if @work_day.draft? %>
             <%= link_to "Edit Slot Requirements",
-          edit_slots_work_day_path(@work_day),
-          class: "btn btn-outline-light" %>
+                    edit_slots_work_day_path(@work_day),
+                    class: "btn btn-outline-light" %>
             <% end %>
 
             <% if @work_day.generated? %>
             <%= button_to "Reset Roll",
-          reset_roll_work_day_path(@work_day),
-          method: :post,
-          class: "btn btn-secondary",
-          data: { turbo: false, confirm: "Reset this day's roll completely?" } %>
+                      reset_roll_work_day_path(@work_day),
+                      method: :post,
+                      class: "btn btn-secondary",
+                      data: {
+                        turbo: false,
+                        confirm: "Reset this day's roll completely?"
+                      } %>
             <% end %>
 
             <% if @work_day.draft? %>
             <%= button_to "Generate Roles",
-          generate_roles_work_day_path(@work_day),
-          method: :patch,
-          class: "btn btn-success",
-          data: { turbo: false, confirm: "Generate roles for this day?" } %>
+                      generate_roles_work_day_path(@work_day),
+                      method: :patch,
+                      class: "btn btn-success",
+                      data: {
+                        turbo: false,
+                        confirm: "Generate roles for this day?"
+                      } %>
             <% end %>
 
             <% if @work_day.generated? %>
             <%= button_to "Publish Work Day",
-          publish_work_day_path(@work_day),
-          method: :post,
-          class: "btn btn-success",
-          data: { turbo: false, confirm: "Are you sure you want to publish?" } %>
+                      publish_work_day_path(@work_day),
+                      method: :post,
+                      class: "btn btn-success",
+                      data: {
+                        turbo: false,
+                        confirm: "Are you sure you want to publish?"
+                      } %>
             <% end %>
 
             <% if @work_day.published? %>
             <%= button_to "Unpublish Work Day",
-          unpublish_work_day_path(@work_day),
-          method: :post,
-          class: "btn btn-secondary",
-          data: { turbo: false, confirm: "Reopen this work day?" } %>
+                      unpublish_work_day_path(@work_day),
+                      method: :post,
+                      class: "btn btn-secondary",
+                      data: {
+                        turbo: false,
+                        confirm: "Reopen this work day?"
+                      } %>
             <% end %>
 
             <%= link_to "Back to Work Days",
-        work_days_path,
-        class: "btn btn-light" %>
+                  work_days_path,
+                  class: "btn btn-light" %>
         </div>
 
         <div class="container mt-1">
@@ -122,11 +135,11 @@
                                     <% date = @work_day.date %>
 
                                     <% @work_day.guide_days
-                      .includes(:guide)
-                      .where(status: [:vacation, :day_off, :assigned_task, :penalized])
-                      .joins(:guide)
-                      .order("guides.priority ASC")
-                      .each do |gd| %>
+                    .includes(:guide)
+                    .where(status: [:vacation, :day_off, :assigned_task, :penalized])
+                    .joins(:guide)
+                    .order("guides.priority ASC")
+                    .each do |gd| %>
 
                                     <tr>
                                         <td>
@@ -142,15 +155,20 @@
 
                                             <% elsif gd.assigned_task? %>
                                             <span class="badge bg-info text-dark">Assigned Task</span>
-                                            <small class="text-muted d-block"><%= gd.status_note %></small>
+
+                                            <small class="text-muted d-block">
+                                                <%= gd.status_note %>
+                                            </small>
 
                                             <% elsif gd.penalized? %>
                                             <span class="badge bg-dark">Penalized</span>
-                                            <small class="text-muted d-block"><%= gd.status_note %></small>
+
+                                            <small class="text-muted d-block">
+                                                <%= gd.status_note %>
+                                            </small>
                                             <% end %>
                                         </td>
 
-                                        <td>
                                         <td>
                                             <% if @work_day.generated? && gd.assigned_task? %>
                                             <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#moveAssignedTaskModal_<%= gd.id %>">
@@ -160,8 +178,8 @@
                                             -
                                             <% end %>
                                         </td>
-                                        </td>
                                     </tr>
+
                                     <% if @work_day.generated? && gd.assigned_task? %>
                                     <div class="modal fade" id="moveAssignedTaskModal_<%= gd.id %>" tabindex="-1" aria-hidden="true">
 
@@ -173,7 +191,8 @@
                                                         Mover de tarea asignada a roll
                                                     </h5>
 
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                                    </button>
                                                 </div>
 
                                                 <div class="modal-body">
@@ -195,8 +214,8 @@
                                                     <% end %>
 
                                                     <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
-                        method: :post,
-                        local: true do %>
+                                            method: :post,
+                                            local: true do %>
 
                                                     <%= hidden_field_tag :guide_day_id, gd.id %>
 
@@ -204,8 +223,10 @@
                                                         <%= label_tag :location, "Location" %>
 
                                                         <%= select_tag :location,
-                options_for_select(["Balsa", "Sara-3&4", "Privado", "PM"]),
-                class: "form-select" %>
+                                                 options_for_select(
+                                                   ["Balsa", "Sara-3&4", "Privado", "PM"]
+                                                 ),
+                                                 class: "form-select" %>
                                                     </div>
 
                                                     <div class="text-end">
@@ -214,11 +235,11 @@
                                                         </button>
 
                                                         <%= submit_tag "Mover a roll",
-                class: "btn btn-warning",
-                data: {
-                  turbo: false,
-                  confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
-                } %>
+                                                 class: "btn btn-warning",
+                                                 data: {
+                                                   turbo: false,
+                                                   confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
+                                                 } %>
                                                     </div>
                                                     <% end %>
                                                 </div>
@@ -230,17 +251,21 @@
                                     <% end %>
 
                                     <% ManualDayOff
-                      .includes(:guide)
-                      .where(date: date)
-                      .joins(:guide)
-                      .order("guides.priority ASC")
-                      .each do |m| %>
+                    .includes(:guide)
+                    .where(date: date)
+                    .joins(:guide)
+                    .order("guides.priority ASC")
+                    .each do |manual_off| %>
 
                                     <tr>
-                                        <td><%= m.guide.name %></td>
+                                        <td><%= manual_off.guide.name %></td>
+
                                         <td>
-                                            <span class="badge bg-info text-dark">Manual Off</span>
+                                            <span class="badge bg-info text-dark">
+                                                Manual Off
+                                            </span>
                                         </td>
+
                                         <td>-</td>
                                     </tr>
                                     <% end %>
@@ -267,11 +292,18 @@
                                 </thead>
 
                                 <tbody>
-                                    <% Guide.active.order(day_off_balance: :desc).limit(5).each do |guide| %>
+                                    <% Guide.active
+                      .order(day_off_balance: :desc)
+                      .limit(5)
+                      .each do |guide| %>
+
+                                    <% balance = guide.day_off_balance.to_i %>
+
                                     <tr>
                                         <td><%= guide.name %></td>
-                                        <td class="<%= 'text-danger fw-bold' if guide.day_off_balance < 0 %>">
-                                            <%= guide.day_off_balance %>
+
+                                        <td class="<%= 'text-danger fw-bold' if balance.negative? %>">
+                                            <%= balance %>
                                         </td>
                                     </tr>
                                     <% end %>
@@ -284,6 +316,129 @@
             </div>
         </div>
 
+        <!-- FAIRNESS DIAGNOSTIC -->
+        <div class="container mt-4">
+            <div class="card border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <strong>Fairness Diagnostic</strong>
+                </div>
+
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        This table shows each guide's fairness position immediately
+                        before the operation date. The current WorkDay itself is not
+                        included in these calculations.
+                    </p>
+
+                    <table class="table table-sm table-bordered table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Guide</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Fairness Since</th>
+                                <th>Roll Days</th>
+                                <th>Consecutive</th>
+                                <th>Waiting Since</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <%
+                fairness_guide_days =
+                  @work_day.guide_days
+                    .includes(:guide)
+                    .select do |guide_day|
+                      guide_day.worked? ||
+                        guide_day.standby? ||
+                        guide_day.assigned_task?
+                    end
+
+                # Usa exactamente la misma llave de ranking que utiliza
+                # RoleGeneratorV2 y GuideCandidateRanker.
+                fairness_guide_days =
+                  fairness_guide_days.sort_by do |guide_day|
+                    RollFairnessPolicy.ranking_key_for(
+                      guide_day.guide,
+                      before_date: @work_day.date
+                    )
+                  end
+              %>
+
+                            <% fairness_guide_days.each_with_index do |guide_day, index| %>
+                            <%
+                  guide = guide_day.guide
+
+                  snapshot =
+                    RollFairnessPolicy.fairness_snapshot_for(
+                      guide,
+                      before_date: @work_day.date
+                    )
+                %>
+
+                            <tr>
+                                <td>
+                                    <strong><%= index + 1 %></strong>
+                                </td>
+
+                                <td>
+                                    <%= guide.name %>
+                                </td>
+
+                                <td>
+                                    <% if guide_day.worked? %>
+                                    <span class="badge bg-success">
+                                        Worked
+                                    </span>
+
+                                    <% elsif guide_day.assigned_task? %>
+                                    <span class="badge bg-info text-dark">
+                                        Assigned Task
+                                    </span>
+
+                                    <% else %>
+                                    <span class="badge bg-secondary">
+                                        Standby
+                                    </span>
+                                    <% end %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:priority] %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:fairness_started_on]&.strftime("%d/%m/%Y") || "-" %>
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        <%= snapshot[:roll_worked_days] %>
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:consecutive_roll_days] %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:waiting_since]&.strftime("%d/%m/%Y") || "-" %>
+                                </td>
+                            </tr>
+                            <% end %>
+                        </tbody>
+                    </table>
+
+                    <small class="text-muted">
+                        Ranking order:
+                        Priority → Roll Days → Consecutive Days →
+                        Waiting Since → Technical ID.
+                    </small>
+                </div>
+            </div>
+        </div>
+
         <!-- TRANSPORTATION -->
         <div class="container mt-4">
             <h4 class="mt-4">Transportation</h4>
@@ -291,7 +446,9 @@
             <div class="row">
                 <% ["Privado", "Sara-3&4", "Balsa", "PM"].each do |loc| %>
                 <div class="col-md-6 col-lg-3">
-                    <%= render "buses", work_day: @work_day, location: loc %>
+                    <%= render "buses",
+                       work_day: @work_day,
+                       location: loc %>
                 </div>
                 <% end %>
             </div>
@@ -305,7 +462,9 @@
     <% if @work_day.draft? %>
     <h2>Set Availability</h2>
 
-    <%= form_with url: update_availability_work_day_path(@work_day), method: :patch do %>
+    <%= form_with url: update_availability_work_day_path(@work_day),
+                  method: :patch do %>
+
     <%= hidden_field_tag :audit_screen, "work_day_show" %>
     <%= hidden_field_tag :audit_component, "set_availability_form" %>
 
@@ -320,48 +479,59 @@
         </thead>
 
         <tbody>
-            <% manual_off_guide_ids = ManualDayOff.where(date: @work_day.date).pluck(:guide_id) %>
+            <% manual_off_guide_ids =
+               ManualDayOff
+                 .where(date: @work_day.date)
+                 .pluck(:guide_id) %>
 
             <% @guide_days
-              .ordered_for_display
-              .reject { |gd| manual_off_guide_ids.include?(gd.guide_id) }
-              .each_with_index do |gd, index| %>
+            .ordered_for_display
+            .reject { |gd| manual_off_guide_ids.include?(gd.guide_id) }
+            .each_with_index do |gd, index| %>
 
             <tr>
                 <td><%= index + 1 %></td>
-                <td><%= gd.guide.name %></td>
+
+                <td>
+                    <%= gd.guide.name %>
+                </td>
 
                 <td>
                     <%= select_tag "availability[#{gd.id}][status]",
-                  options_for_select(
-                    [
-                      ["Standby", "standby"],
-                      ["Day Off", "day_off"],
-                      ["Vacation", "vacation"],
-                      ["Penalized", "penalized"],
-                      ["Assigned Task", "assigned_task"]
-                    ],
-                    gd.status
-                  ),
-                  class: "form-select form-select-sm availability-status",
-                  data: { guide_day_id: gd.id } %>
+                               options_for_select(
+                                 [
+                                   ["Standby", "standby"],
+                                   ["Day Off", "day_off"],
+                                   ["Vacation", "vacation"],
+                                   ["Penalized", "penalized"],
+                                   ["Assigned Task", "assigned_task"]
+                                 ],
+                                 gd.status
+                               ),
+                               class: "form-select form-select-sm availability-status",
+                               data: {
+                                 guide_day_id: gd.id
+                               } %>
 
                     <%= text_field_tag "availability[#{gd.id}][status_note]",
-                  gd.status_note,
-                  placeholder: "Required for Penalized or Assigned Task",
-                  class: "form-control form-control-sm mt-1 availability-note",
-                  id: "status_note_#{gd.id}" %>
+                                   gd.status_note,
+                                   placeholder: "Required for Penalized or Assigned Task",
+                                   class: "form-control form-control-sm mt-1 availability-note",
+                                   id: "status_note_#{gd.id}" %>
                 </td>
 
-                <td class="<%= 'text-danger fw-bold' if gd.guide.day_off_balance < 0 %>">
-                    <%= gd.guide.day_off_balance %>
+                <% day_off_balance = gd.guide.day_off_balance.to_i %>
+
+                <td class="<%= 'text-danger fw-bold' if day_off_balance.negative? %>">
+                    <%= day_off_balance %>
                 </td>
             </tr>
             <% end %>
         </tbody>
     </table>
 
-    <%= submit_tag "Save Availability", class: "btn btn-info" %>
+    <%= submit_tag "Save Availability",
+                     class: "btn btn-info" %>
     <% end %>
     <% end %>
 
@@ -369,7 +539,10 @@
     <% if @work_day.generated? %>
     <h2>Edit Roles</h2>
 
-    <%= form_with url: update_roles_work_day_path(@work_day), method: :patch, local: true do %>
+    <%= form_with url: update_roles_work_day_path(@work_day),
+                  method: :patch,
+                  local: true do %>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -385,43 +558,81 @@
         </thead>
 
         <tbody>
-            <% primary_roles = ["River Guide", "Safety Kayaker", "Photographer"] %>
-            <% secondary_roles = ["Head Guide", "Bus Guide & Towels", "Driver", "Bus Guide, towels & SendPhotos", "SendPhotos"] %>
-            <% locations = ["Balsa", "Sara-3&4", "PM", "Privado"] %>
+            <% primary_roles = [
+               "River Guide",
+               "Safety Kayaker",
+               "Photographer"
+             ] %>
+
+            <% secondary_roles = [
+               "Head Guide",
+               "Bus Guide & Towels",
+               "Driver",
+               "Bus Guide, towels & SendPhotos",
+               "SendPhotos"
+             ] %>
+
+            <% locations = [
+               "Balsa",
+               "Sara-3&4",
+               "PM",
+               "Privado"
+             ] %>
 
             <% location_counters = Hash.new(0) %>
 
-            <% @guide_days.counts_as_worked_for_roll.ordered_for_display.each do |gd| %>
+            <% @guide_days
+            .counts_as_worked_for_roll
+            .ordered_for_display
+            .each do |gd| %>
+
             <tr>
                 <td>
-                    <%= location_counters[gd.location.presence || "NO_LOCATION"] += 1 %>
+                    <%= location_counters[
+                      gd.location.presence || "NO_LOCATION"
+                    ] += 1 %>
                 </td>
 
                 <td>
                     <strong><%= gd.guide.name %></strong>
                 </td>
 
-                <td><%= gd.role_primary.presence || "-" %></td>
+                <td>
+                    <%= gd.role_primary.presence || "-" %>
+                </td>
 
                 <td>
                     <%= select_tag "roles[#{gd.id}][role_primary]",
-                  options_for_select(primary_roles, gd.role_primary),
-                  include_blank: true %>
+                               options_for_select(
+                                 primary_roles,
+                                 gd.role_primary
+                               ),
+                               include_blank: true %>
                 </td>
 
-                <td><%= gd.role_secondary.presence || "-" %></td>
+                <td>
+                    <%= gd.role_secondary.presence || "-" %>
+                </td>
 
                 <td>
                     <%= select_tag "roles[#{gd.id}][role_secondary]",
-                  options_for_select(secondary_roles, gd.role_secondary),
-                  include_blank: true %>
+                               options_for_select(
+                                 secondary_roles,
+                                 gd.role_secondary
+                               ),
+                               include_blank: true %>
                 </td>
 
-                <td><%= gd.location.presence || "-" %></td>
+                <td>
+                    <%= gd.location.presence || "-" %>
+                </td>
 
                 <td>
                     <%= select_tag "roles[#{gd.id}][location]",
-                  options_for_select(locations, gd.location) %>
+                               options_for_select(
+                                 locations,
+                                 gd.location
+                               ) %>
                 </td>
             </tr>
             <% end %>
@@ -429,7 +640,8 @@
     </table>
 
     <div class="text-center">
-        <%= submit_tag "Save Roles", class: "btn btn-primary" %>
+        <%= submit_tag "Save Roles",
+                       class: "btn btn-primary" %>
     </div>
     <% end %>
 
@@ -442,40 +654,46 @@
         </div>
 
         <div class="card-body">
-            <%= form_with url: force_assign_work_day_path(@work_day), method: :post do %>
+            <%= form_with url: force_assign_work_day_path(@work_day),
+                      method: :post do %>
+
             <div class="row">
                 <div class="col-md-4">
                     <label>Location</label>
 
                     <%= select_tag :location,
-                options_for_select(["Balsa", "Sara-3&4", "Privado", "PM"]),
-                class: "form-control",
-                id: "force_location" %>
+                             options_for_select(
+                               ["Balsa", "Sara-3&4", "Privado", "PM"]
+                             ),
+                             class: "form-control",
+                             id: "force_location" %>
                 </div>
 
                 <div class="col-md-4">
                     <label>Required Skills</label>
 
                     <%= select_tag "skills[]",
-                options_from_collection_for_select(
-                  Skill.all,
-                  :id,
-                  :name,
-                  Skill.find_by(name: "ClassIII")&.id
-                ),
-                multiple: true,
-                class: "form-control",
-                id: "force_skills" %>
+                             options_from_collection_for_select(
+                               Skill.all,
+                               :id,
+                               :name,
+                               Skill.find_by(name: "ClassIII")&.id
+                             ),
+                             multiple: true,
+                             class: "form-control",
+                             id: "force_skills" %>
                 </div>
 
                 <div class="col-md-3 d-flex align-items-end">
-                    <%= submit_tag "Force Assign", class: "btn btn-warning" %>
+                    <%= submit_tag "Force Assign",
+                             class: "btn btn-warning" %>
                 </div>
             </div>
             <% end %>
 
             <div class="mt-3">
                 <strong>Next eligible guide:</strong>
+
                 <span id="preview_guide">
                     Select skills to preview
                 </span>
@@ -491,7 +709,10 @@
             if (!forceSkills || !preview) return;
 
             function updateGuidePreview() {
-                const skills = Array.from(forceSkills.selectedOptions).map(option => option.value);
+                const skills =
+                    Array.from(forceSkills.selectedOptions)
+                    .map(option => option.value);
+
                 const params = new URLSearchParams();
 
                 skills.forEach(skillId => {
@@ -500,34 +721,43 @@
                     }
                 });
 
-                fetch("/work_days/<%= @work_day.id %>/preview_force_assign?" + params.toString())
+                fetch(
+                        "/work_days/<%= @work_day.id %>/preview_force_assign?" +
+                        params.toString()
+                    )
                     .then(response => response.json())
                     .then(data => {
                         if (data.name) {
                             preview.innerHTML =
                                 data.name +
-                                " | priority: " + data.priority +
-                                " | worked this month: " + data.monthly_worked_days;
+                                " | Priority: " + data.priority +
+                                " | Roll days in fairness cycle: " +
+                                data.monthly_worked_days;
                         } else {
-                            preview.innerHTML = "No standby guide meets requirements";
+                            preview.innerHTML =
+                                "No standby guide meets requirements";
                         }
                     })
                     .catch(error => {
                         console.error("Preview error:", error);
-                        preview.innerHTML = "Error loading preview";
+
+                        preview.innerHTML =
+                            "Error loading preview";
                     });
             }
 
-            forceSkills.addEventListener("change", updateGuidePreview);
+            forceSkills.addEventListener(
+                "change",
+                updateGuidePreview
+            );
+
             updateGuidePreview();
         });
     </script>
     <% end %>
 
-
     <!-- PUBLISHED VIEW -->
     <% if @work_day.published? %>
-
     <h3>Assigned Guides</h3>
 
     <table class="table table-bordered w-auto">
@@ -553,9 +783,9 @@
 
           location_order = {
             "Sara-3&4" => 1,
-            "Balsa"    => 2,
-            "Privado"  => 3,
-            "PM"       => 4
+            "Balsa" => 2,
+            "Privado" => 3,
+            "PM" => 4
           }
 
           published_worked_guides =
@@ -592,19 +822,16 @@
         %>
 
             <!-- WORKED GUIDES -->
-
             <% published_worked_guides.each do |guide_day| %>
-
             <tr class="<%= guide_day.location_css_class %>">
-
                 <td>
                     <%
-                  is_balsa_special_role =
-                    guide_day.location == "Balsa" &&
-                    special_primary_roles.include?(
-                      guide_day.role_primary
-                    )
-                %>
+                is_balsa_special_role =
+                  guide_day.location == "Balsa" &&
+                  special_primary_roles.include?(
+                    guide_day.role_primary
+                  )
+              %>
 
                     <% unless is_balsa_special_role %>
                     <%= location_counters[
@@ -632,16 +859,11 @@
                 <td>
                     Trabaja
                 </td>
-
             </tr>
-
             <% end %>
 
-
             <!-- STANDBY -->
-
             <% @work_day.standby_guides_for_published_roll.each do |guide_day| %>
-
             <tr>
                 <td></td>
 
@@ -657,20 +879,17 @@
                     En espera
                 </td>
             </tr>
-
             <% end %>
 
-
             <!-- ASSIGNED TASK -->
-
             <% @work_day.guide_days
-              .where(status: :assigned_task)
-              .joins(:guide)
-              .order(
-                "guides.priority ASC",
-                "guides.name ASC"
-              )
-              .each do |guide_day| %>
+          .where(status: :assigned_task)
+          .joins(:guide)
+          .order(
+            "guides.priority ASC",
+            "guides.name ASC"
+          )
+          .each do |guide_day| %>
 
             <tr>
                 <td></td>
@@ -693,20 +912,17 @@
                     <% end %>
                 </td>
             </tr>
-
             <% end %>
 
-
             <!-- DAY OFF -->
-
             <% @work_day.guide_days
-              .where(status: :day_off)
-              .joins(:guide)
-              .order(
-                "guides.priority ASC",
-                "guides.name ASC"
-              )
-              .each do |guide_day| %>
+          .where(status: :day_off)
+          .joins(:guide)
+          .order(
+            "guides.priority ASC",
+            "guides.name ASC"
+          )
+          .each do |guide_day| %>
 
             <tr>
                 <td></td>
@@ -723,20 +939,17 @@
                     Libre
                 </td>
             </tr>
-
             <% end %>
 
-
             <!-- PENALIZED -->
-
             <% @work_day.guide_days
-              .where(status: :penalized)
-              .joins(:guide)
-              .order(
-                "guides.priority ASC",
-                "guides.name ASC"
-              )
-              .each do |guide_day| %>
+          .where(status: :penalized)
+          .joins(:guide)
+          .order(
+            "guides.priority ASC",
+            "guides.name ASC"
+          )
+          .each do |guide_day| %>
 
             <tr>
                 <td>
@@ -763,20 +976,17 @@
                     <% end %>
                 </td>
             </tr>
-
             <% end %>
 
-
             <!-- VACATION -->
-
             <% @work_day.guide_days
-              .where(status: :vacation)
-              .joins(:guide)
-              .order(
-                "guides.priority ASC",
-                "guides.name ASC"
-              )
-              .each do |guide_day| %>
+          .where(status: :vacation)
+          .joins(:guide)
+          .order(
+            "guides.priority ASC",
+            "guides.name ASC"
+          )
+          .each do |guide_day| %>
 
             <tr>
                 <td></td>
@@ -793,21 +1003,18 @@
                     Vacation
                 </td>
             </tr>
-
             <% end %>
 
-
             <!-- MANUAL DAY OFF -->
-
             <% ManualDayOff
-              .includes(:guide)
-              .where(date: @work_day.date)
-              .joins(:guide)
-              .order(
-                "guides.priority ASC",
-                "guides.name ASC"
-              )
-              .each do |manual_off| %>
+          .includes(:guide)
+          .where(date: @work_day.date)
+          .joins(:guide)
+          .order(
+            "guides.priority ASC",
+            "guides.name ASC"
+          )
+          .each do |manual_off| %>
 
             <tr>
                 <td></td>
@@ -824,27 +1031,23 @@
                     LIBRE MANUAL
                 </td>
             </tr>
-
             <% end %>
-
         </tbody>
     </table>
 
-
     <!-- BALSA OPERATION SUMMARY -->
-
     <%
-    balsa_passengers =
-    (@passenger_counts["Balsa"] || 0).to_i
+      balsa_passengers =
+        (@passenger_counts["Balsa"] || 0).to_i
 
-    actual_balsa_river_guides =
-    location_counters["Balsa"].to_i
+      actual_balsa_river_guides =
+        location_counters["Balsa"].to_i
 
-    recommended_balsa_guides =
-    (balsa_passengers / 5.0).ceil
+      recommended_balsa_guides =
+        (balsa_passengers / 5.0).ceil
 
-    recommended_rafts =
-    recommended_balsa_guides + 2
+      recommended_rafts =
+        recommended_balsa_guides + 2
     %>
 
     <div class="card mt-4 mb-4">
@@ -854,7 +1057,6 @@
 
         <div class="card-body">
             <div class="row text-center">
-
                 <div class="col-md-3 mb-3">
                     <h6 class="text-muted">
                         Pasajeros Balsa
@@ -902,11 +1104,11 @@
                         Guías recomendados + 2 extras
                     </small>
                 </div>
-
             </div>
 
             <% guide_difference =
-             actual_balsa_river_guides - recommended_balsa_guides %>
+             actual_balsa_river_guides -
+             recommended_balsa_guides %>
 
             <% if guide_difference < 0 %>
             <div class="alert alert-danger mb-0">
@@ -930,7 +1132,6 @@
             <% end %>
         </div>
     </div>
-
     <% end %>
 
     <hr>
@@ -938,10 +1139,13 @@
     <!-- DELETE BUTTON -->
     <div class="mt-4">
         <%= button_to "X) Delete Work Day",
-      delete_with_reset_work_day_path(@work_day),
-      method: :delete,
-      class: "btn btn-outline-danger btn-sm",
-      data: { turbo: false, confirm: "This will permanently delete the Work Day and restore balances. Continue?" } %>
+                  delete_with_reset_work_day_path(@work_day),
+                  method: :delete,
+                  class: "btn btn-outline-danger btn-sm",
+                  data: {
+                    turbo: false,
+                    confirm: "This will permanently delete the Work Day and restore balances. Continue?"
+                  } %>
     </div>
 </div>
 
@@ -949,27 +1153,40 @@
     document.addEventListener("DOMContentLoaded", function() {
         function toggleStatusNote(select) {
             const guideDayId = select.dataset.guideDayId;
-            const noteField = document.getElementById(`status_note_${guideDayId}`);
+            const noteField =
+                document.getElementById(`status_note_${guideDayId}`);
+
             if (!noteField) return;
 
-            const requiresNote = ["penalized", "assigned_task"].includes(select.value);
+            const requiresNote = ["penalized", "assigned_task"].includes(
+                select.value
+            );
 
-            noteField.style.display = requiresNote ? "block" : "none";
+            noteField.style.display =
+                requiresNote ? "block" : "none";
 
             if (requiresNote) {
-                noteField.setAttribute("required", "required");
+                noteField.setAttribute(
+                    "required",
+                    "required"
+                );
             } else {
                 noteField.removeAttribute("required");
                 noteField.value = "";
             }
         }
 
-        document.querySelectorAll(".availability-status").forEach((select) => {
-            toggleStatusNote(select);
-
-            select.addEventListener("change", function() {
+        document
+            .querySelectorAll(".availability-status")
+            .forEach((select) => {
                 toggleStatusNote(select);
+
+                select.addEventListener(
+                    "change",
+                    function() {
+                        toggleStatusNote(select);
+                    }
+                );
             });
-        });
     });
 </script>

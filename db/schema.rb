@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_03_233536) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_16_203408) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -81,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_03_233536) do
     t.datetime "created_at", null: false
     t.integer "day_off_balance", default: 0, null: false
     t.datetime "day_off_balance_updated_at"
+    t.date "fairness_started_on"
     t.date "last_priority_change_date"
     t.string "name"
     t.integer "priority"

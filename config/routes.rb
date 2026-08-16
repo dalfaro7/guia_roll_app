@@ -12,42 +12,70 @@ Rails.application.routes.draw do
   root "dashboard#index"
   get "dashboard", to: "dashboard#index"
 
-  resources :guides
+  resources :guides do
+    member do
+      # Activa o desactiva un guía.
+      # Al activar, Guide inicia automáticamente
+      # un nuevo ciclo de fairness.
+      patch :toggle_active
+    end
+  end
 
   resources :work_days do
     member do
       patch :generate_roles
+
       post :publish
       post :unpublish
       post :reset_roll
+
       patch :update_availability
       patch :update_roles
+
       delete :delete_with_reset
+
       get :locations
       post :create_slots
       get :edit_slots
+
       post :force_assign
       get :preview_force_assign
+
       post :move_assigned_task_to_roll
     end
   end
 
   resources :location_slots do
-    patch :update_skills, on: :member
-    patch :update_all, on: :collection
+    member do
+      patch :update_skills
+    end
+
+    collection do
+      patch :update_all
+    end
   end
 
   resources :guide_days, only: [:update]
 
-  get "guide_assignments", to: "guide_assignments#index"
+  get "guide_assignments",
+      to: "guide_assignments#index"
 
-  get "day_off_report", to: "day_off_report#index"
-  post "assign_day_off", to: "day_off_report#assign_day_off"
-  post "remove_day_off", to: "day_off_report#remove_day_off"
+  get "day_off_report",
+      to: "day_off_report#index"
+
+  post "assign_day_off",
+       to: "day_off_report#assign_day_off"
+
+  post "remove_day_off",
+       to: "day_off_report#remove_day_off"
 
   resources :buses
-  resources :bus_assignments, only: [:create, :destroy]
-  resources :audit_logs, only: [:index]
+
+  resources :bus_assignments,
+            only: [:create, :destroy]
+
+  resources :audit_logs,
+            only: [:index]
 
   resources :office_holidays
   resources :office_overtimes

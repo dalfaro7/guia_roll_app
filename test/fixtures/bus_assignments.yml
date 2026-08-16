@@ -1,11 +1,11 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
 one:
   bus: one
-  location_slot: one
+  work_day: one
+  location: Balsa
   seats_assigned: 1
 
 two:
   bus: two
-  location_slot: two
+  work_day: two
+  location: Sara-3&4
   seats_assigned: 1

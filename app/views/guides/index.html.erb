@@ -1,96 +1,183 @@
 <div class="container p-3">
-    <h3 class="inline">Guides</h3>
-    <%= link_to "New Guide", new_guide_path, class: "btn btn-info inline m-2" %>
-    <br>
+    <div class="d-flex align-items-center mb-3">
+        <h3 class="mb-0 me-2">Guides</h3>
+
+        <%= link_to "New Guide",
+                new_guide_path,
+                class: "btn btn-info" %>
+    </div>
 
     <div class="card p-3 mb-3">
-
-        <%= form_with url: guides_path, method: :get, local: true do %>
+        <%= form_with url: guides_path,
+                  method: :get,
+                  local: true do %>
 
         <div class="row">
-
             <div class="col-md-4">
                 <label>Name</label>
-                <%= text_field_tag :name, params[:name], class: "form-control" %>
+
+                <%= text_field_tag :name,
+                             params[:name],
+                             class: "form-control" %>
             </div>
 
             <div class="col-md-3">
                 <label>Priority</label>
+
                 <%= select_tag :priority,
-options_for_select(
-Guide.distinct.order(:priority).pluck(:priority),
-params[:priority]
-),
-include_blank: "All",
-class: "form-control" %>
+                         options_for_select(
+                           Guide
+                             .distinct
+                             .order(:priority)
+                             .pluck(:priority),
+                           params[:priority]
+                         ),
+                         include_blank: "All",
+                         class: "form-control" %>
             </div>
 
             <div class="col-md-3">
                 <label>Skill</label>
+
                 <%= select_tag :skill_id,
-options_from_collection_for_select(
-Skill.order(:name),
-:id,
-:name,
-params[:skill_id]
-),
-include_blank: "All",
-class: "form-control" %>
+                         options_from_collection_for_select(
+                           Skill.order(:name),
+                           :id,
+                           :name,
+                           params[:skill_id]
+                         ),
+                         include_blank: "All",
+                         class: "form-control" %>
             </div>
 
             <div class="col-md-2 d-flex align-items-end">
-                <%= submit_tag "Search", class: "btn btn-primary w-100" %>
+                <%= submit_tag "Search",
+                         class: "btn btn-primary w-100" %>
             </div>
-
         </div>
 
         <% end %>
-
     </div>
-    <table border="1" cellpadding="8">
-        <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Skills</th>
-            <th>Day Off Balance</th>
-            <th>Last Day Off Balance Update</th>
-            <th>Id</th>
-            <th>-</th>
-        </tr>
 
-        <% active_index = 0 %>
+    <table class="table table-bordered table-hover align-middle">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Skills</th>
+                <th>Day Off Balance</th>
+                <th>Last Day Off Balance Update</th>
+                <th>ID</th>
+                <th>Fairness Since</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
 
-        <% @guides.sort_by { |guide|
-     [
-       guide.active? ? 0 : 1,
-       guide.priority || 999,
-       guide.name
-     ]
-   }.each do |guide| %>
-        <% active_index += 1 if guide.active? %>
+        <tbody>
+            <% active_index = 0 %>
 
-        <tr class="<%= 'table-secondary text-muted' unless guide.active? %>">
-            <td>
-                <%= guide.active? ? active_index : "-" %>
-            </td>
+            <% sorted_guides =
+           @guides.sort_by do |guide|
+             [
+               guide.active? ? 0 : 1,
+               guide.priority || 999,
+               guide.name.to_s
+             ]
+           end %>
 
-            <td><%= guide.name %></td>
-            <td><%= guide.priority %></td>
-            <td><%= guide.active? ? "Active" : "Inactive" %></td>
-            <td><%= guide.skills.pluck(:name).join(", ") %></td>
+            <% sorted_guides.each do |guide| %>
+            <% active_index += 1 if guide.active? %>
 
-            <td class="<%= 'text-danger fw-bold' if guide.day_off_balance < 0 %>">
-                <%= guide.day_off_balance %>
-            </td>
+            <tr class="<%= 'table-secondary text-muted' unless guide.active? %>">
+                <td>
+                    <%= guide.active? ? active_index : "-" %>
+                </td>
 
-            <td><%= guide.day_off_balance_updated_at %></td>
-            <td><%= guide.id %></td>
-            <td>
-                <%= link_to "Edit", edit_guide_path(guide), class: "btn btn-sm btn-primary" %>
-            </td>
-        </tr>
-        <% end %>
+                <td>
+                    <%= guide.name %>
+                </td>
+
+                <td>
+                    <%= guide.priority %>
+                </td>
+
+                <td>
+                    <% if guide.active? %>
+                    <span class="badge bg-success">Active</span>
+                    <% else %>
+                    <span class="badge bg-secondary">Inactive</span>
+                    <% end %>
+                </td>
+
+                <td>
+                    <%= guide.skills.map(&:name).join(", ") %>
+                </td>
+
+                <% day_off_balance = guide.day_off_balance.to_i %>
+
+                <td class="<%= 'text-danger fw-bold' if day_off_balance.negative? %>">
+                    <%= day_off_balance %>
+                </td>
+
+                <td>
+                    <%= guide.day_off_balance_updated_at&.strftime("%d/%m/%Y %H:%M") || "-" %>
+                </td>
+
+                <td>
+                    <%= guide.id %>
+                </td>
+
+                <td>
+                    <%= guide.fairness_started_on&.strftime("%d/%m/%Y") || "-" %>
+                </td>
+
+                <td class="text-nowrap">
+                    <%= link_to "Edit",
+                        edit_guide_path(guide),
+                        class: "btn btn-sm btn-primary" %>
+
+                    <% if guide.active? %>
+
+                    <%#
+                Desactivar NO borra el historial de fairness.
+                Al volver a activar al guía se iniciará un ciclo nuevo.
+              %>
+
+                    <%= button_to "Deactivate",
+                            toggle_active_guide_path(guide),
+                            method: :patch,
+                            class: "btn btn-sm btn-danger",
+                            form: {
+                              class: "d-inline",
+                              data: {
+                                turbo_confirm: "Deactivate #{guide.name}? The guide will stop participating in new rolls. Their work and fairness history will be preserved. When activated again, a new fairness cycle will begin."
+                              }
+                            } %>
+
+                    <% else %>
+
+                    <%#
+                Activar inicia automáticamente un nuevo ciclo
+                de fairness desde la fecha actual.
+              %>
+
+                    <%= button_to "Activate",
+                            toggle_active_guide_path(guide),
+                            method: :patch,
+                            class: "btn btn-sm btn-success",
+                            form: {
+                              class: "d-inline",
+                              data: {
+                                turbo_confirm: "Activate #{guide.name}? This will start a NEW fairness cycle today. Previous work history will remain stored, but it will not affect the guide's position in the new fairness cycle."
+                              }
+                            } %>
+
+                    <% end %>
+                </td>
+            </tr>
+            <% end %>
+        </tbody>
     </table>
 </div>

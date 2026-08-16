@@ -6,7 +6,7 @@ class RoleResetService
   def call
     ActiveRecord::Base.transaction do
       restore_day_off_balances
-      clear_worked_assignments
+      clear_roll_assignments
 
       @work_day.work_day_versions.destroy_all
 
@@ -25,9 +25,14 @@ class RoleResetService
 
   private
 
+  # Restaura el saldo únicamente para días libres cuyo saldo
+  # ya había sido consumido dentro de este WorkDay.
   def restore_day_off_balances
     @work_day.guide_days
-             .where(status: :day_off, day_off_consumed: true)
+             .where(
+               status: :day_off,
+               day_off_consumed: true
+             )
              .includes(:guide)
              .each do |guide_day|
 
@@ -43,9 +48,19 @@ class RoleResetService
     end
   end
 
-  def clear_worked_assignments
+  # Reinicia solamente asignaciones pertenecientes al roll normal.
+  #
+  # Se preservan:
+  # - day_off
+  # - vacation
+  # - assigned_task
+  # - penalized
+  #
+  # porque representan decisiones operativas independientes
+  # de la generación automática del roll.
+  def clear_roll_assignments
     @work_day.guide_days.find_each do |guide_day|
-      next if guide_day.day_off? || guide_day.vacation?
+      next if preserve_status_on_reset?(guide_day)
 
       guide_day.update!(
         status: :standby,
@@ -58,5 +73,14 @@ class RoleResetService
         day_off_consumed: false
       )
     end
+  end
+
+  # Estos estados no deben desaparecer simplemente por
+  # regenerar el roll.
+  def preserve_status_on_reset?(guide_day)
+    guide_day.day_off? ||
+      guide_day.vacation? ||
+      guide_day.assigned_task? ||
+      guide_day.penalized?
   end
 end

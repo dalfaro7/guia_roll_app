@@ -13,58 +13,88 @@ class GuideDay < ApplicationRecord
   }
 
   validates :status, presence: true
-  validates :status_note, presence: true, if: :requires_status_note?
+  validates :status_note,
+            presence: true,
+            if: :requires_status_note?
 
   before_validation :clear_status_note_unless_needed
-  before_save :apply_day_off_balance, if: :will_save_change_to_status?
 
+  before_save :apply_day_off_balance,
+              if: :will_save_change_to_status?
+
+  # Un GuideDay está disponible para entrar al roll solamente si:
+  # - está en standby;
+  # - el guía está activo;
+  # - no tiene un ManualDayOff para esa fecha.
   scope :available_for_date, ->(date) {
-  joins(:guide)
-    .where(status: :standby)
-    .where(guides: { active: true })
-    .where.not(
-      guide_id: ManualDayOff.where(date: date).select(:guide_id)
-    )
-}
+    joins(:guide)
+      .where(status: :standby)
+      .where(guides: { active: true })
+      .where.not(
+        guide_id: ManualDayOff
+          .where(date: date)
+          .select(:guide_id)
+      )
+  }
 
+  # Actualmente solo worked consume una oportunidad del roll.
+  #
+  # La lógica configurable de assigned_task vive en
+  # RollFairnessPolicy y no debe duplicarse aquí.
   scope :counts_as_worked_for_roll, -> {
     where(status: :worked)
   }
 
+  # Orden usado únicamente para presentación.
+  #
+  # No debe utilizarse como criterio de fairness.
   scope :ordered_for_display, -> {
-  joins(:guide).order(
-    Arel.sql("
-      CASE guide_days.status
-        WHEN 0 THEN 1
-        WHEN 5 THEN 2
-        WHEN 4 THEN 4
-        WHEN 1 THEN 3
-        ELSE 5
-      END
-    "),
-    Arel.sql("
-      CASE guide_days.location
-        WHEN 'Sara-3&4' THEN 1
-        WHEN 'Balsa' THEN 2
-        WHEN 'Privado' THEN 3
-        WHEN 'PM' THEN 4
-        ELSE 5
-      END
-    "),
-    "guides.priority ASC"
-  )
-}
+    joins(:guide)
+      .order(
+        Arel.sql("
+          CASE guide_days.status
+            WHEN 0 THEN 1
+            WHEN 5 THEN 2
+            WHEN 1 THEN 3
+            WHEN 4 THEN 4
+            ELSE 5
+          END
+        "),
+        Arel.sql("
+          CASE guide_days.location
+            WHEN 'Sara-3&4' THEN 1
+            WHEN 'Balsa' THEN 2
+            WHEN 'Privado' THEN 3
+            WHEN 'PM' THEN 4
+            ELSE 5
+          END
+        "),
+        "guides.priority ASC"
+      )
+  }
 
   def counts_as_worked_for_roll?
-    worked? 
+    worked?
   end
 
+  # assigned_task se considera similar a standby para ciertos
+  # reportes y presentación, aunque el guía estuvo realizando
+  # una función para la empresa.
+  #
+  # Esto NO determina el fairness; esa decisión pertenece
+  # a RollFairnessPolicy.
   def counts_as_standby_for_roll?
     standby? || assigned_task?
   end
 
+  # Estados que impiden que el GuideDay sea usado para
+  # una asignación normal en ese mismo día.
   def unavailable_for_assignment?
-    day_off? || vacation? || assigned_task? || penalized? || worked?
+    day_off? ||
+      vacation? ||
+      assigned_task? ||
+      penalized? ||
+      worked?
   end
 
   def payable_day?
@@ -75,6 +105,7 @@ class GuideDay < ApplicationRecord
     penalized?
   end
 
+  # Estos estados requieren una explicación adicional.
   def requires_status_note?
     penalized? || assigned_task?
   end
@@ -100,8 +131,16 @@ class GuideDay < ApplicationRecord
     self.status_note = nil unless requires_status_note?
   end
 
+  # Un día libre consume saldo únicamente cuando el GuideDay
+  # cambia hacia day_off por primera vez.
+  #
+  # day_off_consumed evita cobrar el mismo día libre dos veces.
   def apply_day_off_balance
-    old_status = status_in_database || status_before_last_save || status_was
+    old_status =
+      status_in_database ||
+      status_before_last_save ||
+      status_was
+
     new_status = status
 
     return unless new_status == "day_off"
@@ -109,6 +148,7 @@ class GuideDay < ApplicationRecord
     return if day_off_consumed
 
     guide.consume_day_off!
+
     self.day_off_consumed = true
   end
 end

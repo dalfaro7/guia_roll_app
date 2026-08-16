@@ -1,32 +1,63 @@
-<div class="container">
-<h1>New Guide</h1>
+<div class="container p-3">
+    <div class="card p-4">
+        <h3 class="mb-4">New Guide</h3>
 
-<%= form_with model: @guide do |f| %>
-  <div>
-    <%= f.label :name %><br>
-    <%= f.text_field :name %>
-  </div>
+        <%= form_with model: @guide do |f| %>
+        <div class="mb-3">
+            <%= f.label :name, class: "form-label" %>
 
-  <div>
-    <%= f.label :active %>
-    <%= f.check_box :active %>
-  </div>
+            <%= f.text_field :name,
+                         class: "form-control",
+                         required: true %>
+        </div>
 
-  <div>
-  <%= f.label :priority %><br>
-  <%= f.number_field :priority %>
-</div>
+        <div class="mb-3">
+            <%= f.label :priority, class: "form-label" %>
 
-<div>
-<label>Skills</label>
+            <%= f.number_field :priority,
+                           class: "form-control",
+                           required: true %>
+        </div>
 
-<%= collection_check_boxes :guide, :skill_ids, Skill.all, :id, :name %>
-</div>
+        <div class="mb-3">
+            <label class="form-label">Skills</label>
 
-  <div>
-    <%= f.submit "Create Guide" %>
-  </div>
-<% end %>
+            <div class="border rounded p-3">
+                <%= collection_check_boxes(
+                :guide,
+                :skill_ids,
+                Skill.order(:name),
+                :id,
+                :name
+              ) do |skill| %>
 
-<%= link_to "Back", guides_path %>
+                <div class="form-check mb-1">
+                    <%= skill.check_box class: "form-check-input" %>
+
+                    <%= skill.label class: "form-check-label" %>
+                </div>
+
+                <% end %>
+            </div>
+        </div>
+
+        <%#
+        El guía se crea sin controlar el estado active desde este formulario.
+
+        La activación se realiza posteriormente desde Guides,
+        usando el botón Activate.
+
+        Esa acción inicia formalmente el nuevo ciclo de fairness.
+      %>
+
+        <div class="d-flex gap-2">
+            <%= f.submit "Create Guide",
+                     class: "btn btn-primary" %>
+
+            <%= link_to "Back",
+                    guides_path,
+                    class: "btn btn-secondary" %>
+        </div>
+        <% end %>
+    </div>
 </div>
