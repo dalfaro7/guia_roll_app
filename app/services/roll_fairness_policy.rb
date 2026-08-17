@@ -36,8 +36,14 @@ class RollFairnessPolicy
 
     # Genera una fotografía del estado actual de fairness de un guía.
     #
-    # Este método será útil tanto para el ranking como para
-    # futuros diagnósticos de "por qué este guía fue seleccionado".
+    # roll_worked_days:
+    #   Cuenta únicamente las guiadas que consumen fairness.
+    #
+    # service_days:
+    #   Cuenta todos los días de servicio:
+    #   worked + assigned_task.
+    #
+    # service_days es informativo y NO modifica el ranking.
     def fairness_snapshot_for(guide, before_date:)
       fairness_start = fairness_start_for(
         guide,
@@ -49,15 +55,24 @@ class RollFairnessPolicy
         guide_name: guide.name,
         priority: guide.priority || 999,
         fairness_started_on: fairness_start,
+
         roll_worked_days: roll_worked_days_for(
           guide,
           fairness_start: fairness_start,
           before_date: before_date
         ),
+
+        service_days: service_days_for(
+          guide,
+          fairness_start: fairness_start,
+          before_date: before_date
+        ),
+
         consecutive_roll_days: consecutive_roll_work_days_for(
           guide,
           before_date: before_date
         ),
+
         waiting_since: waiting_since_for(
           guide,
           before_date: before_date
@@ -83,14 +98,19 @@ class RollFairnessPolicy
       statuses
     end
 
-    # Estados que representan servicio realizado para estadísticas.
+    # Estados que representan servicio realizado.
     #
-    # Esto es independiente del fairness.
+    # Estos estados se utilizan para calcular Worked Days
+    # en el Fairness Diagnosis.
+    #
+    # Esto es independiente del fairness utilizado para
+    # seleccionar guías en el roll.
     def service_statuses
       [:worked, :assigned_task]
     end
 
-    # Determina desde cuándo está esperando el guía una nueva guiada.
+    # Determina desde cuándo está esperando el guía
+    # una nueva guiada.
     #
     # Si ya obtuvo una guiada dentro de su ciclo actual,
     # usamos la fecha de la última.
@@ -125,11 +145,16 @@ class RollFairnessPolicy
     # inmediatamente antes del WorkDay que se está generando.
     #
     # Ejemplo:
+    #
     # 14 ago = worked
     # 15 ago = worked
     # 16 ago = se genera
     #
-    # Resultado: streak = 2
+    # Resultado:
+    # consecutive_roll_days = 2
+    #
+    # assigned_task NO aumenta esta racha mientras
+    # ASSIGNED_TASK_COUNTS_AS_ROLL_WORK sea false.
     def consecutive_roll_work_days_for(guide, before_date:)
       fairness_start = fairness_start_for(
         guide,
@@ -166,14 +191,18 @@ class RollFairnessPolicy
 
     # El ciclo de fairness empieza en fairness_started_on.
     #
-    # Para guías antiguos que todavía no tengan este campo definido,
-    # usamos el inicio del mes como fallback seguro.
+    # Para guías antiguos que todavía no tengan este campo
+    # definido, usamos el inicio del mes como fallback seguro.
     def fairness_start_for(guide, before_date:)
       guide.fairness_started_on || before_date.beginning_of_month
     end
 
     # Cuenta únicamente las oportunidades del roll consumidas
     # dentro del ciclo actual y antes del día que se está generando.
+    #
+    # Con la configuración actual esto equivale a:
+    #
+    # Guided Days = worked
     def roll_worked_days_for(guide, fairness_start:, before_date:)
       return 0 if fairness_start >= before_date
 
@@ -182,6 +211,32 @@ class RollFairnessPolicy
         .where(
           guide: guide,
           status: fairness_statuses
+        )
+        .where(
+          work_days: {
+            date: fairness_start...before_date
+          }
+        )
+        .count
+    end
+
+    # Cuenta todos los días en los que el guía prestó servicio
+    # dentro de su ciclo actual.
+    #
+    # Actualmente:
+    #
+    # Worked Days = worked + assigned_task
+    #
+    # Este valor es únicamente informativo.
+    # NO participa en ranking_key_for.
+    def service_days_for(guide, fairness_start:, before_date:)
+      return 0 if fairness_start >= before_date
+
+      GuideDay
+        .joins(:work_day)
+        .where(
+          guide: guide,
+          status: service_statuses
         )
         .where(
           work_days: {
