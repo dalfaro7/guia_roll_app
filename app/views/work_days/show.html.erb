@@ -338,7 +338,8 @@
                                 <th>Status</th>
                                 <th>Priority</th>
                                 <th>Fairness Since</th>
-                                <th>Roll Days</th>
+                                <th>Guided Days</th>
+                                <th>Worked Days</th>
                                 <th>Consecutive</th>
                                 <th>Waiting Since</th>
                             </tr>
@@ -416,6 +417,9 @@
                                     <strong>
                                         <%= snapshot[:roll_worked_days] %>
                                     </strong>
+                                </td>
+                                <td>
+                                    <%= snapshot[:service_days] %>
                                 </td>
 
                                 <td>
