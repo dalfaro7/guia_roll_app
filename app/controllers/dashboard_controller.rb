@@ -310,4 +310,78 @@ class DashboardController < ApplicationController
       data
     end
   end
+
+  # =====================================
+# INCIDENTS
+# =====================================
+
+@incident_year =
+  params[:incident_year].present? ?
+    params[:incident_year].to_i :
+    Date.current.year
+
+@incident_month =
+  params[:incident_month].present? ?
+    params[:incident_month].to_i :
+    nil
+
+incident_range =
+  if @incident_month.present? && @incident_month.between?(1, 12)
+    Date.new(@incident_year, @incident_month, 1).all_month
+  else
+    Date.new(@incident_year, 1, 1)..Date.new(@incident_year, 12, 31)
+  end
+
+# -------------------------------------
+# Incidentes por guía
+# -------------------------------------
+
+incident_counts_by_guide = RollNote
+  .incident
+  .joins(roll_note_guide_days: { guide_day: [:guide, :work_day] })
+  .where(work_days: { date: incident_range })
+  .group("guides.id", "guides.name")
+  .count
+
+@incidents_by_guide = incident_counts_by_guide
+  .map do |(_guide_id, guide_name), count|
+    [guide_name, count]
+  end
+  .sort_by { |guide_name, count| [-count, guide_name] }
+
+# -------------------------------------
+# Incidentes por mes
+# -------------------------------------
+
+monthly_incident_counts = RollNote
+  .incident
+  .joins(:work_day)
+  .where(
+    work_days: {
+      date: Date.new(@incident_year, 1, 1)..Date.new(@incident_year, 12, 31)
+    }
+  )
+  .group(
+    Arel.sql("EXTRACT(MONTH FROM work_days.date)")
+  )
+  .count
+
+@incidents_by_month = (1..12).map do |month_number|
+  [
+    Date::ABBR_MONTHNAMES[month_number],
+    monthly_incident_counts[month_number.to_f].to_i
+  ]
+end
+
+@incident_years = RollNote
+  .joins(:work_day)
+  .distinct
+  .pluck(Arel.sql("EXTRACT(YEAR FROM work_days.date)"))
+  .map(&:to_i)
+  .sort
+  .reverse
+
+@incident_years << Date.current.year unless @incident_years.include?(Date.current.year)
+@incident_years.sort!.reverse!
+
 end

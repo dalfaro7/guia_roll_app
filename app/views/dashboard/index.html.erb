@@ -263,7 +263,132 @@
             <p class="text-muted">
                 No guide selected.
             </p>
+
             <% end %>
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">
+                Operational Incidents
+            </h4>
+        </div>
+
+        <div class="card-body">
+
+            <%= form_with url: dashboard_path,
+                  method: :get,
+                  local: true do %>
+
+            <% if params[:month].present? %>
+            <%= hidden_field_tag :month, params[:month] %>
+            <% end %>
+
+            <% if params[:guide_id].present? %>
+            <%= hidden_field_tag :guide_id, params[:guide_id] %>
+            <% end %>
+
+            <div class="row align-items-end mb-4">
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Year
+                    </label>
+
+                    <%= select_tag :incident_year,
+                options_for_select(
+                  @incident_years,
+                  @incident_year
+                ),
+                class: "form-select" %>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Month
+                    </label>
+
+                    <%= select_tag :incident_month,
+                options_for_select(
+                  [["All months", ""]] +
+                  (1..12).map { |m|
+                    [Date::MONTHNAMES[m], m]
+                  },
+                  @incident_month
+                ),
+                class: "form-select" %>
+                </div>
+
+                <div class="col-md-2">
+                    <%= submit_tag "Filter",
+                         class: "btn btn-primary w-100" %>
+                </div>
+
+            </div>
+
+            <% end %>
+
+
+            <div class="row">
+
+                <div class="col-lg-6 mb-4">
+
+                    <h5>
+                        Incidents by Guide
+                    </h5>
+
+                    <% if @incidents_by_guide.any? %>
+
+                    <%= bar_chart @incidents_by_guide,
+                height: "450px",
+                library: {
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        precision: 0
+                      }
+                    }
+                  }
+                } %>
+
+                    <% else %>
+
+                    <div class="alert alert-light border">
+                        No incidents recorded for this period.
+                    </div>
+
+                    <% end %>
+
+                </div>
+
+
+                <div class="col-lg-6 mb-4">
+
+                    <h5>
+                        Incidents by Month — <%= @incident_year %>
+                    </h5>
+
+                    <%= column_chart @incidents_by_month,
+              height: "450px",
+              library: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      precision: 0
+                    }
+                  }
+                }
+              } %>
+
+                </div>
+
+            </div>
+
         </div>
     </div>
 
