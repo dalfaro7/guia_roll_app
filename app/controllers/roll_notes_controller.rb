@@ -82,12 +82,21 @@ end
   end
 
   def destroy
-    work_day = @roll_note.work_day
-    @roll_note.destroy!
+  work_day = @roll_note.work_day
 
+  # Seguridad:
+  # solamente el usuario que creó la nota puede eliminarla.
+  unless @roll_note.created_by_id == current_user.id
     redirect_to roll_notes_path(date: work_day.date),
-                notice: "Roll note deleted successfully."
+                alert: "You can only delete notes created by your user."
+    return
   end
+
+  @roll_note.destroy!
+
+  redirect_to roll_notes_path(date: work_day.date),
+              notice: "Roll note deleted successfully."
+end
 
   private
 
