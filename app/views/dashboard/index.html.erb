@@ -1,189 +1,385 @@
 <div class="container-fluid py-4">
 
     <!-- ======================================================
-       HEADER / FILTRO PRINCIPAL DE MES
-       Este formulario conserva también los filtros actuales
-       de rol especial y guía seleccionada.
-       ====================================================== -->
+         HEADER
+         ======================================================
+         Filtro principal por mes.
+
+         Conserva:
+         - special_role
+         - guide_id
+         - filtros de incidentes
+         ====================================================== -->
+
     <div class="d-flex justify-content-between align-items-end flex-wrap mb-4">
+
         <div>
-            <h1 class="mb-1">Equity Dashboard</h1>
+            <h1 class="mb-1">
+                Equity Dashboard
+            </h1>
+
             <p class="text-muted mb-0">
                 <%= @month.strftime("%B %Y") %>
             </p>
         </div>
 
-        <%= form_with url: dashboard_path, method: :get, local: true, class: "d-flex gap-2 align-items-end" do %>
-        <%= hidden_field_tag :special_role, @selected_special_role %>
-        <%= hidden_field_tag :guide_id, @selected_guide&.id %>
+
+        <%= form_with url: dashboard_path,
+                      method: :get,
+                      local: true,
+                      class: "d-flex gap-2 align-items-end" do %>
+
+        <!-- Mantener filtros actuales -->
+
+        <%= hidden_field_tag :special_role,
+                                 @selected_special_role %>
+
+        <%= hidden_field_tag :guide_id,
+                                 @selected_guide&.id %>
+
+        <%= hidden_field_tag :incident_year,
+                                 @incident_year %>
+
+        <% if @incident_month.present? %>
+        <%= hidden_field_tag :incident_month,
+                                     @incident_month %>
+        <% end %>
+
 
         <div>
-            <%= label_tag :month, "Select Month", class: "form-label" %>
-            <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control" %>
+
+            <%= label_tag :month,
+                              "Select Month",
+                              class: "form-label" %>
+
+            <%= month_field_tag :month,
+                                    @month.strftime("%Y-%m"),
+                                    class: "form-control" %>
+
         </div>
 
-        <%= submit_tag "View", class: "btn btn-primary" %>
+
+        <%= submit_tag "View",
+                           class: "btn btn-primary" %>
+
         <% end %>
+
     </div>
 
+
     <!-- ======================================================
-       KPI CARDS
-       Resumen operativo del mes seleccionado.
-       ====================================================== -->
+         KPI CARDS
+         ======================================================
+         1. Días con alguna asignación
+         2. Total de puestos asignados
+         3. Promedio por guía
+         ====================================================== -->
+
     <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <small class="text-muted">Días del mes con asignación</small>
-                    <h3 class="mb-0"><%= @worked_month_days %></h3>
-                </div>
-            </div>
-        </div>
+
+        <!-- DÍAS CON ASIGNACIÓN -->
 
         <div class="col-md-4 mb-3">
+
             <div class="card shadow-sm h-100">
+
                 <div class="card-body">
-                    <small class="text-muted">Puestos de trabajo asignados</small>
-                    <h3 class="mb-0"><%= @assigned_work_slots %></h3>
+
+                    <small class="text-muted">
+                        Días del mes con asignación
+                    </small>
+
+                    <h3 class="mb-0">
+                        <%= @worked_month_days %>
+                    </h3>
+
                 </div>
+
             </div>
+
         </div>
 
+
+        <!-- PUESTOS ASIGNADOS -->
+
         <div class="col-md-4 mb-3">
+
             <div class="card shadow-sm h-100">
+
                 <div class="card-body">
-                    <small class="text-muted">Promedio de puestos por guía</small>
-                    <h3 class="mb-0"><%= @average.to_f.round(2) %></h3>
+
+                    <small class="text-muted">
+                        Puestos de trabajo asignados
+                    </small>
+
+                    <h3 class="mb-0">
+                        <%= @assigned_work_slots %>
+                    </h3>
+
                 </div>
+
             </div>
+
         </div>
+
+
+        <!-- PROMEDIO -->
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Promedio de puestos por guía
+                    </small>
+
+                    <h3 class="mb-0">
+                        <%= @average.to_f.round(2) %>
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
 
+
     <!-- ======================================================
-       GRÁFICO PRINCIPAL DE EQUIDAD
-       Muestra distribución de asignaciones por guía.
-       ====================================================== -->
+         GRÁFICO PRINCIPAL DE EQUIDAD
+         ====================================================== -->
+
     <div class="card shadow-sm mb-4">
+
         <div class="card-header bg-dark text-white">
             Worked Days Distribution
         </div>
 
         <div class="card-body">
+
             <%= column_chart @chart_data,
-        height: "400px",
-        library: {
-          plugins: {
-            legend: { display: false }
-          }
-        } %>
+                height: "400px",
+                library: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                } %>
+
         </div>
+
     </div>
 
+
     <!-- ======================================================
-       TABLA PRINCIPAL DE EQUIDAD
-       Incluye todos los guías, incluso con 0 asignaciones.
-       ====================================================== -->
+         TABLA PRINCIPAL
+         ====================================================== -->
+
     <div class="card shadow-sm mb-4">
+
         <div class="card-header bg-secondary text-white">
             Guide Equity Detail
         </div>
 
+
         <div class="card-body table-responsive">
+
             <table class="table table-bordered table-sm align-middle">
+
                 <thead class="table-light">
+
                     <tr>
                         <th>Guide</th>
                         <th>Worked Days</th>
                         <th>% Participation</th>
                         <th>Deviation</th>
                     </tr>
+
                 </thead>
 
+
                 <tbody>
+
                     <% @dashboard_data.each do |data| %>
-                    <tr class="<%= 'table-danger' if data[:deviation].to_f > 1 %> <%= 'table-success' if data[:deviation].to_f < -1 %>">
-                        <td><%= data[:guide].name %></td>
-                        <td><%= data[:worked] %></td>
-                        <td><%= data[:percentage] %>%</td>
-                        <td><%= data[:deviation] %></td>
+
+                    <tr class="
+                            <%= 'table-danger' if data[:deviation].to_f > 1 %>
+                            <%= 'table-success' if data[:deviation].to_f < -1 %>
+                        ">
+
+                        <td>
+                            <%= data[:guide].name %>
+                        </td>
+
+                        <td>
+                            <%= data[:worked] %>
+                        </td>
+
+                        <td>
+                            <%= data[:percentage] %>%
+                        </td>
+
+                        <td>
+                            <%= data[:deviation] %>
+                        </td>
+
                     </tr>
+
                     <% end %>
+
                 </tbody>
+
             </table>
+
         </div>
+
     </div>
 
+
     <!-- ======================================================
-       ROLES ESPECIALES
-       Control de asignaciones de Safety Kayaker,
-       Photographer y Bus Guide.
-       ====================================================== -->
+         ROLES ESPECIALES
+         ====================================================== -->
+
     <div class="card shadow-sm mb-4">
+
         <div class="card-header bg-info text-dark">
             Special Role Assignments
         </div>
 
+
         <div class="card-body">
 
-            <!-- FILTRO POR FUNCIÓN ESPECIAL
-           Este formulario conserva el mes y el guía seleccionado. -->
-            <%= form_with url: dashboard_path, method: :get, local: true, class: "row g-3 mb-4" do %>
-            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
-            <%= hidden_field_tag :guide_id, @selected_guide&.id %>
 
-            <div class="col-md-4">
-                <%= label_tag :special_role, "Filter by special role", class: "form-label" %>
+            <!-- ==============================================
+                 FILTRO DE ROL ESPECIAL
+                 ============================================== -->
 
-                <%= select_tag :special_role,
-            options_for_select(
-              [
-                ["All", "all"],
-                ["Safety Kayaker", "safety_kayaker"],
-                ["Photographer", "photographer"],
-                ["Bus Guide", "bus_guide"]
-              ],
-              @selected_special_role
-            ),
-            class: "form-control" %>
-            </div>
+            <%= form_with url: dashboard_path,
+                          method: :get,
+                          local: true,
+                          class: "row g-3 mb-4" do %>
 
-            <div class="col-md-2 d-flex align-items-end">
-                <%= submit_tag "Apply", class: "btn btn-primary w-100" %>
-            </div>
+
+            <%= hidden_field_tag :month,
+                                     @month.strftime("%Y-%m") %>
+
+
+            <%= hidden_field_tag :guide_id,
+                                     @selected_guide&.id %>
+
+
+            <%= hidden_field_tag :incident_year,
+                                     @incident_year %>
+
+
+            <% if @incident_month.present? %>
+
+            <%= hidden_field_tag :incident_month,
+                                         @incident_month %>
+
             <% end %>
 
-            <!-- GRÁFICO DE ROLES ESPECIALES
-           Usa @special_role_chart_data, que ya viene filtrado
-           desde el controller. -->
+
+            <div class="col-md-4">
+
+                <%= label_tag :special_role,
+                                  "Filter by special role",
+                                  class: "form-label" %>
+
+
+                <%= select_tag :special_role,
+                        options_for_select(
+                            [
+                                ["All", "all"],
+                                ["Safety Kayaker", "safety_kayaker"],
+                                ["Photographer", "photographer"],
+                                ["Bus Guide", "bus_guide"]
+                            ],
+                            @selected_special_role
+                        ),
+                        class: "form-control" %>
+
+            </div>
+
+
+            <div class="col-md-2 d-flex align-items-end">
+
+                <%= submit_tag "Apply",
+                                   class: "btn btn-primary w-100" %>
+
+            </div>
+
+            <% end %>
+
+
+            <!-- ==============================================
+                 GRÁFICO DE ROLES ESPECIALES
+                 ============================================== -->
+
             <%= column_chart [
-            {
-              name: "Safety Kayaker",
-              data: @special_role_chart_data.map { |d| [d[:name], d[:"Safety Kayaker"].to_i] }
-            },
-            {
-              name: "Photographer",
-              data: @special_role_chart_data.map { |d| [d[:name], d[:"Photographer"].to_i] }
-            },
-            {
-              name: "Bus Guide",
-              data: @special_role_chart_data.map { |d| [d[:name], d[:"Bus Guide"].to_i] }
-            }
-          ],
-          height: "450px",
-          stacked: true,
-          library: {
-            plugins: {
-              legend: { display: true }
-            }
-          } %>
+
+                {
+                    name: "Safety Kayaker",
+                    data: @special_role_chart_data.map {
+                        |data|
+                        [
+                            data[:name],
+                            data[:"Safety Kayaker"].to_i
+                        ]
+                    }
+                },
+
+                {
+                    name: "Photographer",
+                    data: @special_role_chart_data.map {
+                        |data|
+                        [
+                            data[:name],
+                            data[:"Photographer"].to_i
+                        ]
+                    }
+                },
+
+                {
+                    name: "Bus Guide",
+                    data: @special_role_chart_data.map {
+                        |data|
+                        [
+                            data[:name],
+                            data[:"Bus Guide"].to_i
+                        ]
+                    }
+                }
+
+            ],
+            height: "450px",
+            stacked: true,
+            library: {
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                }
+            } %>
+
 
             <hr>
 
-            <!-- TABLA DE ROLES ESPECIALES
-           Usa la misma data filtrada que el gráfico. -->
+
+            <!-- ==============================================
+                 TABLA DE ROLES ESPECIALES
+                 ============================================== -->
+
             <div class="table-responsive">
+
                 <table class="table table-bordered table-sm align-middle">
+
                     <thead class="table-light">
+
                         <tr>
                             <th>Guide</th>
                             <th>Safety Kayaker</th>
@@ -191,140 +387,275 @@
                             <th>Bus Guide</th>
                             <th>Total</th>
                         </tr>
+
                     </thead>
 
+
                     <tbody>
+
                         <% if @filtered_special_role_data.any? %>
+
                         <% @filtered_special_role_data.each do |data| %>
+
                         <tr>
-                            <td><%= data[:guide_name] %></td>
-                            <td><%= data[:safety_kayaker] %></td>
-                            <td><%= data[:photographer] %></td>
-                            <td><%= data[:bus_guide] %></td>
-                            <td><strong><%= data[:total] %></strong></td>
-                        </tr>
-                        <% end %>
-                        <% else %>
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">
-                                No special role assignments found for this filter.
+
+                            <td>
+                                <%= data[:guide_name] %>
                             </td>
+
+                            <td>
+                                <%= data[:safety_kayaker] %>
+                            </td>
+
+                            <td>
+                                <%= data[:photographer] %>
+                            </td>
+
+                            <td>
+                                <%= data[:bus_guide] %>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    <%= data[:total] %>
+                                </strong>
+                            </td>
+
                         </tr>
+
                         <% end %>
+
+                        <% else %>
+
+                        <tr>
+
+                            <td colspan="5" class="text-center text-muted">
+
+                                No special role assignments found
+                                for this filter.
+
+                            </td>
+
+                        </tr>
+
+                        <% end %>
+
                     </tbody>
+
                 </table>
+
             </div>
 
         </div>
+
     </div>
 
+
     <!-- ======================================================
-       HISTÓRICO POR GUÍA
-       Este formulario conserva el mes y el filtro de rol especial.
-       ====================================================== -->
+         HISTÓRICO POR GUÍA
+         ====================================================== -->
+
     <div class="card shadow-sm mb-4">
+
         <div class="card-header bg-dark text-white">
             Historical Guide View
         </div>
 
+
         <div class="card-body">
-            <%= form_with url: dashboard_path, method: :get, local: true, class: "row g-3 mb-4" do %>
-            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
-            <%= hidden_field_tag :special_role, @selected_special_role %>
 
-            <div class="col-md-5">
-                <%= label_tag :guide_id, "Select Guide", class: "form-label" %>
 
-                <%= select_tag :guide_id,
-            options_from_collection_for_select(
-              @guides,
-              :id,
-              :name,
-              @selected_guide&.id
-            ),
-            class: "form-control" %>
-            </div>
+            <%= form_with url: dashboard_path,
+                          method: :get,
+                          local: true,
+                          class: "row g-3 mb-4" do %>
 
-            <div class="col-md-2 d-flex align-items-end">
-                <%= submit_tag "View Guide", class: "btn btn-primary w-100" %>
-            </div>
+
+            <%= hidden_field_tag :month,
+                                     @month.strftime("%Y-%m") %>
+
+
+            <%= hidden_field_tag :special_role,
+                                     @selected_special_role %>
+
+
+            <%= hidden_field_tag :incident_year,
+                                     @incident_year %>
+
+
+            <% if @incident_month.present? %>
+
+            <%= hidden_field_tag :incident_month,
+                                         @incident_month %>
+
             <% end %>
 
+
+            <div class="col-md-5">
+
+                <%= label_tag :guide_id,
+                                  "Select Guide",
+                                  class: "form-label" %>
+
+
+                <%= select_tag :guide_id,
+                        options_from_collection_for_select(
+                            @guides,
+                            :id,
+                            :name,
+                            @selected_guide&.id
+                        ),
+                        class: "form-control" %>
+
+            </div>
+
+
+            <div class="col-md-2 d-flex align-items-end">
+
+                <%= submit_tag "View Guide",
+                                   class: "btn btn-primary w-100" %>
+
+            </div>
+
+            <% end %>
+
+
             <% if @selected_guide.present? %>
+
             <h5 class="mb-3">
-                Historical Days - <%= @selected_guide.name %>
+
+                Historical Days -
+                <%= @selected_guide.name %>
+
             </h5>
 
+
             <%= line_chart @historical_data,
-          xtitle: "Month",
-          discrete: true,
-          height: "350px" %>
+                    xtitle: "Month",
+                    discrete: true,
+                    height: "350px" %>
+
+
             <% else %>
+
             <p class="text-muted">
                 No guide selected.
             </p>
 
             <% end %>
+
         </div>
+
     </div>
+
+
+    <!-- ======================================================
+         INCIDENTES OPERACIONALES
+         ====================================================== -->
 
     <hr class="my-5">
 
-    <div class="card mb-4">
-        <div class="card-header">
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-danger text-white">
+
             <h4 class="mb-0">
                 Operational Incidents
             </h4>
+
         </div>
+
 
         <div class="card-body">
 
+
+            <!-- ==============================================
+                 FILTROS DE INCIDENTES
+                 ============================================== -->
+
             <%= form_with url: dashboard_path,
-                  method: :get,
-                  local: true do %>
+                          method: :get,
+                          local: true do %>
 
-            <% if params[:month].present? %>
-            <%= hidden_field_tag :month, params[:month] %>
-            <% end %>
 
-            <% if params[:guide_id].present? %>
-            <%= hidden_field_tag :guide_id, params[:guide_id] %>
-            <% end %>
+            <!-- Mantener filtros del dashboard -->
+
+            <%= hidden_field_tag :month,
+                                     @month.strftime("%Y-%m") %>
+
+
+            <%= hidden_field_tag :special_role,
+                                     @selected_special_role %>
+
+
+            <%= hidden_field_tag :guide_id,
+                                     @selected_guide&.id %>
+
 
             <div class="row align-items-end mb-4">
 
+
+                <!-- AÑO -->
+
                 <div class="col-md-3">
+
                     <label class="form-label">
                         Year
                     </label>
 
+
                     <%= select_tag :incident_year,
-                options_for_select(
-                  @incident_years,
-                  @incident_year
-                ),
-                class: "form-select" %>
+                            options_for_select(
+                                @incident_years,
+                                @incident_year
+                            ),
+                            class: "form-select" %>
+
                 </div>
 
+
+                <!-- MES -->
+
                 <div class="col-md-3">
+
                     <label class="form-label">
                         Month
                     </label>
 
+
                     <%= select_tag :incident_month,
-                options_for_select(
-                  [["All months", ""]] +
-                  (1..12).map { |m|
-                    [Date::MONTHNAMES[m], m]
-                  },
-                  @incident_month
-                ),
-                class: "form-select" %>
+                            options_for_select(
+
+                                [
+                                    ["All months", ""]
+                                ] +
+
+                                (1..12).map {
+                                    |month_number|
+
+                                    [
+                                        Date::MONTHNAMES[
+                                            month_number
+                                        ],
+                                        month_number
+                                    ]
+                                },
+
+                                @incident_month
+                            ),
+                            class: "form-select" %>
+
                 </div>
 
+
+                <!-- BOTÓN -->
+
                 <div class="col-md-2">
+
                     <%= submit_tag "Filter",
-                         class: "btn btn-primary w-100" %>
+                                       class: "btn btn-primary w-100" %>
+
                 </div>
 
             </div>
@@ -332,64 +663,178 @@
             <% end %>
 
 
+            <!-- ==============================================
+                 GRÁFICOS
+                 ============================================== -->
+
             <div class="row">
+
+
+                <!-- ==========================================
+                     INCIDENTES POR GUÍA
+                     ========================================== -->
 
                 <div class="col-lg-6 mb-4">
 
-                    <h5>
+                    <h5 class="mb-3">
+
                         Incidents by Guide
+
+                        <% if @incident_month.present? %>
+
+                        —
+                        <%= Date::MONTHNAMES[
+                                @incident_month
+                            ] %>
+
+                        <% end %>
+
+                        <%= @incident_year %>
+
                     </h5>
+
 
                     <% if @incidents_by_guide.any? %>
 
+
                     <%= bar_chart @incidents_by_guide,
-                height: "450px",
-                library: {
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        precision: 0
-                      }
-                    }
-                  }
-                } %>
+                            height: "450px",
+                            discrete: true,
+                            library: {
+
+                                plugins: {
+
+                                    legend: {
+                                        display: false
+                                    }
+
+                                },
+
+                                scales: {
+
+                                    y: {
+
+                                        beginAtZero: true,
+
+                                        ticks: {
+                                            precision: 0
+                                        }
+
+                                    }
+
+                                }
+
+                            } %>
+
 
                     <% else %>
 
+
                     <div class="alert alert-light border">
-                        No incidents recorded for this period.
+
+                        No incidents recorded
+                        for this period.
+
                     </div>
+
 
                     <% end %>
 
                 </div>
 
 
+                <!-- ==========================================
+                     INCIDENTES POR MES
+                     ========================================== -->
+
                 <div class="col-lg-6 mb-4">
 
-                    <h5>
-                        Incidents by Month — <%= @incident_year %>
+                    <h5 class="mb-3">
+
+                        Incidents by Month —
+                        <%= @incident_year %>
+
                     </h5>
 
+
                     <%= column_chart @incidents_by_month,
-              height: "450px",
-              library: {
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      precision: 0
-                    }
-                  }
-                }
-              } %>
+                        height: "450px",
+                        discrete: true,
+                        library: {
+
+                            plugins: {
+
+                                legend: {
+                                    display: false
+                                }
+
+                            },
+
+                            scales: {
+
+                                y: {
+
+                                    beginAtZero: true,
+
+                                    ticks: {
+                                        precision: 0
+                                    }
+
+                                }
+
+                            }
+
+                        } %>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================================
+                 RESUMEN NUMÉRICO
+                 ============================================== -->
+
+            <div class="row mt-3">
+
+
+                <div class="col-md-6">
+
+                    <div class="alert alert-light border">
+
+                        <strong>
+                            Guides with incidents:
+                        </strong>
+
+                        <%= @incidents_by_guide.size %>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="alert alert-light border">
+
+                        <strong>
+                            Incidents in
+                            <%= @incident_year %>:
+                        </strong>
+
+                        <%= @incidents_by_month.sum {
+                            |month_name, count|
+                            count.to_i
+                        } %>
+
+                    </div>
 
                 </div>
 
             </div>
 
         </div>
+
     </div>
 
 </div>
