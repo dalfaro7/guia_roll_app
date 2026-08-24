@@ -2,42 +2,42 @@ class RollNotesController < ApplicationController
   before_action :set_roll_note, only: [:destroy]
 
   def index
-    @selected_date =
-      if params[:date].present?
-        Date.parse(params[:date])
-      else
-        Date.current
-      end
+  @selected_date =
+    if params[:date].present?
+      Date.parse(params[:date])
+    else
+      Date.current
+    end
 
-    @work_day = WorkDay.find_by(
-      date: @selected_date,
-      status: :published
-    )
+  @work_day = WorkDay.find_by(
+    date: @selected_date,
+    status: :published
+  )
 
-    @guide_days =
-      if @work_day
-        @work_day.guide_days
-                 .includes(:guide)
-                 .where(status: [:worked, :assigned_task])
-                 .order("guides.name")
-      else
-        GuideDay.none
-      end
+  @guide_days =
+    if @work_day
+      @work_day.guide_days
+               .joins(:guide)
+               .includes(:guide)
+               .where(status: [:worked, :assigned_task])
+               .order("guides.name ASC")
+    else
+      GuideDay.none
+    end
 
-    @roll_notes =
-      RollNote
-        .includes(
-          :created_by,
-          work_day: [],
-          guide_days: :guide
-        )
-        .joins(:work_day)
-        .where(work_days: { date: @selected_date })
-        .order(created_at: :desc)
-  rescue Date::Error
-    redirect_to roll_notes_path,
-                alert: "Invalid date."
-  end
+  @roll_notes =
+    RollNote
+      .includes(
+        :created_by,
+        guide_days: :guide
+      )
+      .joins(:work_day)
+      .where(work_days: { date: @selected_date })
+      .order(created_at: :desc)
+rescue Date::Error
+  redirect_to roll_notes_path,
+              alert: "Invalid date."
+end
 
   def create
     @work_day = WorkDay.find(params[:work_day_id])
