@@ -2,6 +2,11 @@ class GuideDay < ApplicationRecord
   belongs_to :guide
   belongs_to :work_day
   belongs_to :modified_by, class_name: "User", optional: true
+  has_many :roll_note_guide_days,
+         dependent: :destroy
+
+has_many :roll_notes,
+         through: :roll_note_guide_days
 
   enum :status, {
     worked: 0,

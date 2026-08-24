@@ -5,6 +5,7 @@ class WorkDay < ApplicationRecord
   has_many :location_slots, dependent: :destroy
   has_many :bus_assignments, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
+  has_many :roll_notes, dependent: :destroy
 
   accepts_nested_attributes_for :guide_days,
                                 update_only: true

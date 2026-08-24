@@ -7,6 +7,10 @@
               class: "btn btn-primary" %>
     </div>
 
+    <%= link_to "Roll Notes",
+            roll_notes_path,
+            class: "btn btn-warning" %>
+
     <%= form_with url: work_days_path, method: :get, local: true do |f| %>
     <div class="row justify-content-center mb-3">
         <div class="col-md-3">

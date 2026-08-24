@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_16_203408) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_193042) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -189,6 +189,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_203408) do
     t.index ["office_employee_id"], name: "index_office_vacation_credits_on_office_employee_id"
   end
 
+  create_table "roll_note_guide_days", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "guide_day_id", null: false
+    t.bigint "roll_note_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guide_day_id"], name: "index_roll_note_guide_days_on_guide_day_id"
+    t.index ["roll_note_id", "guide_day_id"], name: "index_roll_note_guide_days_unique", unique: true
+    t.index ["roll_note_id"], name: "index_roll_note_guide_days_on_roll_note_id"
+  end
+
+  create_table "roll_notes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id", null: false
+    t.text "note", null: false
+    t.integer "note_type", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "work_day_id", null: false
+    t.index ["created_by_id"], name: "index_roll_notes_on_created_by_id"
+    t.index ["work_day_id"], name: "index_roll_notes_on_work_day_id"
+  end
+
   create_table "skills", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -254,6 +275,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_16_203408) do
   add_foreign_key "office_employee_days", "office_vacation_credits"
   add_foreign_key "office_overtimes", "office_employees"
   add_foreign_key "office_vacation_credits", "office_employees"
+  add_foreign_key "roll_note_guide_days", "guide_days"
+  add_foreign_key "roll_note_guide_days", "roll_notes"
+  add_foreign_key "roll_notes", "users", column: "created_by_id"
+  add_foreign_key "roll_notes", "work_days"
   add_foreign_key "slot_skills", "location_slots"
   add_foreign_key "slot_skills", "skills"
   add_foreign_key "work_day_versions", "work_days"

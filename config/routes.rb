@@ -21,6 +21,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :roll_notes, only: [:index, :create, :destroy]
+
   resources :work_days do
     member do
       patch :generate_roles
