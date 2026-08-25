@@ -3,22 +3,53 @@
 
     <%= render "shared/office_menu" %>
 
-    <div class="mb-3">
-        <%= form_with url: office_day_credits_path, method: :get, local: true do %>
-        <%= month_field_tag :month, @month.strftime("%Y-%m"),
-          class: "form-control d-inline-block",
-          style: "width: 220px;" %>
+    <!-- ============================= -->
+    <!-- FILTRO GENERAL POR MES -->
+    <!-- ============================= -->
 
-        <%= submit_tag "Ver mes", class: "btn btn-secondary" %>
+    <div class="mb-3">
+        <%= form_with url: office_day_credits_path,
+                      method: :get,
+                      local: true do %>
+
+        <%= month_field_tag(
+                  :month,
+                  @month.strftime("%Y-%m"),
+                  class: "form-control d-inline-block",
+                  style: "width: 220px;"
+                ) %>
+
+        <!-- Conserva el empleado seleccionado -->
+        <% if @selected_employee_id.present? %>
+        <%= hidden_field_tag :employee_id,
+                                     @selected_employee_id %>
+        <% end %>
+
+        <%= submit_tag "Ver mes",
+                           class: "btn btn-secondary" %>
         <% end %>
     </div>
 
+    <!-- ============================= -->
+    <!-- ACCIONES ADMINISTRATIVAS -->
+    <!-- ============================= -->
+
+    <% if current_user.admin? %>
     <div class="mb-3">
-        <%= button_to "Generar acumulados por feriados del mes",
-        generate_for_month_office_day_credits_path(month: @month.strftime("%Y-%m")),
-        method: :post,
-        class: "btn btn-primary" %>
+        <%= button_to(
+                  "Generar acumulados por feriados del mes",
+                  generate_for_month_office_day_credits_path(
+                    month: @month.strftime("%Y-%m")
+                  ),
+                  method: :post,
+                  class: "btn btn-primary"
+                ) %>
     </div>
+    <% end %>
+
+    <!-- ============================= -->
+    <!-- RESUMEN DE SALDOS -->
+    <!-- ============================= -->
 
     <table class="table table-bordered">
         <thead>
@@ -32,15 +63,95 @@
         <tbody>
             <% @employees.each do |employee| %>
             <tr>
-                <td><%= employee.name %></td>
-                <td><%= employee.office_day_credits.where(used: false).count %></td>
-                <td><%= employee.office_day_credits.where(used: true).count %></td>
+                <td>
+                    <%= employee.name %>
+                </td>
+
+                <td>
+                    <%= employee
+                              .office_day_credits
+                              .where(used: false)
+                              .count %>
+                </td>
+
+                <td>
+                    <%= employee
+                              .office_day_credits
+                              .where(used: true)
+                              .count %>
+                </td>
             </tr>
             <% end %>
         </tbody>
     </table>
 
+    <!-- ============================= -->
+    <!-- DETALLE DE ACUMULADOS -->
+    <!-- ============================= -->
+
     <h3 class="mt-4">Detalle de acumulados</h3>
+
+    <!-- FILTRO POR EMPLEADO -->
+
+    <div class="card mb-3">
+        <div class="card-body">
+
+            <%= form_with url: office_day_credits_path,
+                          method: :get,
+                          local: true,
+                          class: "row g-2 align-items-end" do %>
+
+            <!-- Conservamos el mes seleccionado -->
+            <%= hidden_field_tag(
+                      :month,
+                      @month.strftime("%Y-%m")
+                    ) %>
+
+            <div class="col-md-6">
+                <%= label_tag(
+                          :employee_id,
+                          "Filtrar por oficinista",
+                          class: "form-label"
+                        ) %>
+
+                <%= select_tag(
+                          :employee_id,
+                          options_for_select(
+                            [["Todos los oficinistas", ""]] +
+                            @employees.map { |employee|
+                              [employee.name, employee.id]
+                            },
+                            @selected_employee_id
+                          ),
+                          class: "form-select"
+                        ) %>
+            </div>
+
+            <div class="col-md-auto">
+                <%= submit_tag(
+                          "Filtrar",
+                          class: "btn btn-secondary"
+                        ) %>
+            </div>
+
+            <% if @selected_employee_id.present? %>
+            <div class="col-md-auto">
+                <%= link_to(
+                              "Quitar filtro",
+                              office_day_credits_path(
+                                month: @month.strftime("%Y-%m")
+                              ),
+                              class: "btn btn-outline-secondary"
+                            ) %>
+            </div>
+            <% end %>
+
+            <% end %>
+
+        </div>
+    </div>
+
+    <!-- TABLA DE DETALLE -->
 
     <table class="table table-bordered table-sm">
         <thead>
@@ -50,11 +161,16 @@
                 <th>Origen</th>
                 <th>Estado</th>
                 <th>Observación</th>
-                <th></th>
+
+                <% if current_user.admin? %>
+                <th>Acciones</th>
+                <% end %>
             </tr>
         </thead>
 
         <tbody>
+            <% if @credits.any? %>
+
             <% @credits.each do |credit| %>
             <tr>
 
@@ -67,35 +183,72 @@
                 </td>
 
                 <td>
-                    <%= credit.source == "legacy" ? "Histórico" : "Feriado trabajado" %>
+                    <% if credit.source == "legacy" %>
+                    Histórico
+                    <% else %>
+                    Feriado trabajado
+                    <% end %>
                 </td>
 
                 <td>
-                    <%= credit.used? ? "Usado" : "Disponible" %>
+                    <% if credit.used? %>
+                    <span class="badge bg-secondary">
+                        Usado
+                    </span>
+                    <% else %>
+                    <span class="badge bg-success">
+                        Disponible
+                    </span>
+                    <% end %>
                 </td>
 
                 <td>
                     <%= credit.notes.presence || "-" %>
                 </td>
 
+                <% if current_user.admin? %>
                 <td>
                     <% unless credit.used? %>
-                    <%= button_to "Eliminar",
-                        office_day_credit_path(credit),
-                        method: :delete,
-                        class: "btn btn-sm btn-danger",
-                        data: {
-                            turbo_confirm: "¿Eliminar este acumulado?"
-                        } %>
+                    <%= button_to(
+                                          "Eliminar",
+                                          office_day_credit_path(credit),
+                                          method: :delete,
+                                          class: "btn btn-sm btn-danger",
+                                          data: {
+                                            turbo_confirm: "¿Eliminar este acumulado?"
+                                          }
+                                        ) %>
                     <% end %>
                 </td>
+                <% end %>
 
             </tr>
+            <% end %>
+
+            <% else %>
+
+            <tr>
+                <td colspan="<%= current_user.admin? ? 6 : 5 %>" class="text-center text-muted">
+
+                    No existen acumulados para el filtro seleccionado.
+
+                </td>
+            </tr>
+
             <% end %>
         </tbody>
     </table>
 
-    <%= link_to "Agregar acumulados históricos",
-    new_office_day_credit_path,
-    class: "btn btn-success mb-3" %>
+    <!-- ============================= -->
+    <!-- AGREGAR ACUMULADOS -->
+    <!-- ============================= -->
+
+    <% if current_user.admin? %>
+    <%= link_to(
+              "Agregar acumulados históricos",
+              new_office_day_credit_path,
+              class: "btn btn-success mb-3"
+            ) %>
+    <% end %>
+
 </div>

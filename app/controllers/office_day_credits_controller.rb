@@ -5,15 +5,24 @@ class OfficeDayCreditsController < ApplicationController
   before_action :set_credit, only: [:destroy]
 
   def index
-    @month = selected_month
-    @range = @month.beginning_of_month..@month.end_of_month
-    @employees = OfficeEmployee.active.order(:name)
+  @month = selected_month
+  @range = @month.beginning_of_month..@month.end_of_month
+  @employees = OfficeEmployee.active.order(:name)
 
+  @selected_employee_id = params[:employee_id].presence
+
+  @credits =
+    OfficeDayCredit
+      .includes(:office_employee)
+      .order(used: :asc, date: :asc, id: :asc)
+
+  if @selected_employee_id.present?
     @credits =
-      OfficeDayCredit
-        .includes(:office_employee)
-        .order(used: :asc, date: :asc, id: :asc)
+      @credits.where(
+        office_employee_id: @selected_employee_id
+      )
   end
+end
 
   def new
     @credit = OfficeDayCredit.new(
