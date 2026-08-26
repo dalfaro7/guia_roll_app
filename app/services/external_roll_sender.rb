@@ -7,16 +7,17 @@ class ExternalRollSender
   API_URL = "https://arenalrafting.photos/api/rolls"
 
   def self.send_work_day(work_day)
-    guide_names = work_day.guide_days
-                          .where(status: [:worked, :standby])
-                          .includes(:guide)
-                          .map { |guide_day| guide_day.guide.name }
-                          .join(",")
+    guide_names = @work_day.guide_days
+  .where(status: :worked, role_primary: "River Guide")
+  .joins(:guide)
+  .order("guides.name ASC")
+  .pluck("guides.name")
+  .join(",")
 
     payload = {
       work_day_id: work_day.id,
       date: work_day.date,
-      guides: guide_names
+      guides: guide_namesdeseo
     }
 
     uri = URI(API_URL)
