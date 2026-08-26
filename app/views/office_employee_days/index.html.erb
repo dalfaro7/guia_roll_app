@@ -77,6 +77,53 @@
         </div>
     </div>
 
+    <div class="card mb-3">
+        <div class="card-body">
+
+            <%= form_with url: office_employee_days_path,
+                  method: :get,
+                  local: true,
+                  class: "row g-3 align-items-end" do %>
+
+            <!-- Mantiene el mes actual cuando cambiamos de empleado -->
+            <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+
+            <div class="col-md-5">
+                <%= label_tag :office_employee_id,
+                      "Empleado",
+                      class: "form-label" %>
+
+                <%= select_tag :office_employee_id,
+          options_from_collection_for_select(
+            @all_employees,
+            :id,
+            :name,
+            @selected_employee_id
+          ),
+          include_blank: "Todos los empleados",
+          class: "form-select" %>
+            </div>
+
+            <div class="col-md-2">
+                <%= submit_tag "Filtrar",
+                       class: "btn btn-primary w-100" %>
+            </div>
+
+            <% if @selected_employee_id.present? %>
+            <div class="col-md-2">
+                <%= link_to "Mostrar todos",
+              office_employee_days_path(
+                month: @month.strftime("%Y-%m")
+              ),
+              class: "btn btn-outline-secondary w-100" %>
+            </div>
+            <% end %>
+
+            <% end %>
+
+        </div>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-bordered align-middle">
             <thead>

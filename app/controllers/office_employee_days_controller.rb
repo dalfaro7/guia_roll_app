@@ -13,43 +13,109 @@ class OfficeEmployeeDaysController < ApplicationController
                 ]
 
   def index
-    @month = selected_month
+  # ==========================================================
+  # 1. Mes seleccionado
+  # ==========================================================
+  @month = selected_month
 
-    @month_range =
-      @month.beginning_of_month..@month.end_of_month
+  @month_range =
+    @month.beginning_of_month..@month.end_of_month
 
-    @calendar_range =
-      @month.beginning_of_month.beginning_of_week(:monday)..
-      @month.end_of_month.end_of_week(:monday)
+  # ==========================================================
+  # 2. Rango completo del calendario
+  #
+  # Incluye semanas completas de lunes a domingo aunque
+  # comiencen o terminen fuera del mes seleccionado.
+  # ==========================================================
+  @calendar_range =
+    @month.beginning_of_month.beginning_of_week(:monday)..
+    @month.end_of_month.end_of_week(:monday)
 
-    @weeks = []
-    current = @calendar_range.begin
+  # ==========================================================
+  # 3. Construcción de semanas
+  # ==========================================================
+  @weeks = []
 
-    while current <= @calendar_range.end
-      @weeks << (current..current.end_of_week(:monday))
-      current += 1.week
-    end
+  current = @calendar_range.begin
 
-    @employees = OfficeEmployee.active.to_a
-
-    @employee_days =
-      OfficeEmployeeDay
-        .includes(
-          :office_employee,
-          :office_day_credit,
-          :office_vacation_credit
-        )
-        .where(date: @calendar_range)
-        .index_by do |day|
-          [day.office_employee_id, day.date]
-        end
-
-    @holidays =
-      OfficeHoliday
-        .where(date: @calendar_range)
-        .index_by(&:date)
+  while current <= @calendar_range.end
+    @weeks << (current..current.end_of_week(:monday))
+    current += 1.week
   end
 
+  # ==========================================================
+  # 4. Empleados disponibles para el filtro
+  #
+  # @all_employees siempre contiene todos los empleados activos
+  # y se utiliza únicamente para construir el selector.
+  # ==========================================================
+  @all_employees =
+    OfficeEmployee
+      .active
+      .order(:name)
+      .to_a
+
+  # ==========================================================
+  # 5. Empleado seleccionado
+  #
+  # Si no se envía office_employee_id se muestran todos.
+  # ==========================================================
+  @selected_employee_id =
+    params[:office_employee_id].presence&.to_i
+
+  # ==========================================================
+  # 6. Empleados que realmente mostrará el calendario
+  # ==========================================================
+  @employees =
+    if @selected_employee_id.present?
+      @all_employees.select do |employee|
+        employee.id == @selected_employee_id
+      end
+    else
+      @all_employees
+    end
+
+  # ==========================================================
+  # 7. Consulta de días
+  #
+  # Primero construimos la consulta del calendario completo.
+  # Si existe un empleado seleccionado, limitamos la consulta
+  # únicamente a ese empleado.
+  # ==========================================================
+  employee_days_scope =
+    OfficeEmployeeDay
+      .includes(
+        :office_employee,
+        :office_day_credit,
+        :office_vacation_credit
+      )
+      .where(date: @calendar_range)
+
+  if @selected_employee_id.present?
+    employee_days_scope =
+      employee_days_scope.where(
+        office_employee_id: @selected_employee_id
+      )
+  end
+
+  # La vista actual consulta los registros mediante:
+  #
+  #   @employee_days[[employee.id, date]]
+  #
+  # Por eso conservamos el index_by existente.
+  @employee_days =
+    employee_days_scope.index_by do |day|
+      [day.office_employee_id, day.date]
+    end
+
+  # ==========================================================
+  # 8. Feriados
+  # ==========================================================
+  @holidays =
+    OfficeHoliday
+      .where(date: @calendar_range)
+      .index_by(&:date)
+end
 
   def create
     use_day_credit =
