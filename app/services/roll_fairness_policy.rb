@@ -194,8 +194,14 @@ class RollFairnessPolicy
     # Para guías antiguos que todavía no tengan este campo
     # definido, usamos el inicio del mes como fallback seguro.
     def fairness_start_for(guide, before_date:)
-      guide.fairness_started_on || before_date.beginning_of_month
-    end
+  month_start = before_date.beginning_of_month
+
+  guide_start = guide.fairness_started_on
+
+  return month_start if guide_start.blank?
+
+  [guide_start, month_start].max
+end
 
     # Cuenta únicamente las oportunidades del roll consumidas
     # dentro del ciclo actual y antes del día que se está generando.
