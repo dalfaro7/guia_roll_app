@@ -17,8 +17,9 @@ class RollFairnessPolicy
     # 1. Prioridad del guía
     # 2. Menos oportunidades consumidas del roll
     # 3. Menor racha consecutiva
-    # 4. Mayor tiempo esperando una nueva guiada
-    # 5. ID como desempate técnico estable
+    # 4. Estado del día anterior
+    # 5. Mayor tiempo esperando una nueva guiada
+    # 6. ID como desempate técnico estable
     def ranking_key_for(guide, before_date:)
       snapshot = fairness_snapshot_for(
         guide,
@@ -29,6 +30,7 @@ class RollFairnessPolicy
         snapshot[:priority],
         snapshot[:roll_worked_days],
         snapshot[:consecutive_roll_days],
+        previous_day_status_rank_for(guide, before_date: before_date),
         snapshot[:waiting_since],
         guide.id
       ]
@@ -107,6 +109,24 @@ class RollFairnessPolicy
     # seleccionar guías en el roll.
     def service_statuses
       [:worked, :assigned_task]
+    end
+
+    # Tie break: available yesterday, then day off, then penalized.
+    def previous_day_status_rank_for(guide, before_date:)
+      status = GuideDay
+        .joins(:work_day)
+        .where(
+          guide: guide,
+          work_days: { date: before_date - 1.day }
+        )
+        .pick(:status)
+
+      case status
+      when "standby" then 0
+      when "day_off" then 1
+      when "penalized" then 2
+      else 1
+      end
     end
 
     # Determina desde cuándo está esperando el guía

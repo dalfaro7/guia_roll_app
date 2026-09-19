@@ -46,9 +46,9 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
       status: status
     }
 
-    # GuideDay exige status_note cuando es assigned_task.
-    if status.to_sym == :assigned_task
-      attributes[:status_note] = "Test assigned task"
+    # GuideDay exige status_note para assigned_task y penalized.
+    if [:assigned_task, :penalized].include?(status.to_sym)
+      attributes[:status_note] = "Test status"
     end
 
     guide_day.update!(attributes)
@@ -355,6 +355,35 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
 
     assert_equal 0,
                  snapshot[:roll_worked_days]
+  end
+
+  test "standby ranks before day off and penalized with equal roll work" do
+    oscar = Guide.create!(
+      name: "Oscar",
+      priority: 2,
+      active: true,
+      fairness_started_on: Date.new(2026, 8, 1)
+    )
+
+    [@guide_a, @guide_b, oscar].each do |guide|
+      (1..3).each do |day|
+        create_guide_day(
+          guide: guide,
+          date: Date.new(2026, 8, day),
+          status: :worked
+        )
+      end
+    end
+
+    create_guide_day(guide: @guide_a, date: Date.new(2026, 8, 15), status: :standby)
+    create_guide_day(guide: @guide_b, date: Date.new(2026, 8, 15), status: :penalized)
+    create_guide_day(guide: oscar, date: Date.new(2026, 8, 15), status: :day_off)
+
+    ordered = [@guide_b, oscar, @guide_a].sort_by do |guide|
+      RollFairnessPolicy.ranking_key_for(guide, before_date: @work_day_date)
+    end
+
+    assert_equal [@guide_a, oscar, @guide_b], ordered
   end
 
   test "technical id is final deterministic tie breaker" do
