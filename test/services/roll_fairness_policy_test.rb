@@ -476,7 +476,7 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     assert_ranks_before established_key, entrant_key
   end
 
-  test "activation stores rounded average of other active guides" do
+  test "activation stores average rounded down from other active guides" do
     travel_to Date.new(2026, 9, 19) do
       Guide.where.not(id: [@guide_a.id, @guide_b.id]).update_all(active: false)
       @guide_b.update!(active: false)
@@ -498,13 +498,13 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
 
       @guide_b.update!(active: true)
       assert_equal Date.new(2026, 9, 19), @guide_b.fairness_started_on
-      assert_equal 2, @guide_b.fairness_entry_roll_days
+      assert_equal 1, @guide_b.fairness_entry_roll_days
 
       create_guide_day(
         guide: peer, date: Date.new(2026, 9, 13), status: :worked
       )
       @guide_b.update!(name: "Guide B renamed")
-      assert_equal 2, @guide_b.reload.fairness_entry_roll_days
+      assert_equal 1, @guide_b.reload.fairness_entry_roll_days
 
       create_guide_day(
         guide: @guide_b, date: Date.new(2026, 9, 19), status: :worked
@@ -513,8 +513,8 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
         @guide_b, before_date: Date.new(2026, 9, 20)
       )
       assert_equal 1, snapshot[:roll_worked_days]
-      assert_equal 2, snapshot[:entry_roll_balance]
-      assert_equal 3, snapshot[:ranking_roll_days]
+      assert_equal 1, snapshot[:entry_roll_balance]
+      assert_equal 2, snapshot[:ranking_roll_days]
 
       october = RollFairnessPolicy.fairness_snapshot_for(
         @guide_b, before_date: Date.new(2026, 10, 1)
@@ -543,6 +543,28 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
       @guide_b, before_date: Date.new(2026, 10, 1)
     )
     assert_equal 0, october[:entry_roll_balance]
+  end
+
+  test "reactivated guide old work does not inflate another entry balance" do
+    travel_to Date.new(2026, 9, 19) do
+      Guide.where.not(id: [@guide_a.id, @guide_b.id]).update_all(active: false)
+
+      (1..8).each do |day|
+        create_guide_day(
+          guide: @guide_a,
+          date: Date.new(2026, 9, day),
+          status: :worked
+        )
+      end
+
+      @guide_a.update!(active: false)
+      @guide_a.update!(active: true)
+      assert_equal 0, @guide_a.fairness_entry_roll_days
+
+      @guide_b.update!(active: false)
+      @guide_b.update!(active: true)
+      assert_equal 0, @guide_b.fairness_entry_roll_days
+    end
   end
 
   test "technical id is final deterministic tie breaker" do

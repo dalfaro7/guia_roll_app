@@ -38,6 +38,16 @@ class RollFairnessPolicy
       ]
     end
 
+    # Count only roll work in the guide's current fairness cycle.
+    def roll_worked_days_for_guide(guide, before_date:)
+      fairness_start = fairness_start_for(guide, before_date: before_date)
+      roll_worked_days_for(
+        guide,
+        fairness_start: fairness_start,
+        before_date: before_date
+      )
+    end
+
     # Genera una fotografía del estado actual de fairness de un guía.
     #
     # roll_worked_days:

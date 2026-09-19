@@ -75,17 +75,17 @@ class Guide < ApplicationRecord
   # The entering guide is excluded from the active cohort.
   # A guide with no roll work still contributes zero to the average.
   def average_current_roll_days_for_active_guides
-    peers = Guide.active.where.not(id: id)
-    peer_count = peers.count
-    return 0 if peer_count.zero?
+    peers = Guide.active.where.not(id: id).to_a
+    return 0 if peers.empty?
 
-    total_roll_days = GuideDay
-      .joins(:work_day)
-      .where(guide_id: peers.select(:id), status: :worked)
-      .where(work_days: { date: Date.current.beginning_of_month...Date.current })
-      .count
+    total_roll_days = peers.sum do |peer|
+      RollFairnessPolicy.roll_worked_days_for_guide(
+        peer,
+        before_date: Date.current
+      )
+    end
 
-    (total_roll_days.to_f / peer_count).ceil
+    total_roll_days / peers.length
   end
 
   def update_day_off_balance_timestamp
