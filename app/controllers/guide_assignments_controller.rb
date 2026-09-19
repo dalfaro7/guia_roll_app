@@ -20,28 +20,30 @@ class GuideAssignmentsController < ApplicationController
 
     end
 
-    if params[:week_guide_id].present?
+    if params[:range_guide_id].present?
+      if params[:start_date].blank? || params[:end_date].blank?
+        @range_error = "Enter both a start date and an end date."
+      else
+        begin
+          start_date = Date.iso8601(params[:start_date])
+          end_date = Date.iso8601(params[:end_date])
 
-      guide = Guide.find(params[:week_guide_id])
-
-      start_week =
-        if params[:week_start].present?
-          Date.parse(params[:week_start])
-        else
-          Date.today.beginning_of_week
+          if end_date < start_date
+            @range_error = "End date must be on or after start date."
+          else
+            guide = Guide.find(params[:range_guide_id])
+            @range = start_date..end_date
+            @range_assignments =
+              GuideDay.joins(:work_day)
+                      .where(guide: guide)
+                      .where(work_days: { date: @range })
+                      .includes(:work_day)
+                      .order("work_days.date ASC")
+          end
+        rescue Date::Error
+          @range_error = "Enter valid start and end dates."
         end
-
-      end_week = start_week + 6.days
-
-      @weekly_assignments =
-        GuideDay.joins(:work_day)
-                .where(guide: guide)
-                .where(work_days: { date: start_week..end_week })
-                .includes(:work_day)
-                .order("work_days.date ASC")
-
-      @week_range = start_week..end_week
-
+      end
     end
 
   end
