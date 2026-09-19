@@ -15,11 +15,12 @@ class RollFairnessPolicy
     #
     # Orden de prioridad:
     # 1. Prioridad del guía
-    # 2. Menos oportunidades consumidas del roll
-    # 3. Menor racha consecutiva
-    # 4. Estado del día anterior
-    # 5. Mayor tiempo esperando una nueva guiada
-    # 6. ID como desempate técnico estable
+    # 2. Guía nuevo sin primera guiada, al final de su nivel
+    # 3. Menos oportunidades consumidas del roll
+    # 4. Menor racha consecutiva
+    # 5. Estado del día anterior
+    # 6. Mayor tiempo esperando una nueva guiada
+    # 7. ID como desempate técnico estable
     def ranking_key_for(guide, before_date:)
       snapshot = fairness_snapshot_for(
         guide,
@@ -28,7 +29,8 @@ class RollFairnessPolicy
 
       [
         snapshot[:priority],
-        snapshot[:roll_worked_days],
+        new_entrant_rank_for(guide, before_date: before_date),
+        snapshot[:ranking_roll_days],
         snapshot[:consecutive_roll_days],
         previous_day_status_rank_for(guide, before_date: before_date),
         snapshot[:waiting_since],
@@ -52,17 +54,22 @@ class RollFairnessPolicy
         before_date: before_date
       )
 
+      roll_worked_days = roll_worked_days_for(
+        guide,
+        fairness_start: fairness_start,
+        before_date: before_date
+      )
+      entry_balance = entry_roll_balance_for(guide, before_date: before_date)
+
       {
         guide_id: guide.id,
         guide_name: guide.name,
         priority: guide.priority || 999,
         fairness_started_on: fairness_start,
 
-        roll_worked_days: roll_worked_days_for(
-          guide,
-          fairness_start: fairness_start,
-          before_date: before_date
-        ),
+        roll_worked_days: roll_worked_days,
+        entry_roll_balance: entry_balance,
+        ranking_roll_days: roll_worked_days + entry_balance,
 
         service_days: service_days_for(
           guide,
@@ -111,7 +118,45 @@ class RollFairnessPolicy
       [:worked, :assigned_task]
     end
 
-    # Tie break: available yesterday, then day off, then penalized.
+    # Keep the fixed entry balance through the month of the first
+    # roll assignment when that assignment occurs after activation month.
+    def entry_roll_balance_for(guide, before_date:)
+      start_date = guide.fairness_started_on
+      return 0 if start_date.blank? || start_date > before_date
+
+      if start_date.beginning_of_month == before_date.beginning_of_month
+        return guide.fairness_entry_roll_days.to_i
+      end
+
+      first_roll_date = GuideDay
+        .joins(:work_day)
+        .where(guide: guide, status: fairness_statuses)
+        .where(work_days: { date: start_date...before_date })
+        .minimum("work_days.date")
+
+      return 0 unless first_roll_date&.beginning_of_month == before_date.beginning_of_month
+
+      guide.fairness_entry_roll_days.to_i
+    end
+
+    # A guide entering mid-month waits behind established guides
+    # of the same priority until their first roll assignment.
+    def new_entrant_rank_for(guide, before_date:)
+      start_date = guide.fairness_started_on
+      return 0 if start_date.blank?
+      return 0 if start_date == start_date.beginning_of_month
+      return 0 if start_date > before_date
+
+      has_roll_work = GuideDay
+        .joins(:work_day)
+        .where(guide: guide, status: fairness_statuses)
+        .where(work_days: { date: start_date...before_date })
+        .exists?
+
+      has_roll_work ? 0 : 1
+    end
+
+    # Tie break: standby, assigned task, day off, penalized.
     def previous_day_status_rank_for(guide, before_date:)
       status = GuideDay
         .joins(:work_day)
@@ -123,9 +168,10 @@ class RollFairnessPolicy
 
       case status
       when "standby" then 0
-      when "day_off" then 1
-      when "penalized" then 2
-      else 1
+      when "assigned_task" then 1
+      when "day_off" then 2
+      when "penalized" then 3
+      else 2
       end
     end
 

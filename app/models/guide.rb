@@ -60,6 +60,7 @@ class Guide < ApplicationRecord
     return unless active?
 
     self.fairness_started_on = Date.current
+    self.fairness_entry_roll_days = average_current_roll_days_for_active_guides
   end
 
   # Protege el caso en que un Guide sea creado directamente
@@ -68,6 +69,23 @@ class Guide < ApplicationRecord
     return unless active?
 
     self.fairness_started_on ||= Date.current
+    self.fairness_entry_roll_days = average_current_roll_days_for_active_guides
+  end
+
+  # The entering guide is excluded from the active cohort.
+  # A guide with no roll work still contributes zero to the average.
+  def average_current_roll_days_for_active_guides
+    peers = Guide.active.where.not(id: id)
+    peer_count = peers.count
+    return 0 if peer_count.zero?
+
+    total_roll_days = GuideDay
+      .joins(:work_day)
+      .where(guide_id: peers.select(:id), status: :worked)
+      .where(work_days: { date: Date.current.beginning_of_month...Date.current })
+      .count
+
+    (total_roll_days.to_f / peer_count).ceil
   end
 
   def update_day_off_balance_timestamp

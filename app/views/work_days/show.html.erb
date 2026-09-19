@@ -339,6 +339,8 @@
                                 <th>Priority</th>
                                 <th>Fairness Since</th>
                                 <th>Guided Days</th>
+                                <th>Entry Balance</th>
+                                <th>Ranking Days</th>
                                 <th>Worked Days</th>
                                 <th>Consecutive</th>
                                 <th>Waiting Since</th>
@@ -419,6 +421,12 @@
                                     </strong>
                                 </td>
                                 <td>
+                                    <%= snapshot[:entry_roll_balance] %>
+                                </td>
+                                <td>
+                                    <strong><%= snapshot[:ranking_roll_days] %></strong>
+                                </td>
+                                <td>
                                     <%= snapshot[:service_days] %>
                                 </td>
 
@@ -436,8 +444,9 @@
 
                     <small class="text-muted">
                         Ranking order:
-                        Priority → Roll Days → Consecutive Days →
-                        Waiting Since → Technical ID.
+                        Priority → New Entrant → Ranking Days → Consecutive Days →
+                        Previous Day Status → Waiting Since → Technical ID.
+                        Entry Balance applies through the activation month, or through the month of the first guided day if that occurs later.
                     </small>
                 </div>
             </div>

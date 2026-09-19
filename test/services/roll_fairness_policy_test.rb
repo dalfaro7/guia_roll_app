@@ -357,7 +357,7 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
                  snapshot[:roll_worked_days]
   end
 
-  test "standby ranks before day off and penalized with equal roll work" do
+  test "previous day ranks standby, assigned task, day off, penalized" do
     oscar = Guide.create!(
       name: "Oscar",
       priority: 2,
@@ -365,7 +365,14 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
       fairness_started_on: Date.new(2026, 8, 1)
     )
 
-    [@guide_a, @guide_b, oscar].each do |guide|
+    maria = Guide.create!(
+      name: "Maria",
+      priority: 2,
+      active: true,
+      fairness_started_on: Date.new(2026, 8, 1)
+    )
+
+    [@guide_a, @guide_b, oscar, maria].each do |guide|
       (1..3).each do |day|
         create_guide_day(
           guide: guide,
@@ -376,14 +383,166 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     end
 
     create_guide_day(guide: @guide_a, date: Date.new(2026, 8, 15), status: :standby)
-    create_guide_day(guide: @guide_b, date: Date.new(2026, 8, 15), status: :penalized)
+    create_guide_day(guide: maria, date: Date.new(2026, 8, 15), status: :assigned_task)
     create_guide_day(guide: oscar, date: Date.new(2026, 8, 15), status: :day_off)
+    create_guide_day(guide: @guide_b, date: Date.new(2026, 8, 15), status: :penalized)
 
-    ordered = [@guide_b, oscar, @guide_a].sort_by do |guide|
+    ordered = [@guide_b, oscar, maria, @guide_a].sort_by do |guide|
       RollFairnessPolicy.ranking_key_for(guide, before_date: @work_day_date)
     end
 
-    assert_equal [@guide_a, oscar, @guide_b], ordered
+    assert_equal [@guide_a, maria, oscar, @guide_b], ordered
+  end
+
+  test "mid month entrant starts behind established guide of same priority" do
+    @guide_b.update!(fairness_started_on: Date.new(2026, 8, 15))
+
+    (1..3).each do |day|
+      create_guide_day(
+        guide: @guide_a,
+        date: Date.new(2026, 8, day),
+        status: :worked
+      )
+    end
+
+    established_key = RollFairnessPolicy.ranking_key_for(
+      @guide_a, before_date: @work_day_date
+    )
+    entrant_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b, before_date: @work_day_date
+    )
+
+    assert_ranks_before established_key, entrant_key
+
+    @guide_b.update!(priority: 1)
+    higher_priority_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b, before_date: @work_day_date
+    )
+    assert_ranks_before higher_priority_key, established_key
+  end
+
+  test "entry balance prevents a jump after first roll work" do
+    @guide_b.update!(fairness_started_on: Date.new(2026, 8, 15), fairness_entry_roll_days: 3)
+
+    (1..3).each do |day|
+      create_guide_day(
+        guide: @guide_a,
+        date: Date.new(2026, 8, day),
+        status: :worked
+      )
+    end
+    create_guide_day(
+      guide: @guide_b,
+      date: Date.new(2026, 8, 15),
+      status: :worked
+    )
+
+    established_key = RollFairnessPolicy.ranking_key_for(
+      @guide_a, before_date: @work_day_date
+    )
+    entrant_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b, before_date: @work_day_date
+    )
+
+    assert_ranks_before established_key, entrant_key
+    snapshot = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b, before_date: @work_day_date
+    )
+    assert_equal 1, snapshot[:roll_worked_days]
+    assert_equal 3, snapshot[:entry_roll_balance]
+    assert_equal 4, snapshot[:ranking_roll_days]
+  end
+
+  test "entrant stays last across months until first roll assignment" do
+    @guide_b.update!(fairness_started_on: Date.new(2026, 8, 15))
+    create_guide_day(
+      guide: @guide_b,
+      date: Date.new(2026, 8, 16),
+      status: :assigned_task
+    )
+    create_guide_day(
+      guide: @guide_a,
+      date: Date.new(2026, 9, 1),
+      status: :worked
+    )
+
+    established_key = RollFairnessPolicy.ranking_key_for(
+      @guide_a, before_date: Date.new(2026, 9, 5)
+    )
+    entrant_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b, before_date: Date.new(2026, 9, 5)
+    )
+
+    assert_ranks_before established_key, entrant_key
+  end
+
+  test "activation stores rounded average of other active guides" do
+    travel_to Date.new(2026, 9, 19) do
+      Guide.where.not(id: [@guide_a.id, @guide_b.id]).update_all(active: false)
+      @guide_b.update!(active: false)
+      peer = Guide.create!(
+        name: "Peer",
+        priority: 2,
+        active: true,
+        fairness_started_on: Date.new(2026, 9, 1)
+      )
+
+      create_guide_day(
+        guide: @guide_a, date: Date.new(2026, 9, 10), status: :worked
+      )
+      [11, 12].each do |day|
+        create_guide_day(
+          guide: peer, date: Date.new(2026, 9, day), status: :worked
+        )
+      end
+
+      @guide_b.update!(active: true)
+      assert_equal Date.new(2026, 9, 19), @guide_b.fairness_started_on
+      assert_equal 2, @guide_b.fairness_entry_roll_days
+
+      create_guide_day(
+        guide: peer, date: Date.new(2026, 9, 13), status: :worked
+      )
+      @guide_b.update!(name: "Guide B renamed")
+      assert_equal 2, @guide_b.reload.fairness_entry_roll_days
+
+      create_guide_day(
+        guide: @guide_b, date: Date.new(2026, 9, 19), status: :worked
+      )
+      snapshot = RollFairnessPolicy.fairness_snapshot_for(
+        @guide_b, before_date: Date.new(2026, 9, 20)
+      )
+      assert_equal 1, snapshot[:roll_worked_days]
+      assert_equal 2, snapshot[:entry_roll_balance]
+      assert_equal 3, snapshot[:ranking_roll_days]
+
+      october = RollFairnessPolicy.fairness_snapshot_for(
+        @guide_b, before_date: Date.new(2026, 10, 1)
+      )
+      assert_equal 0, october[:entry_roll_balance]
+    end
+  end
+
+  test "entry balance remains after a first guide in a later month" do
+    @guide_b.update!(
+      fairness_started_on: Date.new(2026, 8, 15),
+      fairness_entry_roll_days: 2
+    )
+    create_guide_day(
+      guide: @guide_b, date: Date.new(2026, 9, 3), status: :worked
+    )
+
+    september = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b, before_date: Date.new(2026, 9, 5)
+    )
+    assert_equal 1, september[:roll_worked_days]
+    assert_equal 2, september[:entry_roll_balance]
+    assert_equal 3, september[:ranking_roll_days]
+
+    october = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b, before_date: Date.new(2026, 10, 1)
+    )
+    assert_equal 0, october[:entry_roll_balance]
   end
 
   test "technical id is final deterministic tie breaker" do
