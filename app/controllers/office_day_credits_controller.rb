@@ -1,7 +1,5 @@
 class OfficeDayCreditsController < ApplicationController
-  before_action :require_admin!,
-                only: [:new, :create, :destroy, :generate_for_month]
-                
+  before_action :require_admin!
   before_action :set_credit, only: [:destroy]
 
   def index

@@ -1,4 +1,5 @@
 class OfficeOvertimesController < ApplicationController
+  before_action :require_admin!
   before_action :set_overtime, only: [:edit, :update, :destroy]
 
   def index
