@@ -13,9 +13,11 @@
         <% end %>
     </div>
 
+    <% if current_user.admin? %>
     <%= link_to "Nueva hora extra",
       new_office_overtime_path,
       class: "btn btn-primary mb-3" %>
+    <% end %>
 
     <table class="table table-bordered">
         <thead>
@@ -66,9 +68,11 @@
                 <td><%= overtime.reason %></td>
                 <td><%= overtime.approved ? "Sí" : "No" %></td>
                 <td>
+                    <% if current_user.admin? %>
                     <%= link_to "Editar",
                 edit_office_overtime_path(overtime),
                 class: "btn btn-sm btn-warning" %>
+                    <% end %>
                 </td>
             </tr>
             <% end %>

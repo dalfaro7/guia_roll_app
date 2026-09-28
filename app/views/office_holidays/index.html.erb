@@ -4,9 +4,11 @@
 
     <%= render "shared/office_menu" %>
 
+    <% if current_user.admin? %>
     <%= link_to "Nuevo feriado",
       new_office_holiday_path,
       class: "btn btn-primary mb-3" %>
+    <% end %>
 
     <table class="table">
         <thead>
@@ -27,9 +29,11 @@
                     <%= holiday.double_pay ? "Sí" : "No" %>
                 </td>
                 <td>
+                    <% if current_user.admin? %>
                     <%= link_to "Editar",
                 edit_office_holiday_path(holiday),
                 class: "btn btn-sm btn-warning" %>
+                    <% end %>
                 </td>
             </tr>
             <% end %>

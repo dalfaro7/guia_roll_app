@@ -180,10 +180,7 @@
 
                         <% if day.present? %>
                         <div class="mb-1">
-                            <%= link_to(
-                            edit_office_employee_day_path(day),
-                            class: "text-decoration-none"
-                          ) do %>
+                            <%= office_employee_day_entry(day) do %>
 
                             <% if day.day_off? %>
                             <% if day.uses_credit? %>
@@ -240,14 +237,15 @@
                         </div>
                         <% end %>
                         <% end %>
-
-                        <div class="mt-2">
-                            <%= link_to(
-                        "+ registro",
-                        new_office_employee_day_path(date: date),
-                        class: "btn btn-sm btn-outline-secondary w-100"
-                      ) %>
-                        </div>
+  <% if current_user.admin? %>
+  <div class="mt-2">
+      <%= link_to(
+  "+ registro",
+  new_office_employee_day_path(date: date),
+  class: "btn btn-sm btn-outline-secondary w-100"
+) %>
+  </div>
+  <% end %>
                     </td>
                     <% end %>
                 </tr>

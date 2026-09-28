@@ -3,11 +3,13 @@
 
     <%= render "shared/office_menu" %>
 
+    <% if current_user.admin? %>
     <div class="mb-3">
         <%= link_to "Agregar vacaciones históricas",
                 new_office_vacation_credit_path,
                 class: "btn btn-success" %>
     </div>
+    <% end %>
 
     <table class="table table-bordered">
         <thead>
@@ -94,7 +96,7 @@
                 </td>
 
                 <td class="text-end">
-                    <% unless credit.used? %>
+                    <% if current_user.admin? && !credit.used? %>
                     <%= button_to "Eliminar",
                             office_vacation_credit_path(credit),
                             method: :delete,
