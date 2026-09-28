@@ -1,5 +1,6 @@
 class OfficeHolidaysController < ApplicationController
-  before_action :require_admin!
+  before_action :require_office_access!
+  before_action :require_admin!, except: [:index]
   before_action :set_holiday, only: [:edit, :update, :destroy]
 
   def index

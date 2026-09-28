@@ -20,6 +20,7 @@
         <% end %>
     </div>
 
+    <% if current_user.admin? %>
     <div class="card mb-3">
         <div class="card-body">
             <h5 class="card-title">Generar calendario</h5>
@@ -76,6 +77,7 @@
             <% end %>
         </div>
     </div>
+    <% end %>
 
     <div class="card mb-3">
         <div class="card-body">

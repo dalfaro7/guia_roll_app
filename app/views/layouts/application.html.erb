@@ -50,7 +50,7 @@
         <%= link_to "Buses", buses_path %> |
         <%= link_to "Dashboard", dashboard_path %>
         <%= link_to "Audit Logs", audit_logs_path %>
-        <% if current_user&.admin? %>
+        <% if current_user&.admin? || current_user&.recursos_humanos? %>
             <%= link_to "Libres Oficina", office_employee_days_path %>
         <% end %>
 

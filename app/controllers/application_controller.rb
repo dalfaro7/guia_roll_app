@@ -19,6 +19,14 @@ class ApplicationController < ActionController::Base
                 alert: "Solo los administradores pueden realizar esta acción."
   end
 
+  def require_office_access!
+    return if current_user&.admin? ||
+              current_user&.recursos_humanos?
+  
+    redirect_to root_path,
+                alert: "No tiene acceso al módulo Libres Oficina."
+  end
+  
   def audit!(action:, auditable:, work_day: nil, metadata: {})
     AuditLog.create!(
       user: current_user,
