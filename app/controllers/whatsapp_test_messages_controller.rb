@@ -1,5 +1,7 @@
 class WhatsappTestMessagesController < ApplicationController
-  before_action :require_admin!
+  skip_before_action :authenticate_user!
+  before_action :require_admin_or_meta_reviewer!
+  layout :review_layout
 
   def new
     set_defaults
@@ -44,6 +46,42 @@ class WhatsappTestMessagesController < ApplicationController
   end
 
   private
+
+  def require_admin_or_meta_reviewer!
+    if user_signed_in?
+      return if current_user.admin?
+
+      redirect_to root_path,
+                  alert: "Solo los administradores pueden realizar esta acción."
+      return
+    end
+
+    expected_username = ENV["META_REVIEW_USERNAME"].to_s
+    expected_password = ENV["META_REVIEW_PASSWORD"].to_s
+    return request_http_basic_authentication("ARC_MESSAGE Review") if
+      expected_username.blank? || expected_password.blank?
+
+    authenticated = authenticate_with_http_basic do |username, password|
+      secure_match?(username, expected_username) &&
+        secure_match?(password, expected_password)
+    end
+
+    if authenticated
+      @meta_review_access = true
+    else
+      request_http_basic_authentication("ARC_MESSAGE Review")
+    end
+  end
+
+  def secure_match?(provided, expected)
+    provided_digest = Digest::SHA256.hexdigest(provided.to_s)
+    expected_digest = Digest::SHA256.hexdigest(expected.to_s)
+    ActiveSupport::SecurityUtils.secure_compare(provided_digest, expected_digest)
+  end
+
+  def review_layout
+    @meta_review_access ? "meta_review" : "application"
+  end
 
   def set_defaults
     @to = ""
