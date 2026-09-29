@@ -26,6 +26,14 @@ class WhatsappTestMessagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[value='hello_world']"
   end
 
+test "operator cannot run the account check" do
+  sign_in @operator
+
+  post check_whatsapp_test_message_url
+
+  assert_redirected_to root_url
+end
+
   test "operator cannot open the test form" do
     sign_in @operator
 

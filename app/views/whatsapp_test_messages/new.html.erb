@@ -9,7 +9,31 @@
         Esta prueba no utiliza guías, empleados de oficina ni datos del roll.
       </p>
 
-      <%= form_with url: whatsapp_test_message_path,
+      <div class="border rounded p-3 mb-4">
+  <h2 class="h5">Verificar cuenta de WhatsApp</h2>
+  <p class="mb-2">
+    Comprueba mediante una consulta de solo lectura que la cuenta y el número emisor
+    están disponibles para esta aplicación.
+  </p>
+  <%= button_to "Verificar conexión con Meta",
+                check_whatsapp_test_message_path,
+                method: :post,
+                class: "btn btn-outline-primary" %>
+
+  <% if @phone_numbers.present? %>
+    <ul class="mt-3 mb-0">
+      <% @phone_numbers.each do |phone| %>
+        <li>
+          <strong><%= phone["display_phone_number"] %></strong>
+          — <%= phone["verified_name"] %>
+          — calidad: <%= phone["quality_rating"] || "sin calificación" %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>
+
+<%= form_with url: whatsapp_test_message_path,
                     scope: :whatsapp_test_message,
                     method: :post,
                     local: true do |form| %>

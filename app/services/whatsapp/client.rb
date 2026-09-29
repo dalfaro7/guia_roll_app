@@ -14,17 +14,20 @@ module Whatsapp
     def initialize(
       access_token: ENV["WHATSAPP_ACCESS_TOKEN"],
       phone_number_id: ENV["WHATSAPP_PHONE_NUMBER_ID"],
+      business_account_id: ENV["WHATSAPP_BUSINESS_ACCOUNT_ID"],
       api_version: ENV.fetch("WHATSAPP_GRAPH_API_VERSION", "v25.0"),
       http: nil
     )
       @access_token = access_token.to_s
       @phone_number_id = phone_number_id.to_s
+      @business_account_id = business_account_id.to_s
       @api_version = api_version.to_s
       @http = http
     end
 
     def send_template(to:, template_name:, language_code:)
-      validate_configuration!
+      require_configuration!("WHATSAPP_ACCESS_TOKEN" => @access_token,
+                             "WHATSAPP_PHONE_NUMBER_ID" => @phone_number_id)
 
       recipient = normalize_phone(to)
       raise ArgumentError, "Ingrese un número de destino válido." if recipient.blank?
@@ -33,8 +36,7 @@ module Whatsapp
 
       uri = URI("https://graph.facebook.com/#{@api_version}/#{@phone_number_id}/messages")
       request = Net::HTTP::Post.new(uri)
-      request["Authorization"] = "Bearer #{@access_token}"
-      request["Content-Type"] = "application/json"
+      authorize(request)
       request.body = {
         messaging_product: "whatsapp",
         to: recipient,
@@ -45,23 +47,26 @@ module Whatsapp
         }
       }.to_json
 
-      response = http_for(uri).request(request)
-      body = parse_json(response.body)
-      status = response.code.to_i
+      perform(uri, request)
+    end
 
-      Result.new(
-        success: status.between?(200, 299),
-        status: status,
-        body: body
-      )
+    def phone_numbers
+      require_configuration!("WHATSAPP_ACCESS_TOKEN" => @access_token,
+                             "WHATSAPP_BUSINESS_ACCOUNT_ID" => @business_account_id)
+
+      fields = "id,display_phone_number,verified_name,quality_rating,platform_type"
+      uri = URI("https://graph.facebook.com/#{@api_version}/#{@business_account_id}/phone_numbers")
+      uri.query = URI.encode_www_form(fields: fields)
+      request = Net::HTTP::Get.new(uri)
+      authorize(request)
+
+      perform(uri, request)
     end
 
     private
 
-    def validate_configuration!
-      missing = []
-      missing << "WHATSAPP_ACCESS_TOKEN" if @access_token.blank?
-      missing << "WHATSAPP_PHONE_NUMBER_ID" if @phone_number_id.blank?
+    def require_configuration!(values)
+      missing = values.filter_map { |name, value| name if value.blank? }
       return if missing.empty?
 
       raise ConfigurationError, "Faltan variables de WhatsApp: #{missing.join(', ')}"
@@ -69,6 +74,22 @@ module Whatsapp
 
     def normalize_phone(value)
       value.to_s.gsub(/\D/, "")
+    end
+
+    def authorize(request)
+      request["Authorization"] = "Bearer #{@access_token}"
+      request["Content-Type"] = "application/json"
+    end
+
+    def perform(uri, request)
+      response = http_for(uri).request(request)
+      status = response.code.to_i
+
+      Result.new(
+        success: status.between?(200, 299),
+        status: status,
+        body: parse_json(response.body)
+      )
     end
 
     def http_for(uri)

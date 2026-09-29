@@ -2,7 +2,9 @@ Rails.application.routes.draw do
   get "webhooks/whatsapp", to: "whatsapp_webhooks#verify"
   post "webhooks/whatsapp", to: "whatsapp_webhooks#receive"
 
-  resource :whatsapp_test_message, only: [:new, :create]
+resource :whatsapp_test_message, only: [:new, :create] do
+  post :check
+end
 
   get "audit_logs/index"
   get "bus_assignments/create"

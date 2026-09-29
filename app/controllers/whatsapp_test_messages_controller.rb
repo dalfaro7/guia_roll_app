@@ -18,17 +18,29 @@ class WhatsappTestMessagesController < ApplicationController
       redirect_to new_whatsapp_test_message_path,
                   notice: "Mensaje de prueba enviado a Meta correctamente."
     else
-      error_message = result.body.dig("error", "message") || "Meta rechazó el mensaje."
-      flash.now[:alert] = "Error de Meta (HTTP #{result.status}): #{error_message}"
-      render :new, status: :unprocessable_entity
+      render_meta_error(result)
     end
   rescue Whatsapp::Client::ConfigurationError, ArgumentError => e
-    flash.now[:alert] = e.message
-    render :new, status: :unprocessable_entity
+    render_local_error(e.message)
   rescue StandardError => e
-    Rails.logger.error("[WHATSAPP TEST] #{e.class}: #{e.message}")
-    flash.now[:alert] = "No se pudo conectar con WhatsApp. Revise los registros de Render."
-    render :new, status: :service_unavailable
+    render_connection_error(e)
+  end
+
+  def check
+    set_defaults
+    result = Whatsapp::Client.new.phone_numbers
+
+    if result.success?
+      @phone_numbers = result.body.fetch("data", [])
+      flash.now[:notice] = "Conexión con la cuenta de WhatsApp verificada."
+      render :new
+    else
+      render_meta_error(result)
+    end
+  rescue Whatsapp::Client::ConfigurationError, ArgumentError => e
+    render_local_error(e.message)
+  rescue StandardError => e
+    render_connection_error(e)
   end
 
   private
@@ -48,5 +60,22 @@ class WhatsappTestMessagesController < ApplicationController
     @to = permitted[:to].to_s
     @template_name = permitted[:template_name].to_s
     @language_code = permitted[:language_code].to_s
+  end
+
+  def render_meta_error(result)
+    error_message = result.body.dig("error", "message") || "Meta rechazó la solicitud."
+    flash.now[:alert] = "Error de Meta (HTTP #{result.status}): #{error_message}"
+    render :new, status: :unprocessable_entity
+  end
+
+  def render_local_error(message)
+    flash.now[:alert] = message
+    render :new, status: :unprocessable_entity
+  end
+
+  def render_connection_error(error)
+    Rails.logger.error("[WHATSAPP TEST] #{error.class}: #{error.message}")
+    flash.now[:alert] = "No se pudo conectar con WhatsApp. Revise los registros de Render."
+    render :new, status: :service_unavailable
   end
 end

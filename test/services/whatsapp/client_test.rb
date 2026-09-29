@@ -65,6 +65,23 @@ class Whatsapp::ClientTest < ActiveSupport::TestCase
     assert_equal "Invalid parameter", result.body.dig("error", "message")
   end
 
+test "reads phone numbers for the configured business account" do
+  http = FakeHttp.new(
+    FakeResponse.new("200", { data: [{ id: "1376920292169514" }] }.to_json)
+  )
+  client = Whatsapp::Client.new(
+    access_token: "secret-token",
+    business_account_id: "1092016140140500",
+    http: http
+  )
+
+  result = client.phone_numbers
+
+  assert result.success?
+  assert_equal "Bearer secret-token", http.request_value["Authorization"]
+  assert_equal "1376920292169514", result.body.dig("data", 0, "id")
+end
+
   test "requires server configuration" do
     client = Whatsapp::Client.new(access_token: nil, phone_number_id: nil)
 
