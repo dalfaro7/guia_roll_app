@@ -1,0 +1,46 @@
+<% content_for :title, "Prueba de WhatsApp" %>
+
+<div class="container" style="max-width: 760px;">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h1 class="h3 mb-3">Prueba aislada de WhatsApp</h1>
+      <p class="text-muted">
+        Envía una plantilla directamente a un número escrito manualmente.
+        Esta prueba no utiliza guías, empleados de oficina ni datos del roll.
+      </p>
+
+      <%= form_with url: whatsapp_test_message_path,
+                    scope: :whatsapp_test_message,
+                    method: :post,
+                    local: true do |form| %>
+        <div class="mb-3">
+          <%= form.label :to, "Número de destino", class: "form-label" %>
+          <%= form.telephone_field :to,
+                                   value: @to,
+                                   class: "form-control",
+                                   placeholder: "+506 8888 8888",
+                                   required: true %>
+          <div class="form-text">Incluya el código de país.</div>
+        </div>
+
+        <div class="mb-3">
+          <%= form.label :template_name, "Plantilla", class: "form-label" %>
+          <%= form.text_field :template_name,
+                              value: @template_name,
+                              class: "form-control",
+                              required: true %>
+        </div>
+
+        <div class="mb-3">
+          <%= form.label :language_code, "Código de idioma", class: "form-label" %>
+          <%= form.text_field :language_code,
+                              value: @language_code,
+                              class: "form-control",
+                              required: true %>
+        </div>
+
+        <%= form.submit "Enviar prueba", class: "btn btn-success" %>
+      <% end %>
+    </div>
+  </div>
+</div>
