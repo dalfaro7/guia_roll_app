@@ -453,8 +453,11 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     assert_equal 4, snapshot[:ranking_roll_days]
   end
 
-  test "entrant stays last across months until first roll assignment" do
-    @guide_b.update!(fairness_started_on: Date.new(2026, 8, 15))
+  test "entrant restriction expires at the next monthly reset" do
+    @guide_b.update!(
+      fairness_started_on: Date.new(2026, 8, 15),
+      fairness_entry_roll_days: 3
+    )
     create_guide_day(
       guide: @guide_b,
       date: Date.new(2026, 8, 16),
@@ -473,7 +476,14 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
       @guide_b, before_date: Date.new(2026, 9, 5)
     )
 
-    assert_ranks_before established_key, entrant_key
+    assert_equal 0, entrant_key[1]
+    assert_ranks_before entrant_key, established_key
+
+    snapshot = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b, before_date: Date.new(2026, 9, 5)
+    )
+    assert_equal 0, snapshot[:entry_roll_balance]
+    assert_equal 0, snapshot[:ranking_roll_days]
   end
 
   test "activation stores average rounded down from other active guides" do
@@ -523,7 +533,7 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     end
   end
 
-  test "entry balance remains after a first guide in a later month" do
+  test "entry balance does not reappear after first guide in a later month" do
     @guide_b.update!(
       fairness_started_on: Date.new(2026, 8, 15),
       fairness_entry_roll_days: 2
@@ -536,8 +546,8 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
       @guide_b, before_date: Date.new(2026, 9, 5)
     )
     assert_equal 1, september[:roll_worked_days]
-    assert_equal 2, september[:entry_roll_balance]
-    assert_equal 3, september[:ranking_roll_days]
+    assert_equal 0, september[:entry_roll_balance]
+    assert_equal 1, september[:ranking_roll_days]
 
     october = RollFairnessPolicy.fairness_snapshot_for(
       @guide_b, before_date: Date.new(2026, 10, 1)

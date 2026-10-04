@@ -128,34 +128,28 @@ class RollFairnessPolicy
       [:worked, :assigned_task]
     end
 
-    # Keep the fixed entry balance through the month of the first
-    # roll assignment when that assignment occurs after activation month.
+    # The fixed entry balance only belongs to the activation month.
+    # At the next monthly reset the guide starts with the same zero
+    # balance as every other guide; an old balance must not reappear
+    # when the first roll assignment happens in a later month.
     def entry_roll_balance_for(guide, before_date:)
       start_date = guide.fairness_started_on
       return 0 if start_date.blank? || start_date > before_date
-
-      if start_date.beginning_of_month == before_date.beginning_of_month
-        return guide.fairness_entry_roll_days.to_i
-      end
-
-      first_roll_date = GuideDay
-        .joins(:work_day)
-        .where(guide: guide, status: fairness_statuses)
-        .where(work_days: { date: start_date...before_date })
-        .minimum("work_days.date")
-
-      return 0 unless first_roll_date&.beginning_of_month == before_date.beginning_of_month
+      return 0 unless start_date.beginning_of_month == before_date.beginning_of_month
 
       guide.fairness_entry_roll_days.to_i
     end
 
-    # A guide entering mid-month waits behind established guides
-    # of the same priority until their first roll assignment.
+    # A guide entering mid-month waits behind established guides of
+    # the same priority until the first roll assignment, but only for
+    # the activation month. If the month ends first, the monthly reset
+    # removes the entrant restriction and prevents indefinite starvation.
     def new_entrant_rank_for(guide, before_date:)
       start_date = guide.fairness_started_on
       return 0 if start_date.blank?
       return 0 if start_date == start_date.beginning_of_month
       return 0 if start_date > before_date
+      return 0 unless start_date.beginning_of_month == before_date.beginning_of_month
 
       has_roll_work = GuideDay
         .joins(:work_day)
