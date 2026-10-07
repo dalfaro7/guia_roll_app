@@ -14,6 +14,8 @@ class WhatsappWebhooksController < ActionController::API
 
     payload = JSON.parse(request.raw_post)
 
+    log_message_statuses(payload)
+
     Rails.logger.info(
       "[WHATSAPP WEBHOOK] object=#{payload['object']} " \
       "entries=#{Array(payload['entry']).size}"
@@ -25,6 +27,33 @@ class WhatsappWebhooksController < ActionController::API
   end
 
   private
+
+  def log_message_statuses(payload)
+    statuses = Array(payload["entry"]).flat_map do |entry|
+      Array(entry["changes"]).flat_map do |change|
+        Array(change.dig("value", "statuses"))
+      end
+    end
+
+    statuses.each do |status|
+      errors = Array(status["errors"]).map do |error|
+        [
+          error["code"],
+          error["title"],
+          error["message"],
+          error.dig("error_data", "details")
+        ].compact.join(": ")
+      end
+
+      Rails.logger.info(
+        "[WHATSAPP STATUS] id=#{status["id"]} " \
+        "status=#{status["status"]} " \
+        "recipient=#{status["recipient_id"]} " \
+        "timestamp=#{status["timestamp"]} " \
+        "errors=#{errors.presence&.join(" | ") || "-"}"
+      )
+    end
+  end
 
   def valid_verify_token?
     secure_match(
