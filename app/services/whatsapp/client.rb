@@ -53,6 +53,25 @@ module Whatsapp
       perform(uri, request)
     end
 
+    def upload_media(io:, filename:, content_type: "application/pdf")
+      require_configuration!("WHATSAPP_ACCESS_TOKEN" => @access_token,
+                             "WHATSAPP_PHONE_NUMBER_ID" => @phone_number_id)
+
+      uri = URI("https://graph.facebook.com/#{@api_version}/#{@phone_number_id}/media")
+      request = Net::HTTP::Post.new(uri)
+      request["Authorization"] = "Bearer #{@access_token}"
+      request.set_form(
+        [
+          ["messaging_product", "whatsapp"],
+          ["type", content_type],
+          ["file", io, { filename: filename, content_type: content_type }]
+        ],
+        "multipart/form-data"
+      )
+
+      perform(uri, request)
+    end
+
     def phone_numbers
       require_configuration!("WHATSAPP_ACCESS_TOKEN" => @access_token,
                              "WHATSAPP_BUSINESS_ACCOUNT_ID" => @business_account_id)

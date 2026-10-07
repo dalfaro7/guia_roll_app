@@ -4,7 +4,12 @@ class Whatsapp::RollNotificationSenderTest < ActiveSupport::TestCase
   FakeResult = Struct.new(:success?, :status, :body)
 
   class FakeClient
-    attr_reader :arguments
+    attr_reader :arguments, :upload_arguments
+
+    def upload_media(**arguments)
+      @upload_arguments = arguments
+      FakeResult.new(true, 200, { "id" => "media.roll-pdf" })
+    end
 
     def send_template(**arguments)
       @arguments = arguments
@@ -36,6 +41,26 @@ class Whatsapp::RollNotificationSenderTest < ActiveSupport::TestCase
       assert_nil Whatsapp::RollNotificationSender.send_work_day(work_day, client: client)
     end
     assert_nil client.arguments
+  end
+
+  test "uploads and sends a document when the document template is configured" do
+    work_day = WorkDay.create!(date: Date.new(2026, 10, 7), status: :published)
+    client = FakeClient.new
+
+    with_env("WHATSAPP_ROLL_RECIPIENT", "+506 7296 9810") do
+      with_env("WHATSAPP_ROLL_DOCUMENT_TEMPLATE_NAME", "guide_schedule_pdf") do
+        Whatsapp::RollNotificationSender.send_work_day(work_day, client: client)
+      end
+    end
+
+    assert_equal "guide_schedule_2026-10-07.pdf", client.upload_arguments[:filename]
+    assert client.upload_arguments[:io].string.start_with?("%PDF")
+    assert_equal "guide_schedule_pdf", client.arguments[:template_name]
+    header = client.arguments.dig(:components, 0, :parameters, 0)
+    assert_equal "document", header[:type]
+    assert_equal "media.roll-pdf", header.dig(:document, :id)
+    assert_equal "Wednesday, October 7, 2026",
+      client.arguments.dig(:components, 1, :parameters, 0, :text)
   end
 
   private

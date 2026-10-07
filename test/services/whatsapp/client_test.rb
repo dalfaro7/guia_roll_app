@@ -84,6 +84,22 @@ class Whatsapp::ClientTest < ActiveSupport::TestCase
     assert_equal "Invalid parameter", result.body.dig("error", "message")
   end
 
+  test "uploads a PDF to the configured phone number" do
+    http = FakeHttp.new(FakeResponse.new("200", { id: "media.123" }.to_json))
+    client = Whatsapp::Client.new(access_token: "secret-token", phone_number_id: "123", http: http)
+
+    result = client.upload_media(
+      io: StringIO.new("%PDF sample"),
+      filename: "guide_schedule.pdf"
+    )
+
+    assert result.success?
+    assert_equal "media.123", result.body["id"]
+    assert_equal "/v25.0/123/media", http.request_value.path
+    assert_equal "Bearer secret-token", http.request_value["Authorization"]
+    assert_match %r{multipart/form-data}, http.request_value["Content-Type"]
+  end
+
 test "reads phone numbers for the configured business account" do
   http = FakeHttp.new(
     FakeResponse.new("200", { data: [{ id: "1376920292169514" }] }.to_json)
