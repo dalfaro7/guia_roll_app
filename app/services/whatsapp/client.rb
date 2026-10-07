@@ -25,7 +25,7 @@ module Whatsapp
       @http = http
     end
 
-    def send_template(to:, template_name:, language_code:)
+    def send_template(to:, template_name:, language_code:, components: nil)
       require_configuration!("WHATSAPP_ACCESS_TOKEN" => @access_token,
                              "WHATSAPP_PHONE_NUMBER_ID" => @phone_number_id)
 
@@ -37,14 +37,17 @@ module Whatsapp
       uri = URI("https://graph.facebook.com/#{@api_version}/#{@phone_number_id}/messages")
       request = Net::HTTP::Post.new(uri)
       authorize(request)
+      template = {
+        name: template_name,
+        language: { code: language_code }
+      }
+      template[:components] = components if components.present?
+
       request.body = {
         messaging_product: "whatsapp",
         to: recipient,
         type: "template",
-        template: {
-          name: template_name,
-          language: { code: language_code }
-        }
+        template: template
       }.to_json
 
       perform(uri, request)

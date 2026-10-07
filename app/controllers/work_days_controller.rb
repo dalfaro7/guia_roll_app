@@ -277,6 +277,7 @@ class WorkDaysController < ApplicationController
     @work_day.publish!
 
     ExternalRollSender.send_work_day(@work_day)
+    Whatsapp::RollNotificationSender.send_work_day(@work_day)
 
     redirect_to(
       @work_day,

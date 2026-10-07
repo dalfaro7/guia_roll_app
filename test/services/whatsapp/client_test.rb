@@ -44,6 +44,25 @@ class Whatsapp::ClientTest < ActiveSupport::TestCase
     assert_equal "en_US", payload.dig("template", "language", "code")
   end
 
+  test "sends template body parameters" do
+    http = FakeHttp.new(FakeResponse.new("200", { messages: [{ id: "wamid.456" }] }.to_json))
+    client = Whatsapp::Client.new(access_token: "secret-token", phone_number_id: "123", http: http)
+
+    client.send_template(
+      to: "50672969810",
+      template_name: "nuevo_roll_publicado",
+      language_code: "es",
+      components: [
+        { type: "body", parameters: [{ type: "text", text: "Roll ordenado" }] }
+      ]
+    )
+
+    payload = JSON.parse(http.request_value.body)
+    parameter = payload.dig("template", "components", 0, "parameters", 0)
+    assert_equal "text", parameter["type"]
+    assert_equal "Roll ordenado", parameter["text"]
+  end
+
   test "reports a Meta error without raising" do
     http = FakeHttp.new(
       FakeResponse.new("400", { error: { message: "Invalid parameter" } }.to_json)
