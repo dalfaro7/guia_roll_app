@@ -22,7 +22,7 @@ class Whatsapp::RollNotificationSenderTest < ActiveSupport::TestCase
 
     assert_equal "+506 7296 9810", client.arguments[:to]
     assert_equal "nuevo_roll_publicado", client.arguments[:template_name]
-    assert_equal "en_US", client.arguments[:language_code]
+    assert_equal "en", client.arguments[:language_code]
     assert_includes client.arguments.dig(:components, 0, :parameters, 0, :text), work_day.date.year.to_s
   end
 

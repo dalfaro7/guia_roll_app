@@ -1,7 +1,7 @@
 module Whatsapp
   class RollNotificationSender
     DEFAULT_TEMPLATE_NAME = "nuevo_roll_publicado"
-    DEFAULT_LANGUAGE_CODE = "en_US"
+    DEFAULT_LANGUAGE_CODE = "en"
 
     def self.send_work_day(work_day, client: Client.new)
       recipient = ENV["WHATSAPP_ROLL_RECIPIENT"].to_s
