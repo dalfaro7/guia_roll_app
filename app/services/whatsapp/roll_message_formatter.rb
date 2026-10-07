@@ -1,12 +1,6 @@
 module Whatsapp
   class RollMessageFormatter
     LOCATION_ORDER = ["Sara-3&4", "Balsa", "Privado", "PM"].freeze
-    LOCATION_TITLES = {
-      "Sara-3&4" => "🌊 *SARA 3 Y 4*",
-      "Balsa" => "🛶 *BALSA*",
-      "Privado" => "🚐 *PRIVADO*",
-      "PM" => "🌙 *PM*"
-    }.freeze
     ROLE_LABELS = {
       "River Guide" => "River Guide",
       "Photographer" => "Photographer",
@@ -23,12 +17,18 @@ module Whatsapp
       @work_day = work_day
     end
 
-    def call
-      sections = ["📅 *#{formatted_date}*"]
-      sections.concat(location_sections)
-      sections << assigned_tasks_section if assigned_tasks.any?
-      sections << standby_section if standby_guides.any?
-      sections.compact.join("\n\n")
+    # Meta no permite saltos de línea dentro de una variable de plantilla.
+    # Cada elemento corresponde, en orden, a {{1}} ... {{7}}.
+    def template_parameters
+      [
+        formatted_date,
+        location_summary("Sara-3&4"),
+        location_summary("Balsa"),
+        location_summary("Privado"),
+        location_summary("PM"),
+        assigned_tasks_summary,
+        standby_summary
+      ].map { |value| sanitize_parameter(value) }
     end
 
     private
@@ -40,20 +40,13 @@ module Whatsapp
       "#{WEEKDAYS[date.wday]}, #{MONTHS[date.month - 1]} #{date.day}, #{date.year}"
     end
 
-    def location_sections
-      grouped = worked_guides.group_by(&:location)
-      ordered_locations = LOCATION_ORDER + (grouped.keys.compact - LOCATION_ORDER).sort
+    def location_summary(location)
+      guide_days = worked_guides.select { |guide_day| guide_day.location == location }
+      return "None" if guide_days.empty?
 
-      ordered_locations.filter_map do |location|
-        guide_days = grouped[location]
-        next if guide_days.blank?
-
-        title = LOCATION_TITLES.fetch(location, "📍 *#{location.to_s.upcase}*")
-        lines = guide_days.each_with_index.map do |guide_day, index|
-          format_worked_guide(guide_day, index + 1)
-        end
-        ([title] + lines).join("\n")
-      end
+      guide_days.each_with_index.map do |guide_day, index|
+        format_worked_guide(guide_day, index + 1)
+      end.join(" • ")
     end
 
     def worked_guides
@@ -93,12 +86,13 @@ module Whatsapp
         .sort_by { |guide_day| [guide_day.guide.priority || 999, guide_day.guide.name.to_s] }
     end
 
-    def assigned_tasks_section
-      lines = assigned_tasks.map do |guide_day|
+    def assigned_tasks_summary
+      return "None" if assigned_tasks.empty?
+
+      assigned_tasks.map do |guide_day|
         note = guide_day.status_note.presence || "Assigned task"
-        "• #{guide_day.guide.name.to_s.strip} — #{note}"
-      end
-      (["📌 *ASSIGNED TASKS*"] + lines).join("\n")
+        "#{guide_day.guide.name.to_s.strip} — #{note}"
+      end.join(" • ")
     end
 
     def standby_guides
@@ -110,9 +104,14 @@ module Whatsapp
         .sort_by { |guide_day| [guide_day.guide.priority || 999, guide_day.guide.name.to_s] }
     end
 
-    def standby_section
-      names = standby_guides.map { |guide_day| guide_day.guide.name.to_s.strip }
-      "⏳ *STANDBY*\n• #{names.join("\n• ")}"
+    def standby_summary
+      return "None" if standby_guides.empty?
+
+      standby_guides.map { |guide_day| guide_day.guide.name.to_s.strip }.join(" • ")
+    end
+
+    def sanitize_parameter(value)
+      value.to_s.gsub(/[\r\n\t]+/, " ").gsub(/\s{2,}/, " ").strip.presence || "None"
     end
   end
 end

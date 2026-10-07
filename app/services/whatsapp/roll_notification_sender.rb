@@ -1,6 +1,6 @@
 module Whatsapp
   class RollNotificationSender
-    DEFAULT_TEMPLATE_NAME = "nuevo_roll_publicado"
+    DEFAULT_TEMPLATE_NAME = "nuevo_roll_publicado_v2"
     DEFAULT_LANGUAGE_CODE = "en"
 
     def self.send_work_day(work_day, client: Client.new)
@@ -10,13 +10,16 @@ module Whatsapp
         return nil
       end
 
-      message = RollMessageFormatter.new(work_day).call
+      parameters = RollMessageFormatter.new(work_day).template_parameters
       result = client.send_template(
         to: recipient,
         template_name: ENV.fetch("WHATSAPP_ROLL_TEMPLATE_NAME", DEFAULT_TEMPLATE_NAME),
         language_code: ENV.fetch("WHATSAPP_ROLL_TEMPLATE_LANGUAGE", DEFAULT_LANGUAGE_CODE),
         components: [
-          { type: "body", parameters: [{ type: "text", text: message }] }
+          {
+            type: "body",
+            parameters: parameters.map { |text| { type: "text", text: text } }
+          }
         ]
       )
 
