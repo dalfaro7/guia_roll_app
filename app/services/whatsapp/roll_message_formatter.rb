@@ -8,16 +8,16 @@ module Whatsapp
       "PM" => "🌙 *PM*"
     }.freeze
     ROLE_LABELS = {
-      "River Guide" => "Guía de río",
-      "Photographer" => "Fotógrafo",
-      "Safety Kayaker" => "Kayakista de seguridad"
+      "River Guide" => "River Guide",
+      "Photographer" => "Photographer",
+      "Safety Kayaker" => "Safety Kayaker"
     }.freeze
     SPECIAL_ROLE_ICONS = {
       "Photographer" => "📷",
       "Safety Kayaker" => "🛟"
     }.freeze
-    WEEKDAYS = %w[domingo lunes martes miércoles jueves viernes sábado].freeze
-    MONTHS = %w[enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre].freeze
+    WEEKDAYS = %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday].freeze
+    MONTHS = %w[January February March April May June July August September October November December].freeze
 
     def initialize(work_day)
       @work_day = work_day
@@ -37,7 +37,7 @@ module Whatsapp
 
     def formatted_date
       date = work_day.date
-      "#{WEEKDAYS[date.wday].capitalize} #{date.day} de #{MONTHS[date.month - 1]} de #{date.year}"
+      "#{WEEKDAYS[date.wday]}, #{MONTHS[date.month - 1]} #{date.day}, #{date.year}"
     end
 
     def location_sections
@@ -95,10 +95,10 @@ module Whatsapp
 
     def assigned_tasks_section
       lines = assigned_tasks.map do |guide_day|
-        note = guide_day.status_note.presence || "Tarea asignada"
+        note = guide_day.status_note.presence || "Assigned task"
         "• #{guide_day.guide.name.to_s.strip} — #{note}"
       end
-      (["📌 *TAREAS ASIGNADAS*"] + lines).join("\n")
+      (["📌 *ASSIGNED TASKS*"] + lines).join("\n")
     end
 
     def standby_guides
@@ -112,7 +112,7 @@ module Whatsapp
 
     def standby_section
       names = standby_guides.map { |guide_day| guide_day.guide.name.to_s.strip }
-      "⏳ *EN ESPERA*\n• #{names.join("\n• ")}"
+      "⏳ *STANDBY*\n• #{names.join("\n• ")}"
     end
   end
 end

@@ -20,13 +20,13 @@ class Whatsapp::RollMessageFormatterTest < ActiveSupport::TestCase
 
     message = Whatsapp::RollMessageFormatter.new(work_day).call
 
-    assert_includes message, "📅 *Miércoles 7 de octubre de 2026*"
+    assert_includes message, "📅 *Wednesday, October 7, 2026*"
     assert_includes message, "🛶 *BALSA*"
-    assert_includes message, "1. Guide One — Guía de río"
-    assert_includes message, "🛟 Guide Two — Kayakista de seguridad"
-    assert_includes message, "📌 *TAREAS ASIGNADAS*"
+    assert_includes message, "1. Guide One — River Guide"
+    assert_includes message, "🛟 Guide Two — Safety Kayaker"
+    assert_includes message, "📌 *ASSIGNED TASKS*"
     assert_includes message, "• Guía de Tarea — Revisar equipo"
-    assert_includes message, "⏳ *EN ESPERA*"
+    assert_includes message, "⏳ *STANDBY*"
     assert_includes message, "• Guía en Espera"
   end
 end
