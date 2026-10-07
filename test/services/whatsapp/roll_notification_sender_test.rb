@@ -12,7 +12,7 @@ class Whatsapp::RollNotificationSenderTest < ActiveSupport::TestCase
     end
   end
 
-  test "sends seven parameters to the configured recipient" do
+  test "sends one flexible parameter to the configured recipient" do
     work_day = WorkDay.create!(date: Date.current + 1.day, status: :published)
     client = FakeClient.new
 
@@ -21,11 +21,11 @@ class Whatsapp::RollNotificationSenderTest < ActiveSupport::TestCase
     end
 
     assert_equal "+506 7296 9810", client.arguments[:to]
-    assert_equal "nuevo_roll_publicado_v2", client.arguments[:template_name]
+    assert_equal "nuevo_roll_publicado", client.arguments[:template_name]
     assert_equal "en", client.arguments[:language_code]
     parameters = client.arguments.dig(:components, 0, :parameters)
-    assert_equal 7, parameters.length
-    assert parameters.all? { |parameter| parameter[:text].exclude?("\n") }
+    assert_equal 1, parameters.length
+    assert_no_match(/[\r\n\t]/, parameters.first[:text])
   end
 
   test "skips delivery when the recipient is not configured" do
