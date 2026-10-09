@@ -2,13 +2,13 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">Roll Notes</h2>
+            <h2 class="mb-1">Notas de la programación</h2>
             <p class="text-muted mb-0">
                 Incidents and operational observations
             </p>
         </div>
 
-        <%= link_to "Back to Rolls",
+        <%= link_to "Volver a programación de guías",
                 work_days_path,
                 class: "btn btn-outline-secondary" %>
     </div>
@@ -27,7 +27,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">
-                        Roll Date
+                        Fecha de la programación
                     </label>
 
                     <%= date_field_tag :date,
@@ -36,7 +36,7 @@
                 </div>
 
                 <div class="col-md-2">
-                    <%= submit_tag "Load Roll",
+                    <%= submit_tag "Cargar programación",
                            class: "btn btn-primary w-100" %>
                 </div>
 
@@ -53,7 +53,7 @@
     <!-- SELECTED ROLL -->
 
     <div class="alert alert-success">
-        Published roll:
+        Programación publicada:
         <strong>
             <%= @work_day.date.strftime("%B %d, %Y") %>
         </strong>
@@ -163,7 +163,7 @@
     <!-- EXISTING NOTES -->
 
     <h4 class="mb-3">
-        Notes for this Roll
+        Notas de esta programación
     </h4>
 
     <% if @roll_notes.any? %>
@@ -235,7 +235,7 @@
           roll_note_path(roll_note),
           method: :delete,
           data: {
-            turbo_confirm: "Delete this roll note?"
+            turbo_confirm: "¿Eliminar esta nota de la programación?"
           },
           class: "btn btn-sm btn-outline-danger" %>
 
@@ -251,7 +251,7 @@
     <% else %>
 
     <div class="alert alert-light border">
-        No notes have been registered for this roll.
+        No se han registrado notas para esta programación.
     </div>
 
     <% end %>
@@ -260,7 +260,7 @@
     <% else %>
 
     <div class="alert alert-warning">
-        There is no published roll for
+        No hay una programación publicada para
         <strong><%= @selected_date.strftime("%d/%m/%Y") %></strong>.
     </div>
 

@@ -57,7 +57,7 @@ class DayOffReportController < ApplicationController
   end
 
   redirect_to day_off_report_path(month: date.strftime("%Y-%m")),
-              notice: "#{assigned_count} day off assigned. #{skipped_count} skipped because roll was generated or published."
+              notice: "Se asignaron #{assigned_count} días libres. Se omitieron #{skipped_count} porque la programación ya estaba generada o publicada."
 
 end
 

@@ -104,11 +104,11 @@ class GuidesController < ApplicationController
 
     message =
       if new_status
-        "Guide activated. A new fairness cycle started on " \
-        "#{@guide.fairness_started_on}. Initial roll balance for this month: " \
+        "Guía activado. Se inició un nuevo ciclo de equidad el " \
+        "#{@guide.fairness_started_on}. Saldo inicial de la programación para este mes: " \
         "#{@guide.fairness_entry_roll_days}."
       else
-        "Guide deactivated. Fairness history was preserved."
+        "Guía desactivado. Se conservó su historial de equidad."
       end
 
     redirect_to(

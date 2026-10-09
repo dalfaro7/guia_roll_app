@@ -44,7 +44,7 @@ end
 
     unless @work_day.published?
       redirect_to roll_notes_path(date: @work_day.date),
-                  alert: "Notes can only be added to published rolls."
+                  alert: "Solo se pueden agregar notas a programaciones publicadas."
       return
     end
 
@@ -74,7 +74,7 @@ end
     end
 
     redirect_to roll_notes_path(date: @work_day.date),
-                notice: "Roll note added successfully."
+                notice: "Nota de la programación agregada correctamente."
 
   rescue ActiveRecord::RecordInvalid => e
     redirect_to roll_notes_path(date: @work_day.date),
@@ -95,7 +95,7 @@ end
   @roll_note.destroy!
 
   redirect_to roll_notes_path(date: work_day.date),
-              notice: "Roll note deleted successfully."
+              notice: "Nota de la programación eliminada correctamente."
 end
 
   private

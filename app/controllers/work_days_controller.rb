@@ -51,7 +51,7 @@ class WorkDaysController < ApplicationController
     if WorkDay.exists?(date: @work_day.date)
       redirect_back(
         fallback_location: work_days_path,
-        alert: "A Work Day already exists for this date."
+        alert: "Ya existe una programación para esta fecha."
       )
       return
     end
@@ -59,7 +59,7 @@ class WorkDaysController < ApplicationController
     if @work_day.save
       redirect_to(
         @work_day,
-        notice: "Work Day created successfully."
+        notice: "Programación creada correctamente."
       )
     else
       redirect_back(
@@ -75,7 +75,7 @@ class WorkDaysController < ApplicationController
     if @work_day.update(work_day_params)
       redirect_to(
         @work_day,
-        notice: "Work day actualizado correctamente."
+        notice: "Programación actualizada correctamente."
       )
     else
       render :edit, status: :unprocessable_entity
@@ -281,7 +281,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       @work_day,
-      notice: "Work day published."
+      notice: "Programación publicada correctamente."
     )
   end
 
@@ -291,12 +291,12 @@ class WorkDaysController < ApplicationController
 
       redirect_to(
         @work_day,
-        notice: "Work day unpublished."
+        notice: "Programación reabierta correctamente."
       )
     else
       redirect_to(
         @work_day,
-        alert: "Only published days can be unpublished."
+        alert: "Solo se puede reabrir una programación publicada."
       )
     end
   end
@@ -312,7 +312,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       work_days_path,
-      notice: "Work Day deleted."
+      notice: "Programación eliminada correctamente."
     )
   end
 
@@ -321,7 +321,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       @work_day,
-      notice: "Roll reset. You may now set new availability."
+      notice: "Programación reiniciada. Ya puede definir una nueva disponibilidad."
     )
   end
 
@@ -398,7 +398,7 @@ class WorkDaysController < ApplicationController
   unless guide_day.assigned_task?
     redirect_to(
       @work_day,
-      alert: "Only assigned task guides can be moved to roll."
+      alert: "Solo los guías con tarea asignada pueden moverse a la programación."
     )
     return
   end
@@ -436,7 +436,7 @@ class WorkDaysController < ApplicationController
 
   redirect_to(
     @work_day,
-    notice: "#{guide_day.guide.name} moved from Assigned Task to Roll."
+    notice: "#{guide_day.guide.name} fue movido de Tarea Asignada a la programación."
   )
 end
 

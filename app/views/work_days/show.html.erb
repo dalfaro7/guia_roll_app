@@ -15,13 +15,13 @@
             <% end %>
 
             <% if @work_day.generated? %>
-            <%= button_to "Reset Roll",
+            <%= button_to "Reiniciar programación",
                       reset_roll_work_day_path(@work_day),
                       method: :post,
                       class: "btn btn-secondary",
                       data: {
                         turbo: false,
-                        confirm: "Reset this day's roll completely?"
+                        confirm: "¿Reiniciar completamente la programación de este día?"
                       } %>
             <% end %>
 
@@ -37,13 +37,13 @@
             <% end %>
 
             <% if @work_day.generated? %>
-            <%= button_to "Publish Work Day",
+            <%= button_to "Publicar programación",
                       publish_work_day_path(@work_day),
                       method: :post,
                       class: "btn btn-success",
                       data: {
                         turbo: false,
-                        confirm: "Are you sure you want to publish?"
+                        confirm: "¿Seguro que desea publicar esta programación?"
                       } %>
             <% end %>
 
@@ -52,17 +52,17 @@
                         weather_reports_path,
                         class: "btn btn-info" %>
 
-            <%= button_to "Unpublish Work Day",
+            <%= button_to "Reabrir programación",
                       unpublish_work_day_path(@work_day),
                       method: :post,
                       class: "btn btn-secondary",
                       data: {
                         turbo: false,
-                        confirm: "Reopen this work day?"
+                        confirm: "¿Reabrir esta programación?"
                       } %>
             <% end %>
 
-            <%= link_to "Back to Work Days",
+            <%= link_to "Volver a programación de guías",
                   work_days_path,
                   class: "btn btn-light" %>
         </div>
@@ -192,7 +192,7 @@
 
                                                 <div class="modal-header bg-warning">
                                                     <h5 class="modal-title">
-                                                        Mover de tarea asignada a roll
+                                                        Mover de tarea asignada a la programación
                                                     </h5>
 
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -238,11 +238,11 @@
                                                             Cancelar
                                                         </button>
 
-                                                        <%= submit_tag "Mover a roll",
+                                                        <%= submit_tag "Mover a la programación",
                                                  class: "btn btn-warning",
                                                  data: {
                                                    turbo: false,
-                                                   confirm: "Mover #{gd.guide.name} de tarea asignada al roll?"
+                                                   confirm: "Mover #{gd.guide.name} de tarea asignada a la programación?"
                                                  } %>
                                                     </div>
                                                     <% end %>
@@ -748,7 +748,7 @@
                             preview.innerHTML =
                                 data.name +
                                 " | Priority: " + data.priority +
-                                " | Roll days in fairness cycle: " +
+                                " | Días trabajados en el ciclo de equidad: " +
                                 data.monthly_worked_days;
                         } else {
                             preview.innerHTML =
@@ -1155,13 +1155,13 @@
 
     <!-- DELETE BUTTON -->
     <div class="mt-4">
-        <%= button_to "X) Delete Work Day",
+        <%= button_to "X) Eliminar programación",
                   delete_with_reset_work_day_path(@work_day),
                   method: :delete,
                   class: "btn btn-outline-danger btn-sm",
                   data: {
                     turbo: false,
-                    confirm: "This will permanently delete the Work Day and restore balances. Continue?"
+                    confirm: "Esto eliminará permanentemente la programación y restaurará los saldos. ¿Continuar?"
                   } %>
     </div>
 </div>
