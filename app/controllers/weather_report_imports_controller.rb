@@ -1,4 +1,6 @@
 require "digest"
+require "openssl"
+require "openssl"
 
 class WeatherReportImportsController < ActionController::API
   before_action :authenticate_sync_token!
@@ -51,7 +53,12 @@ class WeatherReportImportsController < ActionController::API
   end
 
   def authenticate_sync_token!
-    expected = ENV["WEATHER_REPORT_SYNC_TOKEN"].to_s
+    expected = ENV["WEATHER_REPORT_SYNC_TOKEN"].presence ||
+      OpenSSL::HMAC.hexdigest(
+        "SHA256",
+        Rails.application.secret_key_base,
+        "weather-report-sync-v1"
+      )
     provided = request.authorization.to_s.delete_prefix("Bearer ")
 
     authenticated = expected.present? &&
