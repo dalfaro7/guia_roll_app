@@ -102,14 +102,9 @@ module Whatsapp
       end.join(" • ")
     end
 
-    def standby_guides
-      @standby_guides ||= work_day.guide_days
-        .where(status: :standby)
-        .includes(:guide)
-        .to_a
-        .select { |guide_day| guide_day.guide.active? }
-        .sort_by { |guide_day| [guide_day.guide.priority || 999, guide_day.guide.name.to_s] }
-    end
+def standby_guides
+  @standby_guides ||= work_day.standby_guides_for_published_roll
+end
 
     def standby_summary
       standby_guides.map { |guide_day| guide_day.guide.name.to_s.strip }.join(" • ")

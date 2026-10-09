@@ -92,14 +92,9 @@ module Whatsapp
       end
     end
 
-    def standby_guides
-      @standby_guides ||= work_day.guide_days
-        .where(status: :standby)
-        .includes(:guide)
-        .to_a
-        .select { |guide_day| guide_day.guide.active? }
-        .sort_by { |guide_day| [guide_day.guide.priority || 999, guide_day.guide.name.to_s] }
-    end
+def standby_guides
+  @standby_guides ||= work_day.standby_guides_for_published_roll
+end
 
     def standby_rows
       standby_guides.each_with_index.map do |guide_day, index|

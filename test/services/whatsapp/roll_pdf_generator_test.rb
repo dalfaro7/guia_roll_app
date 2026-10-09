@@ -3,7 +3,7 @@ require "test_helper"
 class Whatsapp::RollPdfGeneratorTest < ActiveSupport::TestCase
   test "renders a valid nonempty PDF" do
     guide = Guide.create!(name: "PDF Guide", priority: 1, active: true)
-    work_day = WorkDay.create!(date: Date.new(2026, 10, 7), status: :published)
+    work_day = WorkDay.create!(date: Date.current + 1.day, status: :published)
     work_day.guide_days.find_by!(guide: guide).update!(
       status: :worked,
       location: "Balsa",
