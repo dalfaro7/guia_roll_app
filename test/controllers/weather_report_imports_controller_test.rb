@@ -1,37 +1,59 @@
 require "test_helper"
+require "base64"
+require "openssl"
+require "tempfile"
 
 class WeatherReportImportsControllerTest < ActionDispatch::IntegrationTest
   setup do
-    @original_token = ENV["WEATHER_REPORT_SYNC_TOKEN"]
-    ENV["WEATHER_REPORT_SYNC_TOKEN"] = "weather-secret"
+    @original_public_key_path = ENV["WEATHER_REPORT_SYNC_PUBLIC_KEY_PATH"]
+    @private_key = OpenSSL::PKey::RSA.new(2048)
+    @public_key_file = Tempfile.new("weather-report-public-key")
+    @public_key_file.write(@private_key.public_key.to_pem)
+    @public_key_file.flush
+    ENV["WEATHER_REPORT_SYNC_PUBLIC_KEY_PATH"] = @public_key_file.path
   end
 
   teardown do
-    ENV["WEATHER_REPORT_SYNC_TOKEN"] = @original_token
+    ENV["WEATHER_REPORT_SYNC_PUBLIC_KEY_PATH"] = @original_public_key_path
+    @public_key_file.close!
   end
 
-  test "rejects imports without the sync token" do
-    post weather_report_import_url, params: { reports: [report_payload] }, as: :json
+  test "rejects imports without a signature" do
+    post weather_report_import_url,
+         params: JSON.generate(reports: [report_payload]),
+         headers: { "Content-Type" => "application/json" }
+
+    assert_response :unauthorized
+    assert_equal 0, WeatherReport.count
+  end
+
+  test "rejects an expired signature" do
+    payload = JSON.generate(reports: [report_payload])
+
+    post weather_report_import_url,
+         params: payload,
+         headers: signed_headers(payload, 10.minutes.ago.to_i)
 
     assert_response :unauthorized
     assert_equal 0, WeatherReport.count
   end
 
   test "imports reports and updates an existing source uid" do
+    payload = JSON.generate(reports: [report_payload])
     post weather_report_import_url,
-         params: { reports: [report_payload] },
-         headers: authorization_header,
-         as: :json
+         params: payload,
+         headers: signed_headers(payload)
 
     assert_response :success
     assert_equal 1, WeatherReport.count
     assert_equal "Primer contenido", WeatherReport.first.body
 
-    updated_payload = report_payload.merge(body: "Contenido actualizado")
+    updated_payload = JSON.generate(
+      reports: [report_payload.merge(body: "Contenido actualizado")]
+    )
     post weather_report_import_url,
-         params: { reports: [updated_payload] },
-         headers: authorization_header,
-         as: :json
+         params: updated_payload,
+         headers: signed_headers(updated_payload)
 
     assert_response :success
     assert_equal 1, WeatherReport.count
@@ -40,8 +62,17 @@ class WeatherReportImportsControllerTest < ActionDispatch::IntegrationTest
 
   private
 
-  def authorization_header
-    { "Authorization" => "Bearer weather-secret" }
+  def signed_headers(payload, timestamp = Time.current.to_i)
+    signature = @private_key.sign(
+      OpenSSL::Digest::SHA256.new,
+      "#{timestamp}.#{payload}"
+    )
+
+    {
+      "Content-Type" => "application/json",
+      "X-Weather-Report-Timestamp" => timestamp.to_s,
+      "X-Weather-Report-Signature" => Base64.strict_encode64(signature)
+    }
   end
 
   def report_payload

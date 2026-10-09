@@ -1,10 +1,10 @@
-require "digest"
-require "openssl"
-require "openssl"
+require "base64"
 require "openssl"
 
 class WeatherReportImportsController < ActionController::API
-  before_action :authenticate_sync_token!
+  SIGNATURE_TOLERANCE = 5.minutes
+
+  before_action :authenticate_signature!
 
   def create
     reports = Array.wrap(params[:reports].presence || params[:report])
@@ -53,24 +53,35 @@ class WeatherReportImportsController < ActionController::API
     report
   end
 
-  def authenticate_sync_token!
-    expected = ENV["WEATHER_REPORT_SYNC_TOKEN"].presence ||
-      OpenSSL::HMAC.hexdigest(
-        "SHA256",
-        Rails.application.credentials.secret_key_base,
-        "weather-report-sync-v1"
-      )
-    provided = request.authorization.to_s.delete_prefix("Bearer ")
+  def authenticate_signature!
+    timestamp = Integer(
+      request.headers["X-Weather-Report-Timestamp"],
+      exception: false
+    )
+    signature = Base64.strict_decode64(
+      request.headers["X-Weather-Report-Signature"].to_s
+    )
 
-    authenticated = expected.present? &&
-      provided.present? &&
-      ActiveSupport::SecurityUtils.secure_compare(
-        Digest::SHA256.hexdigest(provided),
-        Digest::SHA256.hexdigest(expected)
-      )
+    fresh = timestamp.present? &&
+      (Time.current.to_i - timestamp).abs <= SIGNATURE_TOLERANCE
+    authenticated = fresh && public_key.verify(
+      OpenSSL::Digest::SHA256.new,
+      signature,
+      "#{timestamp}.#{request.raw_post}"
+    )
 
     return if authenticated
 
     render json: { error: "Unauthorized" }, status: :unauthorized
+  rescue ArgumentError, OpenSSL::PKey::PKeyError
+    render json: { error: "Unauthorized" }, status: :unauthorized
+  end
+
+  def public_key
+    path = ENV.fetch(
+      "WEATHER_REPORT_SYNC_PUBLIC_KEY_PATH",
+      Rails.root.join("config/weather_report_sync_public.pem").to_s
+    )
+    OpenSSL::PKey::RSA.new(File.read(path))
   end
 end
