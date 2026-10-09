@@ -48,6 +48,10 @@
             <% end %>
 
             <% if @work_day.published? %>
+            <%= link_to "Reportes del río Balsa",
+                        weather_reports_path,
+                        class: "btn btn-info" %>
+
             <%= button_to "Unpublish Work Day",
                       unpublish_work_day_path(@work_day),
                       method: :post,

@@ -92,9 +92,9 @@ module Whatsapp
       end
     end
 
-def standby_guides
-  @standby_guides ||= work_day.standby_guides_for_published_roll
-end
+    def standby_guides
+      @standby_guides ||= work_day.standby_guides_for_published_roll
+    end
 
     def standby_rows
       standby_guides.each_with_index.map do |guide_day, index|
