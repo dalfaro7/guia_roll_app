@@ -504,6 +504,37 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     assert_equal 4, snapshot[:ranking_roll_days]
   end
 
+  test "positive entry balance replaces entrant penalty before first roll work" do
+    @guide_b.update!(
+      fairness_started_on: Date.new(2026, 8, 15),
+      fairness_entry_roll_days: 3
+    )
+
+    (1..4).each do |day|
+      create_guide_day(
+        guide: @guide_a,
+        date: Date.new(2026, 8, day),
+        status: :worked
+      )
+    end
+
+    established_key = RollFairnessPolicy.ranking_key_for(
+      @guide_a, before_date: @work_day_date
+    )
+    entrant_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b, before_date: @work_day_date
+    )
+    snapshot = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b, before_date: @work_day_date
+    )
+
+    assert_equal 0, entrant_key[1]
+    assert_equal 0, snapshot[:roll_worked_days]
+    assert_equal 3, snapshot[:entry_roll_balance]
+    assert_equal 3, snapshot[:ranking_roll_days]
+    assert_ranks_before entrant_key, established_key
+  end
+
   test "entrant restriction expires at the next monthly reset" do
     @guide_b.update!(
       fairness_started_on: Date.new(2026, 8, 15),

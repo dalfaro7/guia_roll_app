@@ -140,16 +140,17 @@ class RollFairnessPolicy
       guide.fairness_entry_roll_days.to_i
     end
 
-    # A guide entering mid-month waits behind established guides of
-    # the same priority until the first roll assignment, but only for
-    # the activation month. If the month ends first, the monthly reset
-    # removes the entrant restriction and prevents indefinite starvation.
+    # A guide entering mid-month without a positive entry balance waits
+    # behind established guides of the same priority until the first roll
+    # assignment. A positive entry balance already represents the cohort's
+    # average and must not be combined with a second entrant penalty.
     def new_entrant_rank_for(guide, before_date:)
       start_date = guide.fairness_started_on
       return 0 if start_date.blank?
       return 0 if start_date == start_date.beginning_of_month
       return 0 if start_date > before_date
       return 0 unless start_date.beginning_of_month == before_date.beginning_of_month
+      return 0 if guide.fairness_entry_roll_days.to_i.positive?
 
       has_roll_work = GuideDay
         .joins(:work_day)
