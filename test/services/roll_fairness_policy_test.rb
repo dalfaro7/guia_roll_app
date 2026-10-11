@@ -394,6 +394,57 @@ class RollFairnessPolicyTest < ActiveSupport::TestCase
     assert_equal [@guide_a, maria, oscar, @guide_b], ordered
   end
 
+  test "guide forced to work yesterday ranks after guide who remained standby" do
+    [@guide_a, @guide_b].each do |guide|
+      create_guide_day(
+        guide: guide,
+        date: Date.new(2026, 8, 10),
+        status: :worked
+      )
+    end
+    create_guide_day(
+      guide: @guide_b,
+      date: Date.new(2026, 8, 11),
+      status: :worked
+    )
+
+    forced_day = create_guide_day(
+      guide: @guide_a,
+      date: Date.new(2026, 8, 15),
+      status: :worked
+    )
+    forced_day.update!(manually_modified: true)
+
+    create_guide_day(
+      guide: @guide_b,
+      date: Date.new(2026, 8, 15),
+      status: :standby
+    )
+
+    forced_snapshot = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_a,
+      before_date: @work_day_date
+    )
+    standby_snapshot = RollFairnessPolicy.fairness_snapshot_for(
+      @guide_b,
+      before_date: @work_day_date
+    )
+
+    assert_equal 2, forced_snapshot[:roll_worked_days]
+    assert_equal 2, standby_snapshot[:roll_worked_days]
+
+    forced_key = RollFairnessPolicy.ranking_key_for(
+      @guide_a,
+      before_date: @work_day_date
+    )
+    standby_key = RollFairnessPolicy.ranking_key_for(
+      @guide_b,
+      before_date: @work_day_date
+    )
+
+    assert_ranks_before standby_key, forced_key
+  end
+
   test "mid month entrant starts behind established guide of same priority" do
     @guide_b.update!(fairness_started_on: Date.new(2026, 8, 15))
 
