@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Execute only after backup and explicit deployment approval.
+bundle exec rails runner script/kayaktalkie_preflight.rb
+bundle exec rails db:migrate

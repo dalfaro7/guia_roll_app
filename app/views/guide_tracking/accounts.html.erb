@@ -1,0 +1,20 @@
+<div class="container"><% content_for :title, "KayakTalkie&GPS · Cuentas" %>
+<img src="/tracking/kayaktalkie-logo.png" alt="KayakTalkie&GPS" style="width:150px;height:150px;object-fit:contain"><h1>KayakTalkie&amp;GPS · Cuentas de colaboradores</h1>
+<p><%= link_to 'Volver al mapa GPS', tracking_path %></p>
+<p>Los oficinistas usan voz sin compartir ubicación. Estas cuentas no conceden acceso administrativo al rol de guías.</p>
+<p>Acceso web de oficinistas: <%= link_to 'Entrar a KayakTalkie', kayaktalkie_login_path %></p>
+<% if @error %><p role="alert"><%= @error %></p><% end %>
+<%= form_with scope: :mobile_account, url: tracking_accounts_path do |f| %>
+<div><%= f.label :account_type, 'Tipo de colaborador' %> <%= f.select :account_type, [['Guía', 'guide'], ['Oficinista', 'office']] %></div>
+<div><%= f.label :name, 'Nombre del oficinista' %> <%= f.text_field :name %></div>
+<div><%= f.label :guide_id, 'Guía (solo para cuentas de guía)' %> <%= f.collection_select :guide_id, @guides, :id, :name, include_blank: 'Sin guía' %></div>
+<div><%= f.label :phone, 'Teléfono del colaborador (usuario)' %> <%= f.telephone_field :phone, required: true, placeholder: '8888 8888 o +506 8888 8888', autocomplete: 'tel' %></div>
+<div><%= f.label :password, 'Contraseña inicial (mínimo 12 caracteres)' %> <%= f.password_field :password, required: true, minlength: 12, autocomplete: 'new-password' %></div>
+<div><%= f.check_box :location_enabled, checked: true %> <%= f.label :location_enabled, 'Permitir compartir ubicación (solo guías)' %></div>
+<fieldset><legend>Canales autorizados</legend><% @channels.each do |channel| %><label><%= check_box_tag 'mobile_account[voice_channel_ids][]', channel.id, false %> <%= channel.name %></label> <% end %></fieldset>
+<%= f.submit 'Crear cuenta KayakTalkie' %><% end %>
+<table class="table"><thead><tr><th>Colaborador</th><th>Tipo</th><th>Teléfono / usuario</th><th>Ubicación</th><th>Estado</th></tr></thead><tbody>
+<% @accounts.each do |account| %><tr><td><%= account.display_name %></td><td><%= account.office_account? ? 'Oficinista' : 'Guía' %></td><td><%= account.phone %></td><td><%= account.can_share_location? ? 'Permitida' : 'Sin ubicación' %></td><td><%= account.available? ? 'Activa' : 'Inactiva' %></td></tr><% end %></tbody></table>
+<h2>Canales de voz</h2><p>Selecciona todos los canales que puede usar cada colaborador. Los cambios se validan en cada conexion y turno; el servidor programa la desconexion de las sesiones del canal retirado. Si LiveKit no responde, la tarea reintenta y los nuevos accesos ya quedan bloqueados.</p>
+<% @accounts.each do |account| %><%= form_with url: tracking_account_channels_path(account), method: :patch do %><fieldset><legend><%= account.display_name %></legend><%= hidden_field_tag 'voice_channel_ids[]', '' %><% @channels.each do |channel| %><label><%= check_box_tag 'voice_channel_ids[]', channel.id, account.voice_channel_ids.include?(channel.id), id: "account_#{account.id}_channel_#{channel.id}" %> <%= channel.name %></label> <% end %><%= submit_tag 'Guardar canales' %></fieldset><% end %><% end %>
+<%= form_with scope: :voice_channel, url: tracking_channels_path do |f| %><%= f.label :name, 'Nuevo canal' %><%= f.text_field :name, required: true, maxlength: 80 %><%= f.submit 'Crear canal' %><% end %></div>

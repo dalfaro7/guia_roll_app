@@ -1,0 +1,7 @@
+<img class="login-product-logo" src="/tracking/kayaktalkie-logo.png" alt="KayakTalkie&GPS"><h1 class="brand-sr-only">KayakTalkie&amp;GPS</h1><h2>Acceso de oficina · Walkie-talkie</h2>
+<p>Ingresa con el teléfono y la contraseña que te entregó el administrador.</p>
+<% if @error %><p role="alert"><%= @error %></p><% end %>
+<%= form_with url: kayaktalkie_login_path do |f| %>
+<%= f.label :phone, 'Teléfono' %><%= f.telephone_field :phone, required: true, autocomplete: 'username', placeholder: '8888 8888' %>
+<%= f.label :password, 'Contraseña' %><%= f.password_field :password, required: true, autocomplete: 'current-password' %>
+<%= f.submit 'Iniciar sesión' %><% end %>

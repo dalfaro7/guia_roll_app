@@ -70,3 +70,6 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+# Voz WebRTC: tokens de escucha y permisos temporales para pulsar y hablar.
+gem "livekit-server-sdk", require: "livekit"

@@ -1,4 +1,30 @@
 Rails.application.routes.draw do
+  get 'kayaktalkie/login', to: 'kayaktalkie#new', as: :kayaktalkie_login
+  post 'kayaktalkie/login', to: 'kayaktalkie#create'
+  post 'kayaktalkie/logout', to: 'kayaktalkie#destroy', as: :kayaktalkie_logout
+  get 'kayaktalkie', to: 'kayaktalkie#show', as: :kayaktalkie
+  get 'api/account', to: 'tracking_api#account'
+  get "api/map/voice", to: "tracking_api#map_voice"
+  get 'api/voice/channels', to: 'voice#channels'
+  post 'tracking/channels', to: 'guide_tracking#create_channel', as: :tracking_channels
+  patch 'tracking/accounts/:id/channels', to: 'guide_tracking#update_channels', as: :tracking_account_channels
+  get "tracking/voice", to: "guide_tracking#voice", as: :tracking_voice
+  post "api/voice/join", to: "voice#join"
+  get "api/voice/status", to: "voice#status"
+  post "api/voice/claim", to: "voice#claim"
+  post "api/voice/release", to: "voice#release"
+  get "tracking", to: "guide_tracking#index", as: :tracking
+  get "tracking/accounts", to: "guide_tracking#accounts", as: :tracking_accounts
+  post "tracking/accounts", to: "guide_tracking#create_account"
+  post "api/login", to: "tracking_api#login"
+  post "api/logout", to: "tracking_api#logout"
+  post "api/location", to: "tracking_api#location"
+  get "api/me", to: "tracking_api#me"
+  get "api/users", to: "tracking_api#users"
+  get "api/alerts", to: "tracking_api#alerts"
+  post "api/alerts/ack", to: "tracking_api#ack"
+  get "api/reports/speed", to: "tracking_api#report"
+
   get "webhooks/whatsapp", to: "whatsapp_webhooks#verify"
   post "webhooks/whatsapp", to: "whatsapp_webhooks#receive"
   post "webhooks/weather_reports",

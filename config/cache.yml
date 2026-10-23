@@ -12,5 +12,8 @@ test:
   <<: *default
 
 production:
-  database: cache
   <<: *default
+  database: primary
+  store_options:
+    max_size: <%= 32.megabytes %>
+    namespace: production
