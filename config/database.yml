@@ -76,7 +76,7 @@ test:
 # the values provided in this file. Alternatively, you can specify a connection
 # URL environment variable explicitly:
 #
-#   production:
+production:
   primary:
     <<: *default
     max_connections: <%= ENV.fetch("DB_POOL", 10).to_i %>
