@@ -67,8 +67,13 @@ class VoiceTest < ActionDispatch::IntegrationTest
     user = User.create!(name: 'Admin voz', email: 'voice-admin@example.test', password: 'Voice-admin-123456', role: :admin)
     sign_in user
     get '/tracking/voice'
+    assert_redirected_to tracking_path(anchor: 'voicePanel')
+    follow_redirect!
     assert_response :success
-    assert_select '#voiceJoin'
+    assert_select '#map'
+    assert_select 'aside #voiceJoin', count: 1
+    assert_select 'aside #voiceTalk[disabled]', count: 1
+    assert_select 'a[href="/tracking/voice"]', count: 0
     user.update!(role: :operador)
     post '/api/voice/join', as: :json
     assert_response :unauthorized

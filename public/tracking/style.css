@@ -17,3 +17,9 @@ aside .sidebar-logo{display:block;width:220px;max-width:100%;height:auto;object-
 #mapVoiceStatus{display:block;font-size:10px;color:#62829a;margin-top:5px}
 
 aside .sidebar-logo{width:190px;height:190px;object-fit:contain}aside .sidebar-brand{margin-bottom:4px}
+
+/* Voice stays beside the operations map. */
+.map-voice-panel{border:1px solid #dbe3dc;border-radius:12px;padding:16px;background:#f7faf8;display:flex;flex-direction:column;gap:10px}
+.map-voice-panel h2,.map-voice-panel p{margin:0}.map-voice-panel label{margin:0;font-weight:600}.map-voice-panel select{width:100%;padding:10px;border:1px solid #cddbd3;border-radius:8px;background:white;font:inherit;color:inherit}
+.map-voice-panel small{color:#64776d;font-size:11px;line-height:1.5}.map-voice-panel button:disabled{opacity:.5;cursor:not-allowed}.voice-options{display:flex;gap:6px}.voice-options button{flex:1;padding:8px;font-size:11px}
+#voiceTalk{min-height:100px;background:#bb3535;touch-action:none;user-select:none}#voiceTalk[aria-pressed="true"]{background:#16834d}#voiceTalk:focus-visible{outline:3px solid #1689db;outline-offset:3px}

@@ -4,6 +4,7 @@ class GuideTrackingController < ApplicationController
     render layout: false
   end
   def voice
+    redirect_to tracking_path(anchor: "voicePanel")
   end
   def accounts
     @channels = VoiceChannel.enabled
