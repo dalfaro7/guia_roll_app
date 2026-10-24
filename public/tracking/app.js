@@ -13,7 +13,7 @@ function speedDisplay(u) {
   const calculatedAt = candidate?.calculated_at ?? (estimate?.status === 'ready' ? u.captured_at : null);
   const age = Date.now() - calculatedAt;
   if (candidate && Number.isFinite(candidate.kmh) && calculatedAt && age >= -60000 && age <= 300000) {
-    return {value: `Estimada: ${candidate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
+    return {overLimit: candidate.kmh > 90, value: `Estimada: ${candidate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
       note: `Último cálculo · ${new Date(calculatedAt).toLocaleTimeString('es-CR', {timeZone: 'America/Costa_Rica'})}`,
       title: 'Último promedio válido de cinco minutos. Se conserva durante un máximo de cinco minutos desde su cálculo.'};
   }
@@ -89,12 +89,13 @@ function render() {
     entry.marker.options.title = u.name;
     const element = entry.marker.getElement(); if (element && element.title !== u.name) element.title = u.name;
     entry.content.classList.toggle('stale', Date.now() - u.captured_at > 180000);
-    const display = speedDisplay(u); text(entry.speed, display.value); text(entry.note, display.note); entry.speed.title = display.title;
+    const display = speedDisplay(u); entry.content.classList.toggle('speed-warning', display.overLimit === true); text(entry.speed, display.value); text(entry.note, display.note); entry.speed.title = display.title;
   }
   updateSpeaking();
 }
 const crTime = timestamp => new Date(timestamp).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica' });
 const crDate = timestamp => new Date(timestamp).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' });
+const speedSource = source => source === 'estimated' ? 'Promedio calculado' : 'GPS del teléfono';
 const kmh = value => value.toLocaleString('es-CR', { maximumFractionDigits: 1 }) + ' km/h';
 async function refreshAlerts() {
   const request = ++alertsRequest, data = await api('alerts');
@@ -117,7 +118,7 @@ async function refreshAlerts() {
       seen.onclick = async () => { seen.disabled = true; try { await api('alerts/ack', {id: alert.id}); await refreshAlerts(); if ($('reportDialog').open) await loadReport(); } catch (error) { $('status').textContent = error.message; } finally { seen.disabled = false; } };
       row.append(info, seen); box.insertBefore(row, report); entry = {node: row, name, time}; alertNodes.set(alert.id, entry);
     }
-    const value = `${alert.user_name} · máxima ${kmh(alert.peak_kmh)}`; if (entry.name.nodeValue !== value) entry.name.nodeValue = value;
+    const value = `${alert.user_name} · ${speedSource(alert.source)} · máxima ${kmh(alert.peak_kmh)}`; if (entry.name.nodeValue !== value) entry.name.nodeValue = value;
     text(entry.time, `${crDate(alert.first_at)} · ${crTime(alert.first_at)} · hora de Costa Rica`);
   }
 }
@@ -131,7 +132,7 @@ async function loadReport() {
     $('reportSummary').textContent = `${data.items.length} ${data.items.length === 1 ? 'registro' : 'registros'} de exceso de velocidad el ${data.day}.`;
     for (const alert of data.items) {
       const row = document.createElement('tr');
-      for (const value of [alert.user_name, crTime(alert.first_at), crTime(alert.last_at), kmh(alert.peak_kmh), alert.acknowledged_at ? 'Visto' : 'Pendiente']) { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); }
+      for (const value of [alert.user_name, speedSource(alert.source), crTime(alert.first_at), crTime(alert.last_at), kmh(alert.peak_kmh), alert.acknowledged_at ? 'Visto' : 'Pendiente']) { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); }
       $('reportRows').append(row);
     }
   } catch (error) { if (request === reportRequest && $('reportDate').value === selectedDate && $('reportDialog').open) $('reportError').textContent = error.message; }

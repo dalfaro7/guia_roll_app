@@ -21,7 +21,10 @@ class KayaktalkieTrackingIngest
       history = [] if position.team_ids_at_capture.sort != account.kayaktalkie_team_ids.sort
       samples, estimate = KayaktalkieSpeedWindow.call(history, {'t'=>time.to_f, 'lat'=>latitude, 'lon'=>longitude, 'accuracy'=>accuracy}, previous)
       kmh = speed && speed * 3.6
-      KayaktalkieSpeedAlert.record!(account, time, kmh)
+      KayaktalkieSpeedAlert.record!(account, time, kmh, source: 'gps')
+      # Only a fresh complete window is a new measurement, never the retained display value.
+      estimated_kmh = estimate[:status] == 'ready' ? estimate[:kmh] : nil
+      KayaktalkieSpeedAlert.record!(account, time, estimated_kmh, source: 'estimated')
       position.update!(speed_samples: samples, speed_estimate: estimate, team_ids_at_capture: account.kayaktalkie_team_ids, latitude: latitude, longitude: longitude, accuracy: accuracy, captured_at: time, received_at: Time.current, speed_kmh: kmh)
     end
     true

@@ -69,3 +69,12 @@ test('late report response cannot overwrite newly selected date',async()=>{
   h.element('reportDate').value='2026-10-24';finish({ok:true,json:async()=>({day:'2026-10-23',items:[]})});await pending;
   assert.equal(h.element('reportDate').value,'2026-10-24');assert.equal(h.element('reportSummary').textContent,'');
 });
+
+test('orange warning uses a recent estimated average strictly above 90, never GPS alone',()=>{
+  const h=harness();h.context.u={...user(),speed_kmh:110};
+  assert.notEqual(h.run('speedDisplay(u).overLimit'),true);
+  h.context.u.speed_estimate={status:'ready',kmh:90,calculated_at:Date.now()};
+  assert.equal(h.run('speedDisplay(u).overLimit'),false);
+  h.context.u.speed_estimate.kmh=90.1;assert.equal(h.run('speedDisplay(u).overLimit'),true);
+  h.context.u.speed_estimate.calculated_at=Date.now()-301000;assert.notEqual(h.run('speedDisplay(u).overLimit'),true);
+});

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -149,11 +149,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_020000) do
     t.bigint "kayaktalkie_account_id", null: false
     t.datetime "last_at", null: false
     t.float "peak_kmh", null: false
+    t.string "source", default: "gps", null: false
     t.bigint "team_ids_at_capture", default: [], null: false, array: true
     t.datetime "updated_at", null: false
     t.index ["day", "first_at"], name: "index_kayaktalkie_speed_alerts_on_day_and_first_at"
+    t.index ["kayaktalkie_account_id", "source"], name: "one_open_kayaktalkie_speed_alert_per_source", unique: true, where: "(ended_at IS NULL)"
     t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_speed_alerts_on_kayaktalkie_account_id"
-    t.index ["kayaktalkie_account_id"], name: "one_open_kayaktalkie_speed_alert", unique: true, where: "(ended_at IS NULL)"
+    t.check_constraint "source::text = ANY (ARRAY['gps'::character varying, 'estimated'::character varying]::text[])", name: "kayaktalkie_speed_alert_source"
   end
 
   create_table "kayaktalkie_team_memberships", force: :cascade do |t|

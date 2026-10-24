@@ -76,6 +76,6 @@ class TrackingApiController < ActionController::API
   end
   def millis(time) = time && (time.to_f * 1000).round
   def serialize(a)
-    { id: a.id, user_id: a.kayaktalkie_account_id, user_name: a.account_name, day: a.day, first_at: millis(a.first_at), last_at: millis(a.last_at), peak_kmh: a.peak_kmh, ended_at: millis(a.ended_at), acknowledged_at: millis(a.acknowledged_at) }
+    { id: a.id, user_id: a.kayaktalkie_account_id, user_name: a.account_name, day: a.day, first_at: millis(a.first_at), last_at: millis(a.last_at), peak_kmh: a.peak_kmh, source: a.source, ended_at: millis(a.ended_at), acknowledged_at: millis(a.acknowledged_at) }
   end
 end
