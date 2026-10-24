@@ -43,7 +43,20 @@ async function api(path, body) {
   const data = await response.json(); if (!response.ok) { const error = new Error(data.error); error.status = response.status; throw error; } return data;
 }
 const boundsCR = [[8.0, -86.0], [11.3, -82.5]];
-function fit() { if (map) map.fitBounds(boundsCR); }
+let lastFollowPosition = null;
+function followSelectedUser() {
+  const user = users.find(u => String(u.id) === $('userSelect').value);
+  if (!map || user?.latitude == null || user?.longitude == null) { lastFollowPosition = null; return; }
+  const position = `${user.id}:${user.latitude}:${user.longitude}`;
+  if (position !== lastFollowPosition) {
+    map.panTo([user.latitude, user.longitude], {animate: false});
+    lastFollowPosition = position;
+  }
+}
+function fit() {
+  $('userSelect').value = ''; lastFollowPosition = null;
+  if (map) map.fitBounds(boundsCR);
+}
 function render() {
   $('total').textContent = users.length;
   $('online').textContent = users.filter(u => u.captured_at && Date.now() - u.captured_at < 180000).length;
@@ -89,6 +102,7 @@ function render() {
     entry.content.classList.toggle('stale', Date.now() - u.captured_at > 180000);
     const display = speedDisplay(u); entry.content.classList.toggle('speed-warning', display.overLimit === true); text(entry.speed, display.value); text(entry.note, display.note); entry.speed.title = display.title;
   }
+  followSelectedUser();
   updateSpeaking();
 }
 const crTime = timestamp => new Date(timestamp).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica' });
@@ -156,7 +170,7 @@ async function openDashboard(user) {
 }
 $('userSelect').onchange = () => {
   const user = users.find(u => String(u.id) === $('userSelect').value);
-  if (map && user?.latitude != null) map.setView([user.latitude, user.longitude], 15);
+  lastFollowPosition = null; followSelectedUser();
   text($('userSearchStatus'), user && user.latitude == null ? 'Este usuario aún no tiene ubicación' : '');
 };
 $('search').oninput = render; $('fit').onclick = fit;

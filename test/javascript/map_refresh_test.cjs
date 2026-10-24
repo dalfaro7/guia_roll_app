@@ -25,7 +25,7 @@ function harness() {
   });
   const source = fs.readFileSync(path.join(__dirname,'../../public/tracking/app.js'),'utf8').replace(/api\('me'\)\.then\(openDashboard\)[\s\S]*$/, '');
   vm.runInContext(source, context);
-  context.testMap = {setView:(...args)=>views.push(args)};
+  context.testMap = {zoom:12, panTo:(...args)=>views.push(args), fitBounds:()=>{}};
   vm.runInContext('map = testMap',context);
   return {context, element, created, views, run:code=>vm.runInContext(code,context)};
 }
@@ -36,7 +36,7 @@ test('refresh preserves selector and marker, filters options, and selection cent
   h.element('userSelect').value='1';
   h.context.next=[{...user(),latitude:10.1,name:'Updated user'}];h.run('users=next;render()');
   assert.equal(h.element('userSelect').children[0],option);assert.equal(h.element('userSelect').value,'1');
-  assert.equal(h.created.length,1);assert.equal(marker.updates,1);assert.equal(h.views.length,0);
+  assert.equal(h.created.length,1);assert.equal(marker.updates,1);assert.equal(h.views.length,1);assert.equal(h.context.testMap.zoom,12);
   h.element('userSelect').onchange();assert.equal(h.views[0][0][0],10.1);
   h.element('search').value='unmatched';h.run('render()');assert.equal(option.hidden,true);assert.equal(h.element('userSelect').value,'');
   h.run('users=[];render()');assert.equal(marker.removed,true);assert.equal(option.removed,true);
@@ -77,4 +77,15 @@ test('orange warning uses a recent estimated average strictly above 90, never GP
   assert.equal(h.run('speedDisplay(u).overLimit'),false);
   h.context.u.speed_estimate.kmh=90.1;assert.equal(h.run('speedDisplay(u).overLimit'),true);
   h.context.u.speed_estimate.calculated_at=Date.now()-301000;assert.notEqual(h.run('speedDisplay(u).overLimit'),true);
+});
+
+test('selected user follows new positions without zooming; unchanged points and deselection do not recenter',()=>{
+  const h=harness();h.context.next=[user()];h.run('users=next;render()');
+  assert.equal(h.views.length,0);
+  h.element('userSelect').value='1';h.element('userSelect').onchange();assert.equal(h.views.length,1);
+  h.run('render()');assert.equal(h.views.length,1);
+  h.context.testMap.zoom=16;h.context.next=[{...user(),latitude:10.2}];h.run('users=next;render()');
+  assert.equal(h.views.length,2);assert.equal(h.views[1][0][0],10.2);assert.equal(h.context.testMap.zoom,16);
+  h.run('fit()');assert.equal(h.element('userSelect').value,'');
+  h.context.next=[{...user(),latitude:10.3}];h.run('users=next;render()');assert.equal(h.views.length,2);
 });
