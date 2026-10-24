@@ -7,7 +7,7 @@
 
   const el=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
   const title=r=>r.kind==='wildlife'?(animals[r.animal]||'Vida silvestre')+(r.animal==='other'&&r.description?' · '+r.description:''):labels[r.kind];
-  const iconPath=r=>'/tracking/report-icons/'+(r.kind==='wildlife'?(Object.hasOwn(animals,r.animal)?r.animal:'other'):Object.hasOwn(labels,r.kind)?r.kind:'other')+'.png';
+  const iconPath=r=>'/tracking/report-icons/'+(r.kind==='wildlife'?(Object.hasOwn(animals,r.animal)?r.animal:'other'):Object.hasOwn(labels,r.kind)?r.kind:'other')+'.png?v=sos-1';
   async function json(url,options){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url,{...options,signal:controller.signal});if(!response.ok)throw new Error(response.status===401?'Sesión finalizada.':'No se pudieron cargar los reportes.');return await response.json();}finally{clearTimeout(timeout);}}
   function card(r){
     const box=el('div');box.className='field-report-card';const picture=el('img');picture.src=iconPath(r);picture.alt='';if(r.kind==='emergency_sos')picture.className='sos-blink';picture.width=40;picture.height=40;box.append(picture,el('strong',title(r)),el('p',r.author),el('p',new Date(r.observed_at).toLocaleString('es-CR')));
