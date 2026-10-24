@@ -32,6 +32,7 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     assert_redirected_to kayaktalkie_login_path
     sign_out @operator
     post '/kayaktalkie/login', params: {phone: @admin.phone,password: 'Test-admin-123456'}
+    @account.kayaktalkie_teams << KayaktalkieTeam.first!
     get '/api/users'
     assert_response :success
     assert_equal @guide.name, response.parsed_body.first['name']
@@ -88,6 +89,7 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     assert alert.acknowledged_at
   end
   test 'five minute estimate persists through ingestion without exposing raw samples' do
+    @account.kayaktalkie_teams << KayaktalkieTeam.first!
     started = 5.minutes.ago
     (0..10).each do |i|
       KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>i*0.001,'accuracy'=>5.0,'capturedAt'=>(started+i*30).to_f*1000,'speedMps'=>30.0})
@@ -105,7 +107,7 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     assert_not item.key?('speed_samples')
     KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>0.011,'accuracy'=>100.0,'capturedAt'=>(started+310).to_f*1000})
     assert_in_delta 13.3434, position.reload.speed_estimate.dig('last_valid','kmh'), 0.001
-    team=KayaktalkieTeam.first!
+    team=KayaktalkieTeam.where.not(id: @account.kayaktalkie_team_ids).first!
     @account.kayaktalkie_team_memberships.create!(kayaktalkie_team:team)
     KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>0.011,'accuracy'=>5.0,'capturedAt'=>(started+330).to_f*1000})
     assert_equal 1,position.reload.speed_samples.size

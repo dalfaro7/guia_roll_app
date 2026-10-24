@@ -33,6 +33,24 @@ class OfficeAccountsTest < ActionDispatch::IntegrationTest
     get '/tracking/accounts';assert_response :forbidden
     get '/dashboard';assert_redirected_to new_user_session_path
   end
+  test 'map removes unassigned accounts but preserves history and other team membership' do
+    KayaktalkieTrackingIngest.call(@staff, {'latitude'=>10.4,'longitude'=>-84.6,'accuracy'=>10,'capturedAt'=>Time.current.to_f*1000})
+    login(@admin)
+    get '/api/users'
+    assert_includes response.parsed_body.map { |u| u['id'] }, @staff.id
+    KayaktalkieAccess.assign!(@staff, attributes:{}, team_ids:[], channel_ids:[])
+    get '/api/users'
+    assert_not_includes response.parsed_body.map { |u| u['id'] }, @staff.id
+    assert_equal 'no-store', response.headers['Cache-Control']
+    assert @staff.reload.active?
+    assert @staff.kayaktalkie_position.present?
+    KayaktalkieAccess.assign!(@staff, attributes:{}, team_ids:[@b.kayaktalkie_team_id], channel_ids:[])
+    get '/api/users'
+    assert_includes response.parsed_body.map { |u| u['id'] }, @staff.id
+    login(@operator)
+    get '/api/users'
+    assert_not_includes response.parsed_body.map { |u| u['id'] }, @staff.id
+  end
   test 'forged channel ids deny join claim release and status across teams' do
     headers={'Authorization'=>"Bearer #{KayaktalkieSession.issue!(@operator)}"}
     %w[join claim release].each do |action|
@@ -93,7 +111,8 @@ class OfficeAccountsTest < ActionDispatch::IntegrationTest
   end
   test 'disabling account invalidates sessions and enqueues removal for all assigned channels' do
     token=KayaktalkieSession.issue!(@staff)
-    assert_enqueued_with(job:VoiceRevokeAccessJob,args:[@staff.id,@a.id]) do
+    identities = @staff.kayaktalkie_sessions.map { |session| "mobile-#{session.id}" }
+    assert_enqueued_with(job:VoiceRevokeAccessJob,args:[@staff.id,@a.id,identities]) do
       KayaktalkieAccess.assign!(@staff,attributes:{active:false},team_ids:[@a.kayaktalkie_team_id],channel_ids:[@a.id])
     end
     assert_nil KayaktalkieSession.authenticate(token)

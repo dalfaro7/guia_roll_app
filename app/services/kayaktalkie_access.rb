@@ -8,12 +8,19 @@ class KayaktalkieAccess
     KayaktalkieAccount.transaction do
       account.lock! if account.persisted?
       old=account.persisted? ? account.allowed_channels.to_a : []
+      session_identities = account.kayaktalkie_sessions.pluck(:id).map { |id| "mobile-#{id}" }
       account.assign_attributes(attributes)
       account.save!
       account.kayaktalkie_teams=KayaktalkieTeam.where(id: teams)
       account.voice_channels=selected
       current=account.available? ? account.allowed_channels.pluck(:id) : []
-      (old.map(&:id)-current).each { |id| VoiceRevokeAccessJob.perform_later(account.id,id) }
+      (old.map(&:id)-current).each do |id|
+        if account.available?
+          VoiceRevokeAccessJob.perform_later(account.id, id)
+        else
+          VoiceRevokeAccessJob.perform_later(account.id, id, session_identities)
+        end
+      end
     end
   end
 end

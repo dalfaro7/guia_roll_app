@@ -5,6 +5,7 @@ class MapVoiceTest < ActionDispatch::IntegrationTest
     @account=KayaktalkieAccount.create!(name:'Staff radio',phone:'88887771',password:'Map-voice-test-123456',location_enabled:true)
   end
   test 'map voice mapping exposes only current session ids without digests' do
+    @account.kayaktalkie_teams << KayaktalkieTeam.first!
     KayaktalkieSession.issue!(@account);active=@account.kayaktalkie_sessions.last
     KayaktalkieSession.issue!(@account);@account.kayaktalkie_sessions.last.update!(expires_at:1.second.ago)
     post '/kayaktalkie/login', params:{phone:@admin.phone,password:'Map-voice-test-123456'}

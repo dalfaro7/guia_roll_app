@@ -39,7 +39,11 @@ class TrackingApiController < ActionController::API
     render json: { speakers: floors.map { |floor| { identity: floor.holder_identity, expiresAt: (floor.expires_at.to_f * 1000).round } } }
   end
   def users
-    visible = @account.admin? ? KayaktalkieAccount.all : KayaktalkieAccount.where(id: KayaktalkieTeamMembership.where(kayaktalkie_team_id: @account.kayaktalkie_team_ids).select(:kayaktalkie_account_id))
+    response.headers['Cache-Control'] = 'no-store'
+    memberships = KayaktalkieTeamMembership.all
+    memberships = memberships.where(kayaktalkie_team_id: @account.kayaktalkie_team_ids) unless @account.admin?
+    # Unassigned accounts remain manageable, but are not part of the operational map.
+    visible = KayaktalkieAccount.where(id: memberships.select(:kayaktalkie_account_id))
     positions = KayaktalkiePosition.where(kayaktalkie_account_id: visible.select(:id)).index_by(&:kayaktalkie_account_id)
     render json: visible.includes(:kayaktalkie_sessions).where(active: true, location_enabled: true).map { |account|
       p = positions[account.id]
