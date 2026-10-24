@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,19 +66,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
     t.index ["work_day_id"], name: "index_guide_days_on_work_day_id"
   end
 
-  create_table "guide_positions", force: :cascade do |t|
-    t.float "accuracy", null: false
-    t.datetime "captured_at", null: false
-    t.datetime "created_at", null: false
-    t.bigint "guide_id", null: false
-    t.float "latitude", null: false
-    t.float "longitude", null: false
-    t.datetime "received_at", null: false
-    t.float "speed_kmh"
-    t.datetime "updated_at", null: false
-    t.index ["guide_id"], name: "index_guide_positions_on_guide_id", unique: true
-  end
-
   create_table "guide_skills", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "guide_id", null: false
@@ -87,22 +74,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
     t.index ["guide_id", "skill_id"], name: "index_guide_skills_on_guide_id_and_skill_id", unique: true
     t.index ["guide_id"], name: "index_guide_skills_on_guide_id"
     t.index ["skill_id"], name: "index_guide_skills_on_skill_id"
-  end
-
-  create_table "guide_speed_alerts", force: :cascade do |t|
-    t.datetime "acknowledged_at"
-    t.datetime "created_at", null: false
-    t.date "day", null: false
-    t.datetime "ended_at"
-    t.datetime "first_at", null: false
-    t.bigint "guide_id", null: false
-    t.string "guide_name", null: false
-    t.datetime "last_at", null: false
-    t.float "peak_kmh", null: false
-    t.datetime "updated_at", null: false
-    t.index ["day", "first_at"], name: "index_guide_speed_alerts_on_day_and_first_at"
-    t.index ["guide_id"], name: "index_guide_speed_alerts_on_guide_id"
-    t.index ["guide_id"], name: "one_open_speed_alert_per_guide", unique: true, where: "(ended_at IS NULL)"
   end
 
   create_table "guides", force: :cascade do |t|
@@ -117,6 +88,78 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
     t.integer "priority"
     t.date "start_date"
     t.integer "total_worked_days"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "kayaktalkie_accounts", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "encrypted_password", null: false
+    t.boolean "location_enabled", default: true, null: false
+    t.string "name", null: false
+    t.string "phone", null: false
+    t.string "role", default: "staff", null: false
+    t.datetime "updated_at", null: false
+    t.index ["phone"], name: "index_kayaktalkie_accounts_on_phone", unique: true
+    t.check_constraint "length(TRIM(BOTH FROM name)) > 0", name: "kayaktalkie_name"
+    t.check_constraint "role::text = ANY (ARRAY['admin'::character varying, 'operator'::character varying, 'staff'::character varying]::text[])", name: "kayaktalkie_role"
+  end
+
+  create_table "kayaktalkie_positions", force: :cascade do |t|
+    t.float "accuracy", null: false
+    t.datetime "captured_at", null: false
+    t.datetime "created_at", null: false
+    t.bigint "kayaktalkie_account_id", null: false
+    t.float "latitude", null: false
+    t.float "longitude", null: false
+    t.datetime "received_at", null: false
+    t.float "speed_kmh"
+    t.bigint "team_ids_at_capture", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_positions_on_kayaktalkie_account_id"
+    t.index ["kayaktalkie_account_id"], name: "one_kayaktalkie_position", unique: true
+  end
+
+  create_table "kayaktalkie_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "kayaktalkie_account_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_sessions_on_kayaktalkie_account_id"
+    t.index ["token_digest"], name: "index_kayaktalkie_sessions_on_token_digest", unique: true
+  end
+
+  create_table "kayaktalkie_speed_alerts", force: :cascade do |t|
+    t.string "account_name", null: false
+    t.datetime "acknowledged_at"
+    t.datetime "created_at", null: false
+    t.date "day", null: false
+    t.datetime "ended_at"
+    t.datetime "first_at", null: false
+    t.bigint "kayaktalkie_account_id", null: false
+    t.datetime "last_at", null: false
+    t.float "peak_kmh", null: false
+    t.bigint "team_ids_at_capture", default: [], null: false, array: true
+    t.datetime "updated_at", null: false
+    t.index ["day", "first_at"], name: "index_kayaktalkie_speed_alerts_on_day_and_first_at"
+    t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_speed_alerts_on_kayaktalkie_account_id"
+    t.index ["kayaktalkie_account_id"], name: "one_open_kayaktalkie_speed_alert", unique: true, where: "(ended_at IS NULL)"
+  end
+
+  create_table "kayaktalkie_team_memberships", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "kayaktalkie_account_id", null: false
+    t.bigint "kayaktalkie_team_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_account_id", "kayaktalkie_team_id"], name: "unique_kayaktalkie_team_member", unique: true
+    t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_team_memberships_on_kayaktalkie_account_id"
+    t.index ["kayaktalkie_team_id"], name: "index_kayaktalkie_team_memberships_on_kayaktalkie_team_id"
+  end
+
+  create_table "kayaktalkie_teams", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
     t.datetime "updated_at", null: false
   end
 
@@ -136,33 +179,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
     t.datetime "updated_at", null: false
     t.index ["guide_id", "date"], name: "index_manual_day_offs_on_guide_id_and_date", unique: true
     t.index ["guide_id"], name: "index_manual_day_offs_on_guide_id"
-  end
-
-  create_table "mobile_accounts", force: :cascade do |t|
-    t.string "account_type", default: "guide", null: false
-    t.boolean "active", default: true, null: false
-    t.datetime "created_at", null: false
-    t.string "email"
-    t.string "encrypted_password", null: false
-    t.bigint "guide_id"
-    t.boolean "location_enabled", default: true, null: false
-    t.string "name"
-    t.string "phone", null: false
-    t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_mobile_accounts_on_email", unique: true
-    t.index ["guide_id"], name: "index_mobile_accounts_on_guide_id", unique: true
-    t.index ["phone"], name: "index_mobile_accounts_on_phone", unique: true
-    t.check_constraint "account_type::text = 'guide'::text AND guide_id IS NOT NULL OR account_type::text = 'office'::text AND guide_id IS NULL AND name IS NOT NULL AND length(TRIM(BOTH FROM name)) > 0 AND location_enabled = false", name: "mobile_account_identity"
-  end
-
-  create_table "mobile_sessions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "expires_at", null: false
-    t.bigint "mobile_account_id", null: false
-    t.string "token_digest", null: false
-    t.datetime "updated_at", null: false
-    t.index ["mobile_account_id"], name: "index_mobile_sessions_on_mobile_account_id"
-    t.index ["token_digest"], name: "index_mobile_sessions_on_token_digest", unique: true
   end
 
   create_table "monthly_balances", force: :cascade do |t|
@@ -194,9 +210,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
     t.string "day_off_source"
     t.boolean "holiday_paid", default: false, null: false
     t.text "notes"
-    t.bigint "office_day_credit_id", null: false
+    t.bigint "office_day_credit_id"
     t.bigint "office_employee_id", null: false
-    t.bigint "office_vacation_credit_id", null: false
+    t.bigint "office_vacation_credit_id"
     t.integer "status"
     t.datetime "updated_at", null: false
     t.index ["office_day_credit_id"], name: "index_office_employee_days_on_office_day_credit_id"
@@ -441,9 +457,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
   create_table "voice_channels", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
+    t.bigint "kayaktalkie_team_id", null: false
     t.string "name", null: false
     t.string "room_key", null: false
     t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_team_id"], name: "index_voice_channels_on_kayaktalkie_team_id"
     t.index ["room_key"], name: "index_voice_channels_on_room_key", unique: true
   end
 
@@ -460,11 +478,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
 
   create_table "voice_memberships", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "mobile_account_id", null: false
+    t.bigint "kayaktalkie_account_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "voice_channel_id", null: false
-    t.index ["mobile_account_id", "voice_channel_id"], name: "unique_voice_membership", unique: true
-    t.index ["mobile_account_id"], name: "index_voice_memberships_on_mobile_account_id"
+    t.index ["kayaktalkie_account_id", "voice_channel_id"], name: "unique_voice_membership", unique: true
+    t.index ["kayaktalkie_account_id"], name: "index_voice_memberships_on_kayaktalkie_account_id"
     t.index ["voice_channel_id"], name: "index_voice_memberships_on_voice_channel_id"
   end
 
@@ -506,14 +524,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"
   add_foreign_key "guide_days", "work_days"
-  add_foreign_key "guide_positions", "guides"
   add_foreign_key "guide_skills", "guides"
   add_foreign_key "guide_skills", "skills"
-  add_foreign_key "guide_speed_alerts", "guides"
+  add_foreign_key "kayaktalkie_positions", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_sessions", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_speed_alerts", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_team_memberships", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_team_memberships", "kayaktalkie_teams"
   add_foreign_key "location_slots", "work_days"
   add_foreign_key "manual_day_offs", "guides"
-  add_foreign_key "mobile_accounts", "guides"
-  add_foreign_key "mobile_sessions", "mobile_accounts"
   add_foreign_key "monthly_balances", "guides"
   add_foreign_key "office_day_credits", "office_employees"
   add_foreign_key "office_employee_days", "office_day_credits"
@@ -533,7 +552,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_24_020000) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
-  add_foreign_key "voice_memberships", "mobile_accounts"
+  add_foreign_key "voice_channels", "kayaktalkie_teams"
+  add_foreign_key "voice_memberships", "kayaktalkie_accounts"
   add_foreign_key "voice_memberships", "voice_channels"
   add_foreign_key "work_day_versions", "work_days"
 end

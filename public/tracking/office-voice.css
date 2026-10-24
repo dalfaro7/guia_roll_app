@@ -6,3 +6,5 @@
 .identity img{width:108px;height:108px;object-fit:contain}.identity{gap:20px}.identity p{max-width:160px;line-height:1.7}.office-header{margin-bottom:20px}
 .login-product-logo{display:block;width:190px;height:190px;object-fit:contain;margin:0 0 12px}
 @media(max-width:760px){.identity img{width:88px;height:88px}.identity{gap:12px}.identity p{max-width:120px}}
+
+.account-management{width:min(1000px,100%);margin:auto;padding:30px;background:#fff;border-radius:18px}.account-management form{padding:20px;margin:18px 0;border:1px solid #dce6df;border-radius:12px;display:grid;gap:12px}.account-management label{display:block}.account-management fieldset{display:grid;gap:12px;padding:16px;border:1px solid #dce6df;border-radius:10px}.account-management input:not([type=checkbox]),.account-management select{width:100%;padding:12px;border:1px solid #b8cfc2;border-radius:8px}.account-management input[type=checkbox]{width:auto;margin-right:10px}.account-management summary{padding:18px;border-bottom:1px solid #dce6df;cursor:pointer}.account-management input[type=submit]{background:#17634d;color:white;cursor:pointer;font-weight:700}

@@ -1,127 +1,109 @@
 require 'test_helper'
-
 class OfficeAccountsTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
   setup do
-    @office = MobileAccount.create!(account_type: 'office', name: 'Oficina prueba', phone: '87771234', location_enabled: false, password: 'Office-test-123456')
-    @office.voice_channels << VoiceChannel.find_by!(room_key: VoiceFloor::ROOM)
-    @admin = User.create!(name: 'Admin cuentas', email: 'office-admin@example.test', password: 'Office-test-123456', role: :admin)
+    @a=VoiceChannel.find_by!(room_key: VoiceFloor::ROOM)
+    @b=VoiceChannel.find_by!(room_key: 'abccanyoning-team')
+    @staff=make_account('staff', '89991001', [@a], true)
+    @other=make_account('staff', '89991002', [@b], true)
+    @operator=make_account('operator', '89991003', [@a])
+    @admin=make_account('admin', '89991004', [])
   end
-  test 'independent office account logs in and can only use voice' do
-    assert_nil @office.guide_id
-    post '/api/login', params: { phone: '87771234', password: 'Office-test-123456' }, as: :json
-    assert_response :success
-    assert_equal 'Oficina prueba', response.parsed_body.dig('user', 'name')
-    assert_equal false, response.parsed_body.dig('user', 'capabilities', 'share_location')
-    headers = { 'Authorization' => "Bearer #{response.parsed_body['token']}" }
-    get '/api/account', headers: headers
-    assert_response :success
-    get '/api/voice/status', headers: headers
-    assert_response :success
-    assert_no_difference ['GuidePosition.count', 'GuideSpeedAlert.count'] do
-      post '/api/location', params: {latitude: 10.4, longitude: -84.6}, headers: headers, as: :json
+  def make_account(role, phone, channels, gps=false)
+    account=KayaktalkieAccount.new
+    KayaktalkieAccess.assign!(account, attributes:{name: "#{role} #{phone}",role:role,phone:phone,password:'Independent-test-123456',location_enabled:gps},team_ids:channels.map(&:kayaktalkie_team_id),channel_ids:channels.map(&:id))
+    account
+  end
+  def login(account)
+    post '/kayaktalkie/login',params:{phone:account.phone,password:'Independent-test-123456'}
+    assert_response :redirect
+  end
+  test 'operators see only assigned team positions and assigned channel speakers' do
+    [@staff,@other].each { |a| KayaktalkieTrackingIngest.call(a,{'latitude'=>10.4,'longitude'=>-84.6,'accuracy'=>10,'capturedAt'=>Time.current.to_f*1000}) }
+    [@a,@b].each { |c| VoiceFloor.for_channel(c).update!(holder_identity:"channel-#{c.id}",expires_at:20.seconds.from_now) }
+    login(@operator)
+    get '/tracking';assert_response :success
+    assert_select '#voiceChannel option',count:2
+    assert_select 'a[href="/tracking/accounts"]',count:0
+    assert_select 'a[href="/dashboard"]',count:0
+    get '/api/users';assert_equal [@staff.id],response.parsed_body.map { |x| x['id'] }
+    get '/api/map/voice';assert_equal ["channel-#{@a.id}"],response.parsed_body['speakers'].map { |s| s['identity'] }
+    get '/api/voice/channels';assert_equal [@a.id],response.parsed_body['channels'].map { |c| c['id'] }
+    get '/api/reports/speed';assert_response :forbidden
+    get '/tracking/accounts';assert_response :forbidden
+    get '/dashboard';assert_redirected_to new_user_session_path
+  end
+  test 'forged channel ids deny join claim release and status across teams' do
+    headers={'Authorization'=>"Bearer #{KayaktalkieSession.issue!(@operator)}"}
+    %w[join claim release].each do |action|
+      post "/api/voice/#{action}",params:{channel_id:@b.id,lease:'forged'},headers:headers,as: :json
       assert_response :forbidden
     end
-    %w[/api/users /api/alerts /api/reports/speed].each do |path|
-      get path, headers: headers
-      assert_response :unauthorized
-    end
-    @office.update!(active: false)
-    get '/api/voice/status', headers: headers
-    assert_response :unauthorized
+    get '/api/voice/status',params:{channel_id:@b.id},headers:headers;assert_response :forbidden
+    @operator.voice_memberships.destroy_all
+    get '/api/voice/channels',headers:headers;assert_empty response.parsed_body['channels']
+    get '/api/users',headers:headers;assert_response :success # Map team permission is distinct from channel permission.
   end
-  test 'office requires name and cannot have guide or location permission' do
-    @office.name = ''
-    assert_not @office.valid?
-    @office.name = 'Oficina'
-    @office.location_enabled = true
-    assert_not @office.valid?
-    assert_raises(ActiveRecord::StatementInvalid) do
-      MobileAccount.transaction(requires_new: true) { @office.update_columns(location_enabled: true) }
-    end
+  test 'staff has voice only web access and GPS remains an explicit capability' do
+    login(@staff);follow_redirect!;assert_response :success
+    get '/tracking';assert_response :forbidden
+    get '/api/users';assert_response :forbidden
+    @staff.update!(location_enabled:false)
+    headers={'Authorization'=>"Bearer #{KayaktalkieSession.issue!(@staff)}"}
+    post '/api/location',params:{latitude:10.4,longitude:-84.6,accuracy:1,capturedAt:Time.current.to_f*1000},headers:headers,as: :json
+    assert_response :forbidden
+    assert_not @staff.has_attribute?(:guide_id)
+    assert_not @staff.has_attribute?(:account_type)
   end
-  test 'office web login and voice join accept valid CSRF and use office identity' do
-    previous_protection = ActionController::Base.allow_forgery_protection
-    previous_env = ENV.values_at('LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET')
-    begin
-      ActionController::Base.allow_forgery_protection = true
-      ENV['LIVEKIT_URL'] = 'ws://127.0.0.1:7880'
-      ENV['LIVEKIT_API_KEY'] = 'local-test'
-      ENV['LIVEKIT_API_SECRET'] = 'local-test-only-secret'
-      get '/kayaktalkie/login'
-      csrf = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')['content']
-      post '/kayaktalkie/login', params: {phone: '87771234', password: 'Office-test-123456'}, headers: {'X-CSRF-Token' => csrf}
-      assert_redirected_to kayaktalkie_path
-      get '/kayaktalkie'
-      csrf = Nokogiri::HTML(response.body).at_css('meta[name="csrf-token"]')['content']
-      post '/api/voice/join', headers: {'X-CSRF-Token' => csrf}, as: :json
-      assert_response :success
-      claims = JWT.decode(response.parsed_body['participantToken'], 'local-test-only-secret', true, algorithms: ['HS256']).first
-      assert_equal 'Oficina prueba', claims['name']
-      assert_match(/\Amobile-\d+\z/, claims['sub'])
-      assert_equal false, claims.dig('video', 'canPublish')
-      @office.update!(active: false)
-      get '/kayaktalkie'
-      assert_redirected_to kayaktalkie_login_path
-    ensure
-      ActionController::Base.allow_forgery_protection = previous_protection
-      %w[LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET].zip(previous_env).each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
-    end
+  test 'Guia Roll administrator gets no implicit Kayak access' do
+    u=User.create!(name:'Separate admin',email:'separate-admin@example.test',password:'Independent-test-123456',role: :admin)
+    sign_in u
+    get '/tracking';assert_redirected_to kayaktalkie_login_path
+    get '/api/users';assert_response :unauthorized
+    post '/api/voice/join',as: :json;assert_response :unauthorized
   end
-  test 'administrator creates office account without guide or email and map excludes it' do
-    sign_in @admin
-    assert_difference 'MobileAccount.count', 1 do
-      post '/tracking/accounts', params: {mobile_account: {account_type: 'office', name: 'Recepción', phone: '87775678', password: 'Office-test-123456', location_enabled: '1'}}
+  test 'admin can create independent teams and accounts but operators cannot escalate' do
+    login(@admin)
+    assert_difference 'KayaktalkieTeam.count',1 do
+      post '/tracking/teams',params:{kayaktalkie_team:{name:'Independent rescue'}}
+    end
+    assert_difference 'KayaktalkieAccount.count',1 do
+      post '/tracking/accounts',params:{kayaktalkie_account:{name:'New operator',phone:'89991005',password:'Independent-test-123456',role:'operator',location_enabled:false},team_ids:[@b.kayaktalkie_team_id],voice_channel_ids:[@b.id]}
     end
     assert_redirected_to tracking_accounts_path
-    account = MobileAccount.find_by!(phone: '+50687775678')
-    assert_nil account.guide_id
-    assert_nil account.email
-    assert_not account.can_share_location?
-    get '/api/users'
-    assert_response :success
-    assert_not response.parsed_body.any? { |row| row['phone'] == account.phone }
-    get '/tracking/accounts'
-    assert_select 'td', text: 'Recepción'
-  end
-  test 'office browser session only opens the isolated voice screen and expires' do
-    get '/kayaktalkie/login'
-    assert_response :success
-    assert_select 'input[type=tel]'
-    post '/kayaktalkie/login', params: {phone: '87771234', password: 'Office-test-123456'}
-    assert_redirected_to kayaktalkie_path
-    get '/kayaktalkie'
-    assert_response :success
-    assert_select '#voiceJoin'
-    assert_select 'a[href="/tracking"]', count: 0
-    assert_select '#reportDialog', count: 0
-    get '/api/voice/status'
-    assert_response :success
-    # Cookie-authenticated writes must include CSRF protection.
-    post '/api/voice/claim', as: :json
+    login(@operator)
+    patch "/tracking/accounts/#{@operator.id}/channels",params:{kayaktalkie_account:{role:'admin'},team_ids:[@b.kayaktalkie_team_id],voice_channel_ids:[@b.id]}
     assert_response :forbidden
-    %w[/tracking /tracking/accounts /tracking/voice].each do |path|
-      get path
-      assert_redirected_to new_user_session_path
-    end
-    %w[/api/users /api/alerts /api/reports/speed].each do |path|
-      get path
-      assert_response :unauthorized
-    end
-    post '/kayaktalkie/logout'
-    assert_redirected_to kayaktalkie_login_path
-    get '/api/voice/status'
-    assert_response :unauthorized
+    assert_equal 'operator',@operator.reload.role
   end
-  test 'guide accounts cannot use office web login and disabled GPS is enforced' do
-    guide = Guide.create!(name: 'Guía sin GPS', active: true, priority: 1)
-    account = MobileAccount.create!(guide: guide, phone: '87779999', location_enabled: false, password: 'Office-test-123456')
-    post '/kayaktalkie/login', params: {phone: '87779999', password: 'Office-test-123456'}
-    assert_response :unprocessable_entity
-    headers = {'Authorization' => "Bearer #{MobileSession.issue!(account)}"}
-    post '/api/location', headers: headers, params: {}, as: :json
-    assert_response :forbidden
-    guide.update!(active: false)
-    get '/api/voice/status', headers: headers
-    assert_response :unauthorized
+  test 'invalid cross-team assignment is atomic and removal revokes active voice access' do
+    assert_raises(ArgumentError) { KayaktalkieAccess.assign!(@operator,attributes:{role:'admin'},team_ids:[@a.kayaktalkie_team_id],channel_ids:[@b.id]) }
+    assert_equal 'operator',@operator.reload.role
+    assert_enqueued_with(job:VoiceRevokeAccessJob,args:[@operator.id,@a.id]) do
+      KayaktalkieAccess.assign!(@operator,attributes:{},team_ids:[],channel_ids:[])
+    end
+    assert_empty @operator.reload.allowed_channels
+    login(@operator);get '/api/users';assert_empty response.parsed_body
+  end
+  test 'moving a staff member does not expose the previous teams last coordinates' do
+    KayaktalkieTrackingIngest.call(@staff,{'latitude'=>10.4,'longitude'=>-84.6,'accuracy'=>10,'capturedAt'=>Time.current.to_f*1000})
+    KayaktalkieAccess.assign!(@staff,attributes:{},team_ids:[@b.kayaktalkie_team_id],channel_ids:[@b.id])
+    second=make_account('operator','89991006',[@b]);login(second)
+    get '/api/users';row=response.parsed_body.find { |x| x['id']==@staff.id };assert_nil row['latitude']
+  end
+  test 'disabling account invalidates sessions and enqueues removal for all assigned channels' do
+    token=KayaktalkieSession.issue!(@staff)
+    assert_enqueued_with(job:VoiceRevokeAccessJob,args:[@staff.id,@a.id]) do
+      KayaktalkieAccess.assign!(@staff,attributes:{active:false},team_ids:[@a.kayaktalkie_team_id],channel_ids:[@a.id])
+    end
+    assert_nil KayaktalkieSession.authenticate(token)
+  end
+  test 'browser voice and location mutations require CSRF' do
+    login(@staff)
+    [ActionController::Base,VoiceController,TrackingApiController].each { |c| c.allow_forgery_protection=true }
+    post '/api/voice/claim',params:{channel_id:@a.id},as: :json;assert_response :forbidden
+    post '/api/location',params:{},as: :json;assert_response :forbidden
+  ensure
+    [ActionController::Base,VoiceController,TrackingApiController].each { |c| c.allow_forgery_protection=false }
   end
 end

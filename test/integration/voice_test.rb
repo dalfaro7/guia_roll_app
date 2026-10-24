@@ -11,9 +11,10 @@ class VoiceTest < ActionDispatch::IntegrationTest
   end
   setup do
     guide = Guide.create!(name: 'Guía voz', active: true, priority: 1)
-    account = MobileAccount.create!(guide: guide, phone: '88889999', password: 'Voice-test-123456')
+    account = KayaktalkieAccount.create!(name: guide.name, phone: '88889999', password: 'Voice-test-123456')
+    account.kayaktalkie_teams << VoiceChannel.find_by!(room_key: VoiceFloor::ROOM).kayaktalkie_team
     account.voice_channels << VoiceChannel.find_by!(room_key: VoiceFloor::ROOM)
-    @token = MobileSession.issue!(account)
+    @token = KayaktalkieSession.issue!(account)
     @headers = {'Authorization' => "Bearer #{@token}"}
   end
   test 'voice requires authenticated participation and reports missing infrastructure' do
@@ -67,6 +68,10 @@ class VoiceTest < ActionDispatch::IntegrationTest
     user = User.create!(name: 'Admin voz', email: 'voice-admin@example.test', password: 'Voice-admin-123456', role: :admin)
     sign_in user
     get '/tracking/voice'
+    assert_redirected_to kayaktalkie_login_path
+    admin = KayaktalkieAccount.create!(name: 'Independent admin', phone: '89990123', role: 'admin', password: 'Voice-admin-123456')
+    post '/kayaktalkie/login', params: {phone: admin.phone, password: 'Voice-admin-123456'}
+    get '/tracking/voice'
     assert_redirected_to tracking_path(anchor: 'voicePanel')
     follow_redirect!
     assert_response :success
@@ -76,7 +81,7 @@ class VoiceTest < ActionDispatch::IntegrationTest
     assert_select '#voiceChannel option[value=""]', count: 1
     assert_select 'aside #voiceTalk[disabled]', count: 1
     assert_select 'a[href="/tracking/voice"]', count: 0
-    user.update!(role: :operador)
+    admin.update!(active: false)
     post '/api/voice/join', as: :json
     assert_response :unauthorized
   end

@@ -1,6 +1,8 @@
 class VoiceController < ActionController::API
   include ActionController::Cookies
   include ActionController::RequestForgeryProtection
+  include KayaktalkieAuthentication
+  before_action :authenticate_kayaktalkie!
   before_action :authenticate_participant!
   before_action :browser_csrf!, except: [:status, :channels]
   before_action :authorize_channel!, except: :channels
@@ -27,7 +29,7 @@ class VoiceController < ActionController::API
   end
   private
   def available_channels
-    @account ? @account.voice_channels.enabled : VoiceChannel.enabled
+    @account.allowed_channels
   end
   def authorize_channel!
     # Legacy APKs use the former general room only when assigned to that account.
@@ -39,22 +41,8 @@ class VoiceController < ActionController::API
     render json: { error: 'No tienes acceso a este canal.' }, status: :forbidden unless @channel
   end
   def authenticate_participant!
-    bearer = request.authorization.to_s.delete_prefix('Bearer ')
-    browser_token = session[:kayaktalkie_token] if bearer.blank?
-    mobile = MobileSession.authenticate(bearer.presence || browser_token)
-    mobile = nil if browser_token && !mobile&.mobile_account&.office_account?
-    if mobile
-      @account = mobile.mobile_account
-      @identity = "mobile-#{mobile.id}"
-      @name = mobile.mobile_account.display_name
-      @browser = true if browser_token
-    else
-      admin = request.env['warden']&.user
-      return render json: { error: 'Sin acceso al canal.' }, status: :unauthorized unless admin&.admin?
-      @browser = true
-      @identity = "admin-#{admin.id}"
-      @name = admin.name
-    end
+    @identity = "mobile-#{@kayaktalkie_session.id}"
+    @name = @account.name
   end
   def browser_csrf!
     if @browser && !valid_authenticity_token?(session, request.headers['X-CSRF-Token'])

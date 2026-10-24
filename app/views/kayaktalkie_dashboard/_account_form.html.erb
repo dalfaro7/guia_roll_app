@@ -1,0 +1,11 @@
+<%= form_with scope: :kayaktalkie_account, namespace: "account_#{account.id || 'new'}", url: account.persisted? ? tracking_account_channels_path(account) : tracking_accounts_path, method: account.persisted? ? :patch : :post do |f| %>
+<%= f.label :name, 'Nombre' %><%= f.text_field :name, value: account.name, required: true %>
+<%= f.label :phone, 'Teléfono' %><%= f.telephone_field :phone, value: account.phone, required: true %>
+<%= f.label :role, 'Rol' %><%= f.select :role, [['Staff','staff'],['Operador','operator'],['Admin','admin']], selected: account.role %>
+<%= f.label :password, account.persisted? ? 'Nueva contraseña (dejar vacía para conservar)' : 'Contraseña inicial' %><%= f.password_field :password, minlength: 12, required: !account.persisted?, autocomplete: 'new-password' %>
+<label><%= f.check_box :active, checked: account.active? %> Cuenta activa</label>
+<label><%= f.check_box :location_enabled, checked: account.location_enabled? %> Permitir compartir ubicación</label>
+<fieldset><legend>Equipos autorizados</legend><%= hidden_field_tag 'team_ids[]','' %><% @teams.each do |team| %><label><%= check_box_tag 'team_ids[]', team.id, account.kayaktalkie_team_ids.include?(team.id), id: "a#{account.id}_t#{team.id}" %> <%= team.name %></label><% end %></fieldset>
+<fieldset><legend>Canales autorizados (el equipo también debe estar asignado)</legend><%= hidden_field_tag 'voice_channel_ids[]','' %><% @channels.each do |channel| %><label><%= check_box_tag 'voice_channel_ids[]', channel.id, account.voice_channel_ids.include?(channel.id), id: "a#{account.id}_c#{channel.id}" %> <%= channel.kayaktalkie_team.name %> / <%= channel.name %></label><% end %></fieldset>
+<%= f.submit account.persisted? ? 'Guardar cuenta y permisos' : 'Crear cuenta' %>
+<% end %>

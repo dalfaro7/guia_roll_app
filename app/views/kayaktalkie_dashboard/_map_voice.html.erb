@@ -2,7 +2,7 @@
 <h2 id="voiceHeading">Walkie-talkie</h2>
 <p>Habla con tu equipo desde el mapa.</p>
 <label for="voiceChannel">Canal</label>
-<select id="voiceChannel"><option value="">Selecciona un canal…</option><% VoiceChannel.enabled.order(:name).each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select>
+<select id="voiceChannel"><option value="">Selecciona un canal…</option><% @account.allowed_channels.order(:name).each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select>
 <p id="voiceStatus" role="status">Selecciona un canal para conectar</p>
 <button id="voiceTalk" type="button" disabled aria-pressed="false" aria-label="Mantener pulsado para hablar"><span class="radio-symbol" aria-hidden="true">●</span><span id="voiceTalkLabel">HABLAR</span><span class="radio-hint">Mantén pulsado</span></button>
 <p class="voice-key-hint">O mantén la tecla <kbd>M</kbd> para hablar</p>

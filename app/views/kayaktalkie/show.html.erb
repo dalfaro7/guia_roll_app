@@ -2,9 +2,9 @@
   <header class="office-header">
     <div class="identity"><img src="/tracking/kayaktalkie-logo.png" alt="KayakTalkie&GPS" width="140"><div><h1 class="brand-sr-only">KayakTalkie&amp;GPS</h1><p>COMUNICACIÓN DEL EQUIPO</p></div></div>
     <details id="voiceMenu" class="settings-menu"><summary>Menú <span aria-hidden="true">⌄</span></summary><div class="settings-dropdown">
-      <p class="menu-eyebrow">CUENTA DE OFICINA</p><strong><%= @account.display_name %></strong>
+      <p class="menu-eyebrow">CUENTA KAYAKTALKIE</p><strong><%= @account.display_name %></strong>
       <div class="menu-divider"></div><p class="menu-eyebrow">AUDIO</p>
-<label for="voiceChannel">Canal autorizado</label><select id="voiceChannel"><% (@account ? @account.voice_channels.enabled : VoiceChannel.enabled).each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select><p>Desconecta para cambiar de canal.</p>
+<label for="voiceChannel">Canal autorizado</label><select id="voiceChannel"><% @account.allowed_channels.each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select><p>Desconecta para cambiar de canal.</p>
       <button id="voiceJoin" type="button">Conectar al canal</button><button id="voiceMute" type="button" disabled>Silenciar recepción</button><button id="voiceLeave" type="button" disabled>Desconectar del canal</button>
       <p class="menu-note">El micrófono solo se activa al mantener pulsado Hablar o la tecla M. No se graban conversaciones.</p>
       <div class="menu-divider"></div><%= button_to 'Cerrar sesión', kayaktalkie_logout_path, method: :post, class: 'logout-button' %>
@@ -24,9 +24,9 @@
       <div class="radio-bottom"><span>Máximo <b>30 s</b> por turno</span><span>Mantén M para hablar</span></div>
       <div id="voiceAudio"></div>
     </section>
-    <aside class="office-help"><span class="team-icon" aria-hidden="true">↗</span><p class="eyebrow">TU EQUIPO, MÁS CERCA</p><h2>Una conversación.<br>Todo el equipo.</h2><p class="help-copy">Habla con los guías conectados desde sus celulares, en el mismo canal.</p>
+    <aside class="office-help"><span class="team-icon" aria-hidden="true">↗</span><p class="eyebrow">TU EQUIPO, MÁS CERCA</p><h2>Una conversación.<br>Todo el equipo.</h2><p class="help-copy">Habla con tu equipo conectado desde sus celulares, en el mismo canal.</p>
       <ol><li><span>01</span><div><strong>Conecta</strong><p>Activa la recepción para escuchar al equipo.</p></div></li><li><span>02</span><div><strong>Mantén pulsado el botón o M</strong><p>El botón verde indica que lo tienes pulsado. El texto confirma cuándo transmites.</p></div></li><li><span>03</span><div><strong>Suelta y escucha</strong><p>La luz azul indica que otra persona está hablando.</p></div></li></ol>
-      <div class="account-note"><span class="account-avatar" aria-hidden="true"><%= @account.display_name.to_s.first.upcase %></span><div><strong><%= @account.display_name %></strong><p>Oficina · Canal de voz</p></div></div>
+      <div class="account-note"><span class="account-avatar" aria-hidden="true"><%= @account.display_name.to_s.first.upcase %></span><div><strong><%= @account.display_name %></strong><p>Staff · Canal de voz</p></div></div>
     </aside>
   </div><footer class="office-footer"><span>KayakTalkie · Remando juntos</span><span>Desarrollado por Didier Alfaro</span></footer>
 </div><script src="/tracking/livekit-client.umd.js" defer></script><script src="/tracking/office-voice.js" defer></script>

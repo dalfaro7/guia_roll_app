@@ -1,0 +1,9 @@
+<main class="account-management"><h1>KayakTalkie · Equipos y cuentas</h1>
+<p><%= link_to 'Volver al mapa', tracking_path, data: {turbo: false} %></p>
+<p>Admin: acceso global. Operador: mapa de sus equipos y canales asignados. Staff: voz y ubicación habilitada.</p>
+<% if @error %><p role="alert"><%= @error %></p><% end %>
+<h2>Crear equipo independiente</h2><%= form_with scope: :kayaktalkie_team, url: tracking_teams_path do |f| %><%= f.label :name, 'Nombre del equipo' %><%= f.text_field :name, required: true, maxlength: 80 %><%= f.submit 'Crear equipo' %><% end %>
+<h2>Crear canal</h2><%= form_with scope: :voice_channel, url: tracking_channels_path do |f| %><%= f.label :name, 'Nombre del canal' %><%= f.text_field :name, required: true, maxlength: 80 %><%= f.label :kayaktalkie_team_id, 'Equipo propietario' %><%= f.collection_select :kayaktalkie_team_id, @teams, :id, :name %><%= f.submit 'Crear canal' %><% end %>
+<h2>Nueva cuenta</h2><%= render 'account_form', account: KayaktalkieAccount.new(role: 'staff', active: true, location_enabled: false) %>
+<h2>Cuentas existentes</h2><% @accounts.each do |account| %><details><summary><%= account.name %> · <%= account.role %> · <%= account.phone %></summary><%= render 'account_form', account: account %></details><% end %>
+</main>

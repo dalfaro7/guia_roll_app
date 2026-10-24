@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let users = [], map, markers = new Map(), timer;
+let users = [], map, markers = new Map(), timer, dashboardRole;
 let speakingIdentities = [], stopMapVoice;
 function radioIndicator(guideId) {
   const icon = document.createElement('i'); icon.className = 'voice-intercom'; icon.dataset.guideId = guideId;
@@ -62,7 +62,7 @@ async function refreshAlerts() {
     const info = document.createElement('p'); info.textContent = `${alert.user_name} · máxima ${kmh(alert.peak_kmh)}`;
     const time = document.createElement('small'); time.textContent = `${crDate(alert.first_at)} · ${crTime(alert.first_at)} · hora de Costa Rica`; info.append(time);
     const seen = document.createElement('button'); seen.className = 'secondary'; seen.textContent = 'Marcar como visto';
-    seen.onclick = async () => { seen.disabled = true; try { await api('alerts/ack', { id: alert.id }); await refreshAlerts(); if ($('reportDialog').open) await loadReport(); } catch (error) { $('status').textContent = error.message; seen.disabled = false; } };
+    seen.onclick = async () => { seen.disabled = true; try { await api('alerts/ack', { id: alert.id }); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); } catch (error) { $('status').textContent = error.message; seen.disabled = false; } };
     row.append(info, seen); box.append(row);
   }
   const report = document.createElement('button'); report.className = 'secondary'; report.textContent = 'Consultar reporte diario'; report.onclick = showReports; box.append(report);
@@ -81,10 +81,11 @@ async function loadReport() {
 }
 async function showReports() { if (!$('reportDialog').open) $('reportDialog').showModal(); await loadReport(); }
 $('openReports').onclick = showReports; $('closeReports').onclick = () => $('reportDialog').close(); $('reportDate').onchange = loadReport;
-async function refresh() { try { users = await api('users'); render(); await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; $('login').hidden = false; $('reportDialog').close(); } } }
+async function refresh() { try { users = await api('users'); render(); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; location.href = '/kayaktalkie/login'; $('reportDialog').close(); } } }
 async function openDashboard(user) {
-  if (user.role !== 'admin') throw new Error('Este panel es para administradores. Usa la app móvil para compartir ubicación.');
-  $('login').hidden = true; $('dashboard').hidden = false;
+  dashboardRole = user.role;
+  if (!['admin','operator'].includes(user.role)) throw new Error('Este panel es para administradores. Usa la app móvil para compartir ubicación.');
+  $('dashboard').hidden = false;
   if (!stopMapVoice && window.KayakMapVoice) stopMapVoice = window.KayakMapVoice.start(identities => {speakingIdentities = identities;updateSpeaking();}, status => {$('mapVoiceStatus').textContent = status;});
   await refresh(); clearInterval(timer); timer = setInterval(refresh, 15000);
   if (!map) {
@@ -97,10 +98,5 @@ async function openDashboard(user) {
     fit(); render();
   }
 }
-$('loginForm').onsubmit = async e => { e.preventDefault(); try { await openDashboard((await api('login', Object.fromEntries(new FormData(e.target)))).user); $('loginError').textContent = ''; e.target.reset(); } catch (error) { $('loginError').textContent = error.message; } };
 $('search').oninput = render; $('fit').onclick = fit;
-$('addUser').onclick = () => $('userDialog').showModal(); $('cancel').onclick = () => $('userDialog').close();
-$('userForm').onsubmit = async e => { e.preventDefault(); try { await api('users', Object.fromEntries(new FormData(e.target))); e.target.reset(); $('userError').textContent = ''; $('userDialog').close(); await refresh(); } catch (error) { $('userError').textContent = error.message; } };
-$('logout').hidden = true;
-$('logout').onclick = async () => { try { await api('logout', {}); clearInterval(timer); location.reload(); } catch (error) { $('status').textContent = error.message; } };
-api('me').then(openDashboard).catch(() => { location.href = '/users/sign_in'; });
+api('me').then(openDashboard).catch(() => { location.href = '/kayaktalkie/login'; });

@@ -37,31 +37,31 @@
 </head>
 
 <body>
-    <nav style="padding:15px; background:#f8f9fa; margin-bottom:20px;">
-        <span class="m-3">Arenal Rafting Staffing | <% if user_signed_in? %>
-            User: <%= current_user.name %>
-            <% else %>
-            User:
-            <% end %></span>
-        <%= link_to "Programación de guías", work_days_path %> |
-        <%= link_to "Guide_assignments", guide_assignments_path %> |
-        <%= link_to "Guides", guides_path %> |
-        <%= link_to "Days Off", day_off_report_path %> |
-        <%= link_to "Buses", buses_path %> |
-        <%= link_to "Dashboard", dashboard_path %>
-        <% if current_user&.admin? %><%= link_to "KayakTalkie&GPS", tracking_path, data: { turbo: false } %><% end %>
-        <%= link_to "Audit Logs", audit_logs_path %>
-        <% if current_user&.admin? || current_user&.recursos_humanos? %>
-            <%= link_to "Libres Oficina", office_employee_days_path %>
-        <% end %>
-
-        <span class="ms-3 d-inline-block">
-            <%= button_to "Log Out",
-            destroy_user_session_path,
-            method: :delete,
-            class: "btn btn-sm btn-outline-secondary d-inline-block" %>
-        </span>
-    </nav>
+    <header class="roll-header">
+      <div class="roll-header__identity">
+        <strong>Arenal Rafting Staffing</strong>
+        <% if user_signed_in? %><span><%= current_user.name %></span><% end %>
+      </div>
+      <nav class="roll-header__nav" aria-label="Navegación principal">
+        <div class="roll-header__links">
+          <% [["Programación de guías", work_days_path], ["Asignaciones", guide_assignments_path], ["Guías", guides_path], ["Días libres", day_off_report_path], ["Buses", buses_path], ["Dashboard", dashboard_path], ["Auditoría", audit_logs_path]].each do |label, path| %>
+            <%= link_to label, path, class: "roll-header__link", aria: { current: current_page?(path) ? "page" : nil } %>
+          <% end %>
+          <% if current_user&.admin? || current_user&.recursos_humanos? %>
+            <%= link_to "Libres Oficina", office_employee_days_path, class: "roll-header__link", aria: { current: current_page?(office_employee_days_path) ? "page" : nil } %>
+          <% end %>
+          <% if user_signed_in? %>
+            <%= button_to "Cerrar sesión", destroy_user_session_path, method: :delete, class: "roll-header__logout" %>
+          <% end %>
+        </div>
+        <div class="roll-header__app">
+          <%= link_to kayaktalkie_login_path, class: "roll-header__kayak", data: { turbo: false } do %>
+            <span class="roll-header__badge">new</span>
+            <span>KayakTalkie&amp;GPS</span><span aria-hidden="true">↗</span>
+          <% end %>
+        </div>
+      </nav>
+    </header>
 
     <%= yield %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

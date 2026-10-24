@@ -24,3 +24,23 @@ body {
   background-repeat: no-repeat;
 }
 
+
+/* Independent application entry, separated from guide operations. */
+.roll-header{padding:18px 24px;background:#fff;border-bottom:1px solid #dce5e2;margin-bottom:24px;box-shadow:0 2px 8px #153b2c08}
+.roll-header__identity{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;color:#173e34;font-size:15px}
+.roll-header__identity>span{color:#64746e;font-size:13px}
+.roll-header__nav{display:flex;align-items:center;gap:24px}
+.roll-header__links{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.roll-header__link,.roll-header__logout{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;border-radius:9px;font-size:14px;line-height:1.4;text-decoration:none;white-space:nowrap}
+.roll-header__link{color:#40554e;border:1px solid transparent}
+.roll-header__link:hover{color:#135d49;background:#eef6f2}
+.roll-header__link[aria-current="page"]{background:#e5f3ec;color:#135d49;border-color:#c4dfd0;font-weight:700}
+.roll-header__links form{margin:0}
+.roll-header__logout{border:1px solid #dce5e2;background:white;color:#64746e;cursor:pointer}
+.roll-header__logout:hover{background:#f3f5f4;color:#253f35}
+.roll-header__app{margin-left:auto;padding:12px 0 4px 24px;border-left:1px solid #dce5e2;flex-shrink:0}
+.roll-header__kayak{position:relative;display:flex;align-items:center;gap:14px;min-height:46px;padding:12px 18px;border-radius:12px;background:#075a80;color:white;font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 3px 9px #075a801c}
+.roll-header__kayak:hover{background:#064867;color:white}
+.roll-header__badge{position:absolute;right:12px;top:-12px;padding:2px 9px;border:2px solid white;border-radius:12px;background:#d6f6e6;color:#126145;font-size:10px;font-weight:800;line-height:16px;letter-spacing:.04em}
+.roll-header a:focus-visible,.roll-header button:focus-visible{outline:3px solid #218ab6;outline-offset:3px}
+@media(max-width:767px){.roll-header{padding:16px}.roll-header__nav{flex-wrap:wrap;gap:18px}.roll-header__links{flex-basis:100%;gap:6px}.roll-header__app{border-left:0;padding:12px 0 0;margin-left:auto}.roll-header__identity{margin-bottom:12px}.roll-header__link,.roll-header__logout{font-size:13px;padding:10px}}

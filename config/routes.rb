@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  post "tracking/teams", to: "kayaktalkie_dashboard#create_team", as: :tracking_teams
   get 'kayaktalkie/login', to: 'kayaktalkie#new', as: :kayaktalkie_login
   post 'kayaktalkie/login', to: 'kayaktalkie#create'
   post 'kayaktalkie/logout', to: 'kayaktalkie#destroy', as: :kayaktalkie_logout
@@ -6,16 +7,16 @@ Rails.application.routes.draw do
   get 'api/account', to: 'tracking_api#account'
   get "api/map/voice", to: "tracking_api#map_voice"
   get 'api/voice/channels', to: 'voice#channels'
-  post 'tracking/channels', to: 'guide_tracking#create_channel', as: :tracking_channels
-  patch 'tracking/accounts/:id/channels', to: 'guide_tracking#update_channels', as: :tracking_account_channels
-  get "tracking/voice", to: "guide_tracking#voice", as: :tracking_voice
+  post 'tracking/channels', to: 'kayaktalkie_dashboard#create_channel', as: :tracking_channels
+  patch 'tracking/accounts/:id/channels', to: 'kayaktalkie_dashboard#update_channels', as: :tracking_account_channels
+  get "tracking/voice", to: "kayaktalkie_dashboard#voice", as: :tracking_voice
   post "api/voice/join", to: "voice#join"
   get "api/voice/status", to: "voice#status"
   post "api/voice/claim", to: "voice#claim"
   post "api/voice/release", to: "voice#release"
-  get "tracking", to: "guide_tracking#index", as: :tracking
-  get "tracking/accounts", to: "guide_tracking#accounts", as: :tracking_accounts
-  post "tracking/accounts", to: "guide_tracking#create_account"
+  get "tracking", to: "kayaktalkie_dashboard#index", as: :tracking
+  get "tracking/accounts", to: "kayaktalkie_dashboard#accounts", as: :tracking_accounts
+  post "tracking/accounts", to: "kayaktalkie_dashboard#create_account"
   post "api/login", to: "tracking_api#login"
   post "api/logout", to: "tracking_api#logout"
   post "api/location", to: "tracking_api#location"

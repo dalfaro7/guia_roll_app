@@ -4,9 +4,10 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
   setup do
     @arenal = VoiceChannel.find_by!(room_key: VoiceFloor::ROOM)
     @abc = VoiceChannel.find_by!(room_key: 'abccanyoning-team')
-    @account = MobileAccount.create!(account_type: 'office', name: 'Canales prueba', phone: '88882221', location_enabled: false, password: 'Channels-test-123456')
+    @account = KayaktalkieAccount.create!(name: 'Canales prueba', phone: '88882221', location_enabled: false, password: 'Channels-test-123456')
+    @account.kayaktalkie_teams << @arenal.kayaktalkie_team
     @account.voice_channels << @arenal
-    @headers = { 'Authorization' => "Bearer #{MobileSession.issue!(@account)}" }
+    @headers = { 'Authorization' => "Bearer #{KayaktalkieSession.issue!(@account)}" }
   end
   def transport_stub(method, callable)
     previous = VoiceTransport.method(method)
@@ -27,6 +28,7 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
         post '/api/voice/join', headers: @headers, as: :json
         assert_response :success
         assert_equal @arenal.room_key, response.parsed_body['participantToken']
+        @account.kayaktalkie_teams << @abc.kayaktalkie_team
         @account.voice_channels << @abc
         post '/api/voice/join', headers: @headers, params: {channel_id: @abc.id}, as: :json
         assert_response :success
@@ -53,20 +55,20 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
   end
   test 'only administrator can assign several channels and create channels' do
     post '/tracking/channels', params: {voice_channel: {name: 'Nuevo'}}
-    assert_redirected_to new_user_session_path
-    admin = User.create!(name: 'Admin canales', email: 'channel-admin@example.test', password: 'Channels-test-123456', role: :admin)
-    sign_in admin
-    patch "/tracking/accounts/#{@account.id}/channels", params: {voice_channel_ids: [@arenal.id, @abc.id]}
+    assert_redirected_to kayaktalkie_login_path
+    admin = KayaktalkieAccount.create!(name: 'Admin canales', phone: '89990124', password: 'Channels-test-123456', role: 'admin')
+    post '/kayaktalkie/login', params: {phone: admin.phone, password: 'Channels-test-123456'}
+    patch "/tracking/accounts/#{@account.id}/channels", params: {kayaktalkie_account: {name: @account.name}, team_ids: [@arenal.kayaktalkie_team_id,@abc.kayaktalkie_team_id], voice_channel_ids: [@arenal.id, @abc.id]}
     assert_redirected_to tracking_accounts_path
     assert_equal [@arenal.id, @abc.id].sort, @account.reload.voice_channel_ids.sort
     assert_enqueued_with(job: VoiceRevokeAccessJob, args: [@account.id, @abc.id]) do
-      patch "/tracking/accounts/#{@account.id}/channels", params: {voice_channel_ids: [@arenal.id]}
+      patch "/tracking/accounts/#{@account.id}/channels", params: {kayaktalkie_account: {name: @account.name}, team_ids: [@arenal.kayaktalkie_team_id,@abc.kayaktalkie_team_id], voice_channel_ids: [@arenal.id]}
     end
-    patch "/tracking/accounts/#{@account.id}/channels", params: {voice_channel_ids: [999999]}
+    patch "/tracking/accounts/#{@account.id}/channels", params: {kayaktalkie_account: {name: @account.name}, team_ids: [@arenal.kayaktalkie_team_id,@abc.kayaktalkie_team_id], voice_channel_ids: [999999]}
     assert_response :unprocessable_entity
     assert_equal [@arenal.id], @account.reload.voice_channel_ids
     assert_difference 'VoiceChannel.count', 1 do
-      post '/tracking/channels', params: {voice_channel: {name: 'Equipo rescate'}}
+      post '/tracking/channels', params: {voice_channel: {name: 'Equipo rescate', kayaktalkie_team_id: @arenal.kayaktalkie_team_id}}
     end
   end
   test 'revocation removes account sessions only from the revoked channel and skips restored access' do
@@ -102,8 +104,8 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
     end
   end
   test 'map shows simultaneous active turns in both channels only for administrator' do
-    admin = User.create!(name: 'Mapa canales', email: 'channel-map@example.test', password: 'Channels-test-123456', role: :admin)
-    sign_in admin
+    admin = KayaktalkieAccount.create!(name: 'Mapa canales', phone: '89990125', password: 'Channels-test-123456', role: 'admin')
+    post '/kayaktalkie/login', params: {phone: admin.phone, password: 'Channels-test-123456'}
     [@arenal, @abc].each_with_index { |c,i| VoiceFloor.for_channel(c).update!(holder_identity: "mobile-#{i}", expires_at: 10.seconds.from_now) }
     get '/api/map/voice'
     assert_response :success
