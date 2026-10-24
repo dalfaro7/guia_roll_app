@@ -8,6 +8,33 @@ function text(node, value) { if (node.textContent !== String(value)) node.textCo
 function prune(nodes, ids, dispose = entry => entry.node.remove()) {
   for (const [id, entry] of nodes) if (!ids.has(id)) { dispose(entry); nodes.delete(id); }
 }
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim().replace(/\s+/g, ' ');
+}
+function matchesSearch(user, query) {
+  const name = normalizeSearch(user.name);
+  return normalizeSearch(query).split(' ').every(part => name.includes(part));
+}
+const suggestionNodes = new Map();
+function renderSearchSuggestions() {
+  const query = normalizeSearch($('search').value);
+  const results = query ? users.filter(u => matchesSearch(u, query)).sort((a,b) =>
+    Number(normalizeSearch(b.name).startsWith(query)) - Number(normalizeSearch(a.name).startsWith(query)) || a.name.localeCompare(b.name, 'es')) : [];
+  const visible = results.slice(0, 8);
+  prune(suggestionNodes, new Set(visible.map(u => u.id)));
+  $('searchSuggestions').hidden = !query || !results.length;
+  visible.forEach((user, index) => {
+    let entry = suggestionNodes.get(user.id);
+    if (!entry) {
+      const node = document.createElement('button'); node.type = 'button';
+      node.onclick = () => selectMapUser(user.id);
+      entry = {node}; suggestionNodes.set(user.id, entry);
+    }
+    text(entry.node, user.name + (user.latitude == null ? ' · sin ubicación' : ''));
+    if ($('searchSuggestions').children[index] !== entry.node) $('searchSuggestions').insertBefore(entry.node, $('searchSuggestions').children[index] || null);
+  });
+  if (query && results.length > 8) text($('userSearchStatus'), `${results.length} coincidencias · escribe más letras para precisar`);
+}
 function speedDisplay(u) {
   const estimate = u.speed_estimate;
   const candidate = estimate?.status === 'ready' ? estimate : estimate?.last_valid;
@@ -70,6 +97,34 @@ function followSelectedUser() {
     lastFollowPosition = position;
   }
 }
+let dashboardAccountId = null;
+const areaKey = () => `kayaktalkie.map-area.v1.${dashboardAccountId}`;
+function savedMapArea() {
+  if (dashboardAccountId == null) return null;
+  try {
+    const area = JSON.parse(localStorage.getItem(areaKey()));
+    return area && Number.isFinite(area.lat) && Math.abs(area.lat) <= 85.051129 &&
+      Number.isFinite(area.lng) && Math.abs(area.lng) <= 180 && Number.isFinite(area.zoom) && area.zoom >= 0 && area.zoom <= 19 ? area : null;
+  } catch { return null; }
+}
+function saveMapArea() {
+  if (!map || dashboardAccountId == null) return;
+  const center = map.getCenter();
+  const area = {lat:center.lat, lng:((center.lng + 180) % 360 + 360) % 360 - 180, zoom:map.getZoom()};
+  try {
+    localStorage.setItem(areaKey(), JSON.stringify(area));
+    text($('mapAreaStatus'), 'Área guardada en este navegador.');
+  } catch { text($('mapAreaStatus'), 'No se pudo guardar: el almacenamiento del navegador no está disponible.'); }
+}
+function restoreMapArea() {
+  const area = savedMapArea();
+  if (!area) { text($('mapAreaStatus'), 'Mueve el mapa, ajusta el zoom y pulsa Guardar área.'); return; }
+  if (!map) return;
+  $('search').value = ''; $('userSelect').value = ''; lastFollowPosition = null;
+  map.setView([area.lat, area.lng], area.zoom, {animate:false});
+  render();
+  text($('mapAreaStatus'), 'Mi área · seguimiento de usuarios detenido.');
+}
 function fit() {
   $('userSelect').value = ''; lastFollowPosition = null;
   if (map) map.fitBounds(boundsCR);
@@ -87,11 +142,16 @@ function renderRecentUsers() {
     if (!entry) {
       const node = document.createElement('button'); node.type = 'button'; node.className = 'recent-map-user';
       const name = document.createElement('strong'), status = document.createElement('small');
-      node.append(name, status);
+      const speed = document.createElement('small'); speed.className = 'recent-user-speed';
+      node.append(name, speed, status);
       node.onclick = () => selectMapUser(u.id);
-      entry = {node, name, status}; recentUserNodes.set(u.id, entry);
+      entry = {node, name, speed, status}; recentUserNodes.set(u.id, entry);
     }
     text(entry.name, u.name);
+    const display = speedDisplay(u);
+    text(entry.speed, display.value.replace('Estimada:', 'Prom.:').replace('Velocidad no disponible', 'Sin velocidad'));
+    entry.speed.title = `${display.title} ${display.note}`;
+    entry.node.classList.toggle('speed-warning', display.overLimit === true);
     const age = Math.max(0, now - u.captured_at);
     text(entry.status, age < 60000 ? 'Ubicación hace menos de 1 min' : `Última ubicación hace ${Math.floor(age / 60000)} min`);
     entry.node.classList.toggle('recent', age < 180000);
@@ -106,7 +166,7 @@ function render() {
   $('online').textContent = users.filter(u => u.captured_at && Date.now() - u.captured_at < 180000).length;
   const ids = new Set(users.map(u => u.id));
   prune(userNodes, ids);
-  const query = $('search').value.trim().toLocaleLowerCase('es');
+  const query = normalizeSearch($('search').value);
   let matches = 0;
   for (const u of users) {
     let entry = userNodes.get(u.id);
@@ -114,14 +174,15 @@ function render() {
       const option = document.createElement('option'); option.value = String(u.id);
       entry = {node: option}; userNodes.set(u.id, entry); $('userSelect').append(option);
     }
-    const matched = u.name.toLocaleLowerCase('es').includes(query);
+    const matched = matchesSearch(u, query);
     entry.node.hidden = !matched; entry.node.disabled = !matched;
     text(entry.node, u.name + (u.latitude == null ? ' · sin ubicación' : ''));
     if (matched) matches++;
   }
   const selected = users.find(u => String(u.id) === $('userSelect').value);
-  if (!selected || !selected.name.toLocaleLowerCase('es').includes(query)) $('userSelect').value = '';
+  if (!selected || !matchesSearch(selected, query)) $('userSelect').value = '';
   text($('userSearchStatus'), matches ? '' : 'No hay usuarios que coincidan');
+  renderSearchSuggestions();
   renderRecentUsers();
   if (!map) { updateSpeaking(); return; }
   const located = new Set(users.filter(u => u.latitude != null).map(u => u.id));
@@ -134,10 +195,8 @@ function render() {
     content.innerHTML = '<svg width="42" height="52" viewBox="0 0 42 52" aria-hidden="true"><g transform="rotate(24 21 26)"><path d="M21 2C11 12 9 36 21 50C33 36 31 12 21 2Z" fill="#efa83e" stroke="#805020" stroke-width="1.5"/><path d="M21 6v10m0 20v10" stroke="#fff3c9" stroke-width="2" stroke-linecap="round"/><ellipse cx="21" cy="26" rx="6" ry="10" fill="#173f32"/><ellipse cx="21" cy="27" rx="3.5" ry="6" fill="#7fb2a0"/><path d="M7 32L35 20" stroke="#173f32" stroke-width="2.5" stroke-linecap="round"/><path d="M3 32l5-3 4 5-6 3zM30 18l6-3 3 5-6 3z" fill="#17634d" stroke="#fff" stroke-width=".7"/></g></svg>';
     const label = document.createElement('span'); label.className = 'marker-label'; label.tabIndex = 0;
     const name = document.createTextNode(''); label.append(name, radioIndicator(u.id)); content.append(label);
-    const speed = document.createElement('small'); speed.className = 'marker-speed';
-    const note = document.createElement('small'); note.className = 'marker-speed-note'; label.append(speed, note);
     const marker = L.marker([u.latitude, u.longitude], {icon: L.divIcon({html: content, className: 'kayak-icon', iconSize: [140, 96], iconAnchor: [70, 52]}), title: u.name, riseOnHover: true, riseOffset: 10000}).addTo(map);
-    entry = {marker, content, name, speed, note}; markerNodes.set(u.id, entry); markers.set(u.id, marker);
+    entry = {marker, content, name}; markerNodes.set(u.id, entry); markers.set(u.id, marker);
     }
     const current = entry.marker.getLatLng();
     if (current.lat !== u.latitude || current.lng !== u.longitude) entry.marker.setLatLng([u.latitude, u.longitude]);
@@ -145,7 +204,7 @@ function render() {
     entry.marker.options.title = u.name;
     const element = entry.marker.getElement(); if (element && element.title !== u.name) element.title = u.name;
     entry.content.classList.toggle('stale', Date.now() - u.captured_at > 180000);
-    const display = speedDisplay(u); entry.content.classList.toggle('speed-warning', display.overLimit === true); text(entry.speed, display.value.replace('Estimada:', 'Prom.:').replace('Velocidad no disponible', 'Sin velocidad')); text(entry.note, display.note); entry.speed.title = display.title; entry.note.parentNode?.setAttribute('aria-label', `${u.name}. ${display.value}. ${display.note}`);
+    entry.content.classList.toggle('speed-warning', speedDisplay(u).overLimit === true);
   }
   followSelectedUser();
   updateSpeaking();
@@ -198,7 +257,7 @@ async function showReports() { if (!$('reportDialog').open) $('reportDialog').sh
 $('openReports').onclick = showReports; $('closeReports').onclick = () => $('reportDialog').close(); $('reportDate').onchange = loadReport;
 async function refresh() { if (refreshInFlight) return; refreshInFlight = true; try { users = await api('users'); render(); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; location.href = '/kayaktalkie/login'; $('reportDialog').close(); } } finally { refreshInFlight = false; } }
 async function openDashboard(user) {
-  dashboardRole = user.role;
+  dashboardRole = user.role; dashboardAccountId = user.id;
   if (!['admin','operator'].includes(user.role)) throw new Error('Este panel es para administradores. Usa la app móvil para compartir ubicación.');
   $('dashboard').hidden = false;
   if (!stopMapVoice && window.KayakMapVoice) stopMapVoice = window.KayakMapVoice.start(identities => {speakingIdentities = identities;updateSpeaking();}, status => {$('mapVoiceStatus').textContent = status;});
@@ -215,13 +274,14 @@ async function openDashboard(user) {
 }
 $('userSelect').onchange = () => selectMapUser($('userSelect').value);
 $('search').onkeydown = event => {
+  if (event.key === 'Escape') { $('search').value = ''; render(); return; }
   if (event.key !== 'Enter') return;
-  const query = $('search').value.trim().toLocaleLowerCase('es');
+  const query = normalizeSearch($('search').value);
   if (!query) return;
-  const matches = users.filter(u => u.name.toLocaleLowerCase('es').includes(query));
-  const exact = matches.find(u => u.name.toLocaleLowerCase('es') === query);
-  if (exact || matches.length === 1) { event.preventDefault(); selectMapUser((exact || matches[0]).id); }
+  const matches = users.filter(u => matchesSearch(u, query));
+  if (matches.length === 1) { event.preventDefault(); selectMapUser(matches[0].id); }
   else text($('userSearchStatus'), matches.length ? 'Selecciona un usuario de la lista' : 'No hay usuarios que coincidan');
 };
 $('search').oninput = render; $('fit').onclick = fit;
+$('myArea').onclick = restoreMapArea; $('saveArea').onclick = saveMapArea;
 api('me').then(openDashboard).catch(() => { location.href = '/kayaktalkie/login'; });

@@ -115,3 +115,34 @@ test('dropdown and unique search select the same 200m scale and center',()=>{
   assert.equal(h.context.testMap.zoom,16);assert.equal(h.element('userSelect').value,'1');
   assert.deepEqual(Array.from(h.views.at(-1)[0]),[10,-84]);
 });
+
+test('smart search ignores accents case and word order and selects a suggestion at 200m',()=>{
+  const h=harness();h.context.next=[{...user(),name:'José Álvaro Núñez'},{...user(),id:2,name:'Ana Núñez'}];h.run('users=next;render()');
+  h.element('search').value='  NUNEZ   jos ';h.element('search').oninput();
+  assert.equal(h.element('searchSuggestions').children.length,1);
+  assert.equal(h.element('searchSuggestions').children[0].textContent,'José Álvaro Núñez');
+  h.element('searchSuggestions').children[0].onclick();
+  assert.equal(h.element('userSelect').value,'1');assert.equal(h.context.testMap.zoom,16);
+  assert.equal(h.element('searchSuggestions').hidden,true);
+  h.element('search').value='alv';h.element('search').onkeydown({key:'Enter',preventDefault(){}});
+  assert.equal(h.element('userSelect').value,'1');
+  h.element('search').value='nunez';h.element('search').oninput();
+  assert.equal(h.element('searchSuggestions').children.length,2);
+  h.element('search').onkeydown({key:'Escape'});assert.equal(h.element('searchSuggestions').hidden,true);
+  h.element('search').value='inexistente';h.element('search').oninput();assert.equal(h.element('searchSuggestions').hidden,true);
+});
+
+test('my area persists center and zoom per account and cancels follow when restored',()=>{
+  const h=harness(), storage=new Map();
+  h.context.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};
+  h.context.testMap.getCenter=()=>({lat:10.4,lng:-84.6});h.context.testMap.getZoom=()=>15;
+  h.run('dashboardAccountId=7;saveMapArea()');assert.equal(storage.size,1);
+  h.context.next=[user()];h.run('users=next;render()');h.element('userSelect').value='1';
+  h.element('myArea').onclick();assert.equal(h.element('userSelect').value,'');
+  assert.equal(h.context.testMap.zoom,15);assert.equal(h.views.at(-1)[0][0],10.4);assert.ok(Math.abs(h.views.at(-1)[0][1]+84.6)<1e-9);
+  h.run('dashboardAccountId=8');assert.equal(h.run('savedMapArea()'),null);
+  h.run('dashboardAccountId=7');assert.equal(h.run('savedMapArea().zoom'),15);
+  storage.set('kayaktalkie.map-area.v1.7','invalid');assert.equal(h.run('savedMapArea()'),null);
+  h.context.localStorage.setItem=()=>{throw new Error('blocked')};h.element('saveArea').onclick();
+  assert.match(h.element('mapAreaStatus').textContent,/No se pudo guardar/);
+});

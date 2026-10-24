@@ -90,3 +90,15 @@ header.dashboard-status{justify-content:flex-end;margin-bottom:20px}
 .kayak-marker .marker-label:focus-visible{outline:2px solid #17634d;outline-offset:2px}
 .kayak-marker .voice-intercom{width:16px;height:18px;margin-left:4px;border-radius:3px}
 .kayak-marker .voice-intercom svg{width:10px;height:14px}
+
+.map-search-box{position:relative;flex:1;min-width:170px;max-width:280px}.map-user-controls .map-search-box input{width:100%;max-width:none}.map-toolbar{position:relative;z-index:1001}.map-search-suggestions{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #d7e0da;border-radius:8px;padding:4px;box-shadow:0 6px 18px #173f3229;max-height:270px;overflow:auto}.map-search-suggestions[hidden]{display:none}.map-search-suggestions button{display:block;width:100%;padding:10px 8px;text-align:left;font-size:12px;font-weight:500;background:#fff;color:#193731;border-radius:5px;overflow-wrap:anywhere}.map-search-suggestions button:hover,.map-search-suggestions button:focus-visible{background:#e2eee4;outline:2px solid #17634d;outline-offset:-2px}
+@media(max-width:650px){.map-search-box{flex-basis:100%;max-width:none;min-width:0}}
+
+.map-area-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}.map-area-controls button{padding:9px 10px;font-size:11px}#mapAreaStatus{flex-basis:100%;text-align:right;font-size:10px;color:#526f61;max-width:390px}#mapAreaStatus:empty{display:none}
+
+/* Map labels carry only identity; speed lives in the team menu. */
+.kayak-marker .marker-label{min-width:0;max-width:180px;width:max-content;padding:2px 4px;font-size:10px;line-height:1.15;border-radius:4px}
+.kayak-marker .voice-intercom{width:12px;height:14px;margin-left:3px}.kayak-marker .voice-intercom svg{width:8px;height:11px}
+.recent-map-user .recent-user-speed{font-size:10px;font-weight:700;color:#365b4c;margin-top:3px}
+.recent-map-user.speed-warning{animation:speed-warning-flash 1s steps(1,end) infinite}.recent-map-user.speed-warning .recent-user-speed{color:inherit}
+@media(prefers-reduced-motion:reduce){.recent-map-user.speed-warning{animation:none;background:#f59b32;color:#472700}}
