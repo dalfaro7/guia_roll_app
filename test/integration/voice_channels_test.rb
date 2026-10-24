@@ -82,6 +82,20 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
       assert_equal @arenal.room_key, calls.first.last
     end
   end
+  test 'deactivation cuts off voice before returning from account update' do
+    identities = @account.kayaktalkie_sessions.map { |session| "mobile-#{session.id}" }
+    calls = []
+    account = @account
+    states = []
+    transport_stub(:disconnect, ->(identity, room:) {
+      states << [account.reload.active?, account.kayaktalkie_sessions.count]
+      calls << [identity, room]
+    }) do
+      KayaktalkieAccess.assign!(@account, attributes:{active:false}, team_ids:[@arenal.kayaktalkie_team_id], channel_ids:[@arenal.id])
+      assert_equal identities.map { |identity| [identity, @arenal.room_key] }, calls
+      assert_equal [[false, 0]], states
+    end
+  end
   test 'deactivation disconnects identities even after sessions are destroyed' do
     identities = @account.kayaktalkie_sessions.map { |session| "mobile-#{session.id}" }
     assert identities.any?

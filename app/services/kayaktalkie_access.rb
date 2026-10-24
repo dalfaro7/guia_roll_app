@@ -5,6 +5,7 @@ class KayaktalkieAccess
     selected=VoiceChannel.enabled.where(id: ids)
     raise ArgumentError, 'Equipo o canal inválido.' unless KayaktalkieTeam.where(id: teams).count==teams.size && selected.count==ids.size
     raise ArgumentError, 'Cada canal debe pertenecer a un equipo asignado.' unless (selected.pluck(:kayaktalkie_team_id).map(&:to_s)-teams).empty?
+    immediate_revocations = []
     KayaktalkieAccount.transaction do
       account.lock! if account.persisted?
       old=account.persisted? ? account.allowed_channels.to_a : []
@@ -19,8 +20,12 @@ class KayaktalkieAccess
           VoiceRevokeAccessJob.perform_later(account.id, id)
         else
           VoiceRevokeAccessJob.perform_later(account.id, id, session_identities)
+          immediate_revocations << [account.id, id, session_identities]
         end
       end
     end
+    # Commit the login lockout first. Attempt the voice cutoff in this request,
+    # while the queued job remains a fallback if LiveKit is temporarily unavailable.
+    immediate_revocations.each { |args| VoiceRevokeAccessJob.perform_now(*args) }
   end
 end

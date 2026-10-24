@@ -91,7 +91,7 @@ function render() {
     const name = document.createTextNode(''); label.append(name, radioIndicator(u.id)); content.append(label);
     const speed = document.createElement('small'); speed.className = 'marker-speed';
     const note = document.createElement('small'); note.className = 'marker-speed-note'; label.append(speed, note);
-    const marker = L.marker([u.latitude, u.longitude], {icon: L.divIcon({html: content, className: 'kayak-icon', iconSize: [140, 96], iconAnchor: [70, 52]}), title: u.name}).addTo(map);
+    const marker = L.marker([u.latitude, u.longitude], {icon: L.divIcon({html: content, className: 'kayak-icon', iconSize: [140, 96], iconAnchor: [70, 52]}), title: u.name, riseOnHover: true, riseOffset: 10000}).addTo(map);
     entry = {marker, content, name, speed, note}; markerNodes.set(u.id, entry); markers.set(u.id, marker);
     }
     const current = entry.marker.getLatLng();

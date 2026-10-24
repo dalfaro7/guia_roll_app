@@ -117,6 +117,29 @@ class OfficeAccountsTest < ActionDispatch::IntegrationTest
     end
     assert_nil KayaktalkieSession.authenticate(token)
   end
+  test 'disabled accounts lose every session and cannot login until reactivated' do
+    first = KayaktalkieSession.issue!(@staff)
+    second = KayaktalkieSession.issue!(@staff)
+    login(@staff)
+    KayaktalkieAccess.assign!(@staff, attributes:{active:false}, team_ids:[@a.kayaktalkie_team_id], channel_ids:[@a.id])
+    assert_empty @staff.reload.kayaktalkie_sessions
+    [first, second].each do |token|
+      get '/api/account', headers:{'Authorization'=>"Bearer #{token}"}
+      assert_response :unauthorized
+    end
+    get '/kayaktalkie'
+    assert_redirected_to kayaktalkie_login_path
+    post '/api/login', params:{phone:@staff.phone,password:'Independent-test-123456'}, as: :json
+    assert_response :unauthorized
+    post '/kayaktalkie/login', params:{phone:@staff.phone,password:'Independent-test-123456'}
+    assert_response :unprocessable_entity
+    KayaktalkieAccess.assign!(@staff, attributes:{active:true}, team_ids:[@a.kayaktalkie_team_id], channel_ids:[@a.id])
+    assert_nil KayaktalkieSession.authenticate(first)
+    assert_nil KayaktalkieSession.authenticate(second)
+    post '/api/login', params:{phone:@staff.phone,password:'Independent-test-123456'}, as: :json
+    assert_response :success
+    assert KayaktalkieSession.authenticate(response.parsed_body['token'])
+  end
   test 'browser voice and location mutations require CSRF' do
     login(@staff)
     [ActionController::Base,VoiceController,TrackingApiController].each { |c| c.allow_forgery_protection=true }
