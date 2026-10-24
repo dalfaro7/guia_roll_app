@@ -8,7 +8,7 @@
   const el=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
   const title=r=>r.kind==='wildlife'?(animals[r.animal]||'Vida silvestre')+(r.animal==='other'&&r.description?' · '+r.description:''):labels[r.kind];
   const iconPath=r=>'/tracking/report-icons/'+(r.kind==='wildlife'?(Object.hasOwn(animals,r.animal)?r.animal:'other'):Object.hasOwn(labels,r.kind)?r.kind:'other')+'.png?v=sos-1';
-  async function json(url,options){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url,{...options,signal:controller.signal});if(!response.ok)throw new Error(response.status===401?'Sesión finalizada.':'No se pudieron cargar los reportes.');return await response.json();}finally{clearTimeout(timeout);}}
+  async function json(url,options){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url,{...options,signal:controller.signal});if(response.status===401||response.status===403)window.KayakSOS?.stop();if(!response.ok)throw new Error(response.status===401?'Sesión finalizada.':'No se pudieron cargar los reportes.');return await response.json();}finally{clearTimeout(timeout);}}
   function card(r){
     const box=el('div');box.className='field-report-card';const picture=el('img');picture.src=iconPath(r);picture.alt='';if(r.kind==='emergency_sos')picture.className='sos-blink';picture.width=40;picture.height=40;box.append(picture,el('strong',title(r)),el('p',r.author),el('p',new Date(r.observed_at).toLocaleString('es-CR')));
     const locate=el('button','Ver en mapa');locate.onclick=()=>{document.getElementById('fieldReportsDialog').close();document.getElementById('userSelect').value='';document.getElementById('search').value='';map.setView([r.latitude,r.longitude],16);nodes.get(r.id)?.marker.openPopup();};box.append(locate);
@@ -21,6 +21,7 @@
       for(const r of rows){if(nodes.has(r.id))continue;const icon=el('img');icon.src=iconPath(r);icon.alt=title(r);if(r.kind==='emergency_sos')icon.className='sos-blink';icon.style.cssText='width:40px;height:40px;display:block;filter:drop-shadow(0 2px 3px #0004)';
         const marker=L.marker([r.latitude,r.longitude],{icon:L.divIcon({html:icon,className:'field-report-icon',iconSize:[40,40],iconAnchor:[20,20]}),title:title(r)}).addTo(map).bindPopup(card(r));
         const row=card(r);document.getElementById('fieldReportsList').append(row);nodes.set(r.id,{marker,card:row,expiresAt:r.expires_at});}
+      window.KayakSOS?.update(rows,r=>{document.getElementById('fieldReportsDialog').close();document.getElementById('userSelect').value='';document.getElementById('search').value='';map.setView([r.latitude,r.longitude],16);nodes.get(r.id)?.marker.openPopup();});
       document.getElementById('fieldReportsStatus').textContent=rows.length?rows.length+' reportes activos':'No hay reportes activos.';
     }catch(e){document.getElementById('fieldReportsStatus').textContent=e.message;}finally{running=false;}
   }

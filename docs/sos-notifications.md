@@ -1,0 +1,7 @@
+# SOS web y futura entrega con pantalla bloqueada
+
+La sirena y el aviso se implementan solo en el panel web. El operador debe pulsar Activar sonido SOS una vez por apertura de página debido a la política de audio del navegador. El audio dura 10 segundos, tiene controles de silencio y no usa el micrófono. Se consulta la API de reportes autorizados cada 30 segundos; no es entrega instantánea. La deduplicación usa cuenta + ID del reporte, localStorage y Web Locks entre pestañas. Borrar el almacenamiento del navegador elimina ese historial; diferentes dispositivos alertan independientemente.
+
+La entrega futura Android utiliza la infraestructura existente Expo Push / Firebase: KayaktalkieNotifyFieldReportJob, KayaktalkieReportDelivery y KayaktalkiePushGateway, con validación de equipo y cuenta activa. Sigue desactivada mientras KAYAK_REPORT_PUSH_ENABLED no sea true. El servidor ya identifica cada reporte por reportId y expiresAt y no reenvía entregas aceptadas. No se agrega sonido ni cambios Android en esta entrega.
+
+Pendiente antes de habilitar pantalla bloqueada: crear/configurar Firebase para com.alfaroute.gps; instalar google-services.json en una futura compilación Android; configurar credenciales FCM v1 del proveedor; habilitar registro push en esa compilación; probar permisos, recepción y apertura del detalle en un dispositivo real; solo entonces activar la variable del servidor. Un aviso web no despierta por sí solo un teléfono bloqueado. Web Push requeriría además service worker y suscripciones propias, no incluidos en esta implementación.
