@@ -43,7 +43,7 @@ class FieldReportsTest < ActionDispatch::IntegrationTest
     post '/api/field_reports',params:@params,as: :json;assert_response :forbidden
   end
   test 'new road categories are accepted and photos are rejected' do
-    %w[road_closed police_checkpoint].each_with_index do |kind,i|
+    %w[road_closed police_checkpoint emergency_sos].each_with_index do |kind,i|
       id=create_report(kind:kind,client_id:"new-category-report-#{i}")
       assert_equal kind,KayaktalkieFieldReport.find(id).kind
     end

@@ -9,7 +9,7 @@ class KayaktalkieFieldReport < ApplicationRecord
   scope :unexpired, -> { where("created_at > ?", LIFETIME.ago) }
   scope :expired, -> { where("created_at <= ?", LIFETIME.ago) }
   def expires_at = created_at + LIFETIME
-  KINDS = %w[road_accident controlled_traffic road_closed police_checkpoint wildlife strainer line_change dangerous_rapid].freeze
+  KINDS = %w[emergency_sos road_accident controlled_traffic road_closed police_checkpoint wildlife strainer line_change dangerous_rapid].freeze
   ANIMALS = %w[monkeys sloths other].freeze
   belongs_to :kayaktalkie_account
   belongs_to :kayaktalkie_team
