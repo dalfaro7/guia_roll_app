@@ -48,4 +48,24 @@ class MapVoiceTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
   end
 
+  test 'operator roster is channel scoped and independent of location' do
+    team = KayaktalkieTeam.create!(name: 'Office team')
+    channel = VoiceChannel.create!(name: 'Office', room_key: 'office-roster', kayaktalkie_team: team)
+    @account.update!(role: 'operator', location_enabled: false)
+    @account.kayaktalkie_teams << team
+    channel.kayaktalkie_accounts << @account
+    KayaktalkieSession.issue!(@account)
+    post '/kayaktalkie/login', params: {phone: @admin.phone, password: 'Map-voice-test-123456'}
+    get '/api/map/operators', params: {channel_id: channel.id}
+    assert_response :success
+    assert_equal [@account.id], response.parsed_body.map { |u| u['id'] }
+    assert_equal 1, response.parsed_body.first['identities'].size
+    assert_not response.body.include?('latitude')
+    @account.update!(active: false)
+    get '/api/map/operators', params: {channel_id: channel.id}
+    assert_empty response.parsed_body
+    get '/api/map/operators', params: {channel_id: 999999999}
+    assert_response :forbidden
+  end
+
 end

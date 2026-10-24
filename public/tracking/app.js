@@ -303,3 +303,24 @@ $('search').onkeydown = event => {
 $('search').oninput = render; $('fit').onclick = fit;
 $('myArea').onclick = restoreMapArea; $('saveArea').onclick = saveMapArea;
 api('me').then(openDashboard).catch(() => { location.href = '/kayaktalkie/login'; });
+
+// Presence comes from the connected LiveKit room, never from login or GPS age.
+let operatorRoster = [], operatorPresence = null, operatorGeneration = 0;
+function renderOperators() {
+  const target = $('connectedOperators'); if (!target) return;
+  target.replaceChildren();
+  const connected = operatorPresence?.connected && String(operatorPresence.channel) === $('voiceChannel').value;
+  const identities = new Set(connected ? operatorPresence.identities : []);
+  const online = operatorRoster.filter(o=>o.identities.some(id=>identities.has(id)));
+  if(!connected) {target.textContent='Conecta un canal para ver operadores'; return;}
+  if(!online.length) {target.textContent='Sin operadores conectados'; return;}
+  online.forEach(o=>{const row=document.createElement('div'); row.textContent='🟢 '+o.name; row.style.fontSize='12px'; target.append(row);});
+}
+async function refreshOperators() {
+  const generation=++operatorGeneration, channel=$('voiceChannel').value;
+  try {const roster=await api('map/operators?channel_id='+encodeURIComponent(channel)); if(generation!==operatorGeneration)return; operatorRoster=roster;renderOperators();}
+  catch {if(generation===operatorGeneration){operatorRoster=[];renderOperators();$('connectedOperators').textContent='No se pudo verificar la lista de operadores';}}
+}
+window.addEventListener('kayak-voice-presence',event=>{operatorPresence=event.detail;renderOperators();refreshOperators();});
+$('voiceChannel').addEventListener('change',()=>{operatorGeneration++;operatorRoster=[];operatorPresence=null;renderOperators();refreshOperators();});
+setInterval(refreshOperators,15000);

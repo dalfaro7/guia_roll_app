@@ -1,6 +1,10 @@
 (() => {
   const $ = id => document.getElementById(id);
   let room = null, channel = null, connection = 0, turn = 0, held = false, claiming = false, lease = null, timer = null, muted = false;
+  function presence(connected = false) {
+    const identities = connected && room ? [room.localParticipant.identity, ...Array.from(room.remoteParticipants.values()).map(p=>p.identity)] : [];
+    window.dispatchEvent(new CustomEvent('kayak-voice-presence',{detail:{channel, connected, identities}}));
+  }
   const error = e => $('voiceError').textContent = e.message;
   function label(text) { $('voiceTalkLabel').textContent = text; }
   async function api(action, body, channelId) {
@@ -14,7 +18,7 @@
     finally { if (previous) await api('release',{lease:previous.id},previous.channel).catch(error); }
   }
   async function disconnect() {
-    const previous = room; room = null;
+    const previous = room; room = null; presence();
     await release(); await previous?.localParticipant.setMicrophoneEnabled(false); await previous?.disconnect();
     $('voiceAudio').replaceChildren(); $('voiceTalk').disabled = true; $('voiceMute').disabled = true;
   }
@@ -29,6 +33,8 @@
       const access = await api('join',{},selected);
       if (generation !== connection) return;
       candidate = new LivekitClient.Room(); room = candidate;
+      candidate.on(LivekitClient.RoomEvent.ParticipantConnected,()=>{if(room===candidate)presence(true);});
+      candidate.on(LivekitClient.RoomEvent.ParticipantDisconnected,()=>{if(room===candidate)presence(true);});
       candidate.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
         if (room !== candidate || track.kind !== 'audio') return;
         const element = track.attach(); element.autoplay = true; element.muted = muted; $('voiceAudio').append(element);
@@ -39,11 +45,12 @@
         const others = speakers.filter(p=>p.identity !== candidate.localParticipant.identity);
         $('voiceStatus').textContent = others.length ? 'Habla: '+others.map(p=>p.name||'Participante').join(', ') : 'Conectado · micrófono apagado';
       });
-      candidate.on(LivekitClient.RoomEvent.Reconnecting,()=>{ if(room===candidate){release().catch(error);$('voiceTalk').disabled=true;$('voiceStatus').textContent='Reconectando…';} });
-      candidate.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room===candidate){$('voiceTalk').disabled=false;$('voiceStatus').textContent='Conectado · micrófono apagado';}});
-      candidate.on(LivekitClient.RoomEvent.Disconnected,()=>{if(room===candidate){release().catch(error);room=null;$('voiceTalk').disabled=true;$('voiceMute').disabled=true;$('voiceChannel').value='';$('voiceStatus').textContent='Desconectado · selecciona un canal para reconectar';}});
+      candidate.on(LivekitClient.RoomEvent.Reconnecting,()=>{ if(room===candidate){presence();release().catch(error);$('voiceTalk').disabled=true;$('voiceStatus').textContent='Reconectando…';} });
+      candidate.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room===candidate){presence(true);$('voiceTalk').disabled=false;$('voiceStatus').textContent='Conectado · micrófono apagado';}});
+      candidate.on(LivekitClient.RoomEvent.Disconnected,()=>{if(room===candidate){presence();release().catch(error);room=null;$('voiceTalk').disabled=true;$('voiceMute').disabled=true;$('voiceChannel').value='';$('voiceStatus').textContent='Desconectado · selecciona un canal para reconectar';}});
       await candidate.connect(access.serverUrl,access.participantToken);
       if(generation!==connection){await candidate.disconnect();return;}
+      presence(true);
       await candidate.startAudio();
       $('voiceTalk').disabled=false; $('voiceMute').disabled=false; $('voiceStatus').textContent='Conectado · micrófono apagado';
     } catch(e) {

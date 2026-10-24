@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   post 'kayaktalkie/logout', to: 'kayaktalkie#destroy', as: :kayaktalkie_logout
   get 'kayaktalkie', to: 'kayaktalkie#show', as: :kayaktalkie
   get 'api/account', to: 'tracking_api#account'
+  get "api/map/operators", to: "tracking_api#operators"
   get "api/map/voice", to: "tracking_api#map_voice"
   get 'api/voice/channels', to: 'voice#channels'
   post 'tracking/channels', to: 'kayaktalkie_dashboard#create_channel', as: :tracking_channels

@@ -3,7 +3,7 @@ class TrackingApiController < ActionController::API
   include ActionController::RequestForgeryProtection
   include KayaktalkieAuthentication
   before_action :authenticate_kayaktalkie!, except: :login
-  before_action :require_kayaktalkie_map!, only: [:users, :me, :map_voice, :map_area]
+  before_action :require_kayaktalkie_map!, only: [:users, :me, :map_voice, :map_area, :operators]
   before_action :require_kayaktalkie_admin!, only: [:alerts, :ack, :report]
   before_action :check_kayak_csrf!, only: [:location, :logout, :map_area]
   rate_limit to: 15, within: 15.minutes, only: :login, with: -> { render json: { error: 'Demasiados intentos. Espera 15 minutos.' }, status: :too_many_requests }
@@ -56,6 +56,18 @@ class TrackingApiController < ActionController::API
     floors = VoiceFloor.where(room_key: channels.select(:room_key)).where('expires_at > ?', Time.current).where.not(holder_identity: nil)
     response.headers['Cache-Control'] = 'no-store'
     render json: { speakers: floors.map { |floor| { identity: floor.holder_identity, expiresAt: (floor.expires_at.to_f * 1000).round } } }
+  end
+  def operators
+    response.headers['Cache-Control'] = 'no-store'
+    return render json: [] if params[:channel_id].blank?
+    channel = @account.allowed_channels.find_by(id: params[:channel_id])
+    return head :forbidden unless channel
+    accounts = KayaktalkieAccount.where(active: true, role: 'operator')
+      .where(id: channel.voice_memberships.select(:kayaktalkie_account_id))
+      .where(id: KayaktalkieTeamMembership.where(kayaktalkie_team_id: channel.kayaktalkie_team_id).select(:kayaktalkie_account_id))
+    render json: accounts.includes(:kayaktalkie_sessions).map { |account|
+      {id: account.id, name: account.name, identities: account.kayaktalkie_sessions.select { |s| s.expires_at.future? }.map { |s| "mobile-#{s.id}" }}
+    }
   end
   def users
     response.headers['Cache-Control'] = 'no-store'
