@@ -19,8 +19,8 @@ class OfficeEmployee < ApplicationRecord
 
   def cannot_take_day_off_on?(date)
     case name
-    when "Fiorela Mena" || [15, 30].include?(date.day)
-      date.wednesday?
+    when "Fiorela Mena"
+      date.wednesday? || [15, 30].include?(date.day)
     when "Yoselin Marin"
       date.friday?
     when "Priscilla Matarrita"

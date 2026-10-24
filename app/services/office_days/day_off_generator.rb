@@ -19,9 +19,11 @@ module OfficeDays
 end
 
     def call
-      generate_required_saturdays
-      generate_required_sundays
-      generate_remaining_weekly_days
+      OfficeEmployeeDay.transaction do
+        generate_required_saturdays
+        generate_required_sundays
+        generate_remaining_weekly_days
+      end
     end
 
     private
@@ -70,40 +72,47 @@ end
   end
 end
 
+    # Existing weekly assignments are preserved; only new days are paired.
+    def assignment_group(employee)
+      names = ["Fiorela Mena", "Manuel Anchia"]
+      return [employee] unless names.include?(employee.name)
+
+      @employees.select { |candidate| names.include?(candidate.name) }
+    end
+
+    def available_for_group?(employee, date)
+      return false if holiday?(date)
+
+      assignment_group(employee).all? do |member|
+        !member.cannot_take_day_off_on?(date) &&
+          !OfficeEmployeeDay.exists?(office_employee: member, date: date) &&
+          !employee_already_has_day_off_this_week?(member, week_range_for(date)) &&
+          !department_conflict_on_date?(member, date)
+      end
+    end
+
     def create_day_off(employee, date)
-  return if holiday?(date)
+      return unless available_for_group?(employee, date)
 
-  return if OfficeEmployeeDay.exists?(
-    office_employee: employee,
-    date: date
-  )
-
-  OfficeEmployeeDay.create!(
-    office_employee: employee,
-    date: date,
-    status: :day_off,
-    day_off_source: "automatic"
-  )
-end
+      OfficeEmployeeDay.transaction do
+        assignment_group(employee).each do |member|
+          OfficeEmployeeDay.create!(office_employee: member, date: date,
+            status: :day_off, day_off_source: "automatic")
+        end
+      end
+    end
 
     def available_weekend_dates_for(employee, day_type)
-  weekend_dates(day_type)
-    .reject { |date| holiday?(date) }
-    .reject { |date| employee.cannot_take_day_off_on?(date) }
-    .reject { |date| OfficeEmployeeDay.exists?(office_employee: employee, date: date) }
-    .reject { |date| employee_already_has_day_off_this_week?(employee, week_range_for(date)) }
-    .reject { |date| department_conflict_on_date?(employee, date) }
-    .sort_by { |date| weekend_date_score(employee, date) }
-end
+      weekend_dates(day_type)
+        .select { |date| available_for_group?(employee, date) }
+        .sort_by { |date| weekend_date_score(employee, date) }
+    end
 
     def best_available_weekday_for(employee, week_range)
       week_range
         .select { |date| @generation_range.cover?(date) }
         .reject { |date| date.saturday? || date.sunday? }
-        .reject { |date| employee.cannot_take_day_off_on?(date) }
-        .reject { |date| OfficeEmployeeDay.exists?(office_employee: employee, date: date) }
-        .reject { |date| department_conflict_on_date?(employee, date) }
-        .reject { |date| holiday?(date) }
+        .select { |date| available_for_group?(employee, date) }
         .sort_by { |date| weekday_score(employee, date) }
         .first
     end
