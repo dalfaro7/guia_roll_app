@@ -27,4 +27,25 @@ class MapVoiceTest < ActionDispatch::IntegrationTest
     floor.update!(expires_at:1.second.ago)
     get '/api/map/voice';assert_empty response.parsed_body['speakers']
   end
+  test 'selected channel excludes other channels and removed team members' do
+    team = KayaktalkieTeam.create!(name: 'Channel map team')
+    a = VoiceChannel.create!(name: 'Map A', room_key: 'map-filter-a', kayaktalkie_team: team)
+    b = VoiceChannel.create!(name: 'Map B', room_key: 'map-filter-b', kayaktalkie_team: team)
+    @account.kayaktalkie_teams << team
+    a.kayaktalkie_accounts << @account
+    post '/kayaktalkie/login', params: {phone: @admin.phone, password: 'Map-voice-test-123456'}
+    get '/api/users', params: {channel_id: a.id}
+    assert_response :success
+    assert_includes response.parsed_body.map { |u| u['id'] }, @account.id
+    get '/api/users', params: {channel_id: b.id}
+    assert_empty response.parsed_body
+    get '/api/users', params: {channel_id: ''}
+    assert_empty response.parsed_body
+    @account.kayaktalkie_team_memberships.where(kayaktalkie_team: team).delete_all
+    get '/api/users', params: {channel_id: a.id}
+    assert_empty response.parsed_body
+    get '/api/users', params: {channel_id: 999999999}
+    assert_response :forbidden
+  end
+
 end

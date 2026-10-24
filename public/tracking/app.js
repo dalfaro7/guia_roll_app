@@ -261,7 +261,9 @@ async function loadReport() {
 }
 async function showReports() { if (!$('reportDialog').open) $('reportDialog').showModal(); await loadReport(); }
 $('openReports').onclick = showReports; $('closeReports').onclick = () => $('reportDialog').close(); $('reportDate').onchange = loadReport;
-async function refresh() { if (refreshInFlight) return; refreshInFlight = true; try { users = await api('users'); render(); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; location.href = '/kayaktalkie/login'; $('reportDialog').close(); } } finally { refreshInFlight = false; } }
+let mapChannelRequest = 0;
+$('voiceChannel').addEventListener('change', () => { mapChannelRequest++; users = []; speakingIdentities = []; render(); refresh(); });
+async function refresh() { const request = ++mapChannelRequest; const channel = $('voiceChannel').value; try { const rows = await api('users?channel_id=' + encodeURIComponent(channel)); if(request !== mapChannelRequest) return; users = rows; render(); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { if(request !== mapChannelRequest) return; $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; location.href = '/kayaktalkie/login'; $('reportDialog').close(); } } finally { refreshInFlight = false; } }
 async function openDashboard(user) {
   dashboardRole = user.role; dashboardAccountId = user.id;
   accountMapArea = user.map_area || null;

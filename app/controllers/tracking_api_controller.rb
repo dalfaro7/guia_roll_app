@@ -46,7 +46,14 @@ class TrackingApiController < ActionController::API
     render json: { area: @account.map_area }
   end
   def map_voice
-    floors = VoiceFloor.where(room_key: @account.allowed_channels.select(:room_key)).where('expires_at > ?', Time.current).where.not(holder_identity: nil)
+    channels = @account.allowed_channels
+    if params.key?(:channel_id)
+      return render json: {speakers: []} if params[:channel_id].blank?
+      channel = channels.find_by(id: params[:channel_id])
+      return head :forbidden unless channel
+      channels = channels.where(id: channel.id)
+    end
+    floors = VoiceFloor.where(room_key: channels.select(:room_key)).where('expires_at > ?', Time.current).where.not(holder_identity: nil)
     response.headers['Cache-Control'] = 'no-store'
     render json: { speakers: floors.map { |floor| { identity: floor.holder_identity, expiresAt: (floor.expires_at.to_f * 1000).round } } }
   end
@@ -56,6 +63,12 @@ class TrackingApiController < ActionController::API
     memberships = memberships.where(kayaktalkie_team_id: @account.kayaktalkie_team_ids) unless @account.admin?
     # Unassigned accounts remain manageable, but are not part of the operational map.
     visible = KayaktalkieAccount.where(id: memberships.select(:kayaktalkie_account_id))
+    if params.key?(:channel_id)
+      channel = @account.allowed_channels.find_by(id: params[:channel_id])
+      return render json: [] if params[:channel_id].blank?
+      return head :forbidden unless channel
+      visible = visible.where(id: channel.voice_memberships.select(:kayaktalkie_account_id)).where(id: KayaktalkieTeamMembership.where(kayaktalkie_team_id: channel.kayaktalkie_team_id).select(:kayaktalkie_account_id))
+    end
     positions = KayaktalkiePosition.where(kayaktalkie_account_id: visible.select(:id)).index_by(&:kayaktalkie_account_id)
     render json: visible.includes(:kayaktalkie_sessions).where(active: true, location_enabled: true).map { |account|
       p = positions[account.id]

@@ -10,9 +10,10 @@
       controller = new AbortController();
       const timeout = setTimeout(() => controller?.abort(), 4000);
       try {
-        const response = await fetch('/api/map/voice', {signal:controller.signal,cache:'no-store'});
+        const channel = document.getElementById('voiceChannel').value;
+        const response = await fetch('/api/map/voice?channel_id=' + encodeURIComponent(channel), {signal:controller.signal,cache:'no-store'});
         if (!response.ok) {if ([401,403].includes(response.status)) stopped = true;throw new Error('Unavailable');}
-        const data = await response.json(); if (stopped) return;
+        const data = await response.json(); if (stopped || channel !== document.getElementById('voiceChannel').value) return;
         clearTimeout(expiry);
         const speakers = (data.speakers || []).filter(speaker => speaker.expiresAt > Date.now());
         onSpeakers(speakers.map(speaker => speaker.identity));
