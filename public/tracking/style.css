@@ -23,3 +23,11 @@ aside .sidebar-logo{width:190px;height:190px;object-fit:contain}aside .sidebar-b
 .map-voice-panel h2,.map-voice-panel p{margin:0}.map-voice-panel label{margin:0;font-weight:600}.map-voice-panel select{width:100%;padding:10px;border:1px solid #cddbd3;border-radius:8px;background:white;font:inherit;color:inherit}
 .map-voice-panel small{color:#64776d;font-size:11px;line-height:1.5}.map-voice-panel button:disabled{opacity:.5;cursor:not-allowed}.voice-options{display:flex;gap:6px}.voice-options button{flex:1;padding:8px;font-size:11px}
 #voiceTalk{min-height:100px;background:#bb3535;touch-action:none;user-select:none}#voiceTalk[aria-pressed="true"]{background:#16834d}#voiceTalk:focus-visible{outline:3px solid #1689db;outline-offset:3px}
+
+/* Comfortable radio controls, matching the mobile push-to-talk surface. */
+aside>a{display:block;padding:14px 12px;border:1px solid #e0e7e1;border-radius:10px;text-decoration:none;color:#345e4b;line-height:1.4}aside>a:hover{background:#f2f7f4}
+.map-voice-panel{gap:16px;padding:18px;margin:8px 0}.map-voice-panel .voice-settings{border:1px solid #d8e3dd;border-radius:10px;padding:12px;background:white}.voice-settings summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0}.voice-settings label{margin:14px 0 8px}.voice-settings select{margin-bottom:4px}
+.map-voice-panel #voiceTalk{width:100%;min-height:156px;border-radius:28px;background:#c93636;color:#fff;border:4px solid #f9dada;box-shadow:0 6px 0 #9e2525;font-size:24px;font-weight:800;letter-spacing:1px;transition:background .12s,transform .12s,box-shadow .12s}
+.map-voice-panel #voiceTalk[aria-pressed="true"]{background:#159447;border-color:#c7f3d6;box-shadow:0 2px 0 #0f6e35;transform:translateY(4px)}
+.map-voice-panel #voiceTalk:disabled{opacity:.55;box-shadow:none}.map-voice-panel .voice-key-hint{text-align:center;font-size:12px;line-height:1.8}.voice-key-hint kbd{display:inline-block;border:1px solid #b7c9bf;border-bottom-width:3px;border-radius:5px;padding:2px 8px;background:white;font-weight:800;color:#254937}
+.map-voice-panel .voice-options{display:grid;gap:12px;margin-top:14px}.map-voice-panel .voice-options button{width:100%;padding:13px 10px;font-size:13px;min-height:44px}.map-voice-panel #voiceStatus{padding:10px;border-radius:8px;background:#e9f1ed;font-size:12px}.map-voice-panel #voiceError:empty{display:none}
