@@ -109,3 +109,5 @@ header.dashboard-status{justify-content:flex-end;margin-bottom:20px}
 .map-stats span{display:block;font-size:9px;line-height:1.2;color:#64796e;white-space:nowrap}.map-stats strong{display:block;font:700 14px/1.3 'DM Sans',sans-serif;margin-top:2px;font-variant-numeric:tabular-nums}
 .map-team-menu{top:72px;max-height:calc(100% - 84px)}
 @media(max-width:650px){.map-stats{width:190px;padding:6px 3px}.map-stats strong{font-size:13px}.map-team-menu{top:64px;max-height:calc(100% - 76px)}}
+
+.field-report-pin{display:grid;place-items:center;background:#b64c20;color:white;border:2px solid white;border-radius:8px;font-size:21px;box-shadow:0 2px 4px #0004;width:28px;height:32px}.field-report-card{border-bottom:1px solid #dde6df;padding:12px 0;display:flex;flex-direction:column;gap:7px}.field-report-card p{margin:0;font-size:12px}.field-report-card button{font-size:12px;padding:9px}.field-report-card small{font-size:10px}#fieldReportsDialog{max-height:85vh;overflow:auto;width:min(500px,94vw)}

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_040000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -113,6 +113,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_040000) do
     t.check_constraint "role::text = ANY (ARRAY['admin'::character varying, 'operator'::character varying, 'staff'::character varying]::text[])", name: "kayaktalkie_role"
   end
 
+  create_table "kayaktalkie_field_reports", force: :cascade do |t|
+    t.float "accuracy", null: false
+    t.string "animal"
+    t.string "client_id", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.bigint "kayaktalkie_account_id", null: false
+    t.bigint "kayaktalkie_team_id", null: false
+    t.string "kind", null: false
+    t.float "latitude", null: false
+    t.float "longitude", null: false
+    t.datetime "observed_at", null: false
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_id"
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_account_id", "client_id"], name: "unique_kayak_report_submission", unique: true
+    t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_field_reports_on_kayaktalkie_account_id"
+    t.index ["kayaktalkie_team_id", "resolved_at", "id"], name: "kayak_active_team_reports"
+    t.index ["kayaktalkie_team_id"], name: "index_kayaktalkie_field_reports_on_kayaktalkie_team_id"
+    t.index ["resolved_by_id"], name: "index_kayaktalkie_field_reports_on_resolved_by_id"
+  end
+
   create_table "kayaktalkie_positions", force: :cascade do |t|
     t.float "accuracy", null: false
     t.datetime "captured_at", null: false
@@ -130,12 +152,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_040000) do
     t.index ["kayaktalkie_account_id"], name: "one_kayaktalkie_position", unique: true
   end
 
+  create_table "kayaktalkie_report_deliveries", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "kayaktalkie_field_report_id", null: false
+    t.bigint "kayaktalkie_session_id", null: false
+    t.string "status", default: "pending", null: false
+    t.string "ticket_id"
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_field_report_id", "kayaktalkie_session_id"], name: "unique_report_push_recipient", unique: true
+  end
+
   create_table "kayaktalkie_sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at", null: false
+    t.string "expo_push_token"
     t.bigint "kayaktalkie_account_id", null: false
     t.string "token_digest", null: false
     t.datetime "updated_at", null: false
+    t.index ["expo_push_token"], name: "index_kayaktalkie_sessions_on_expo_push_token", unique: true
     t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_sessions_on_kayaktalkie_account_id"
     t.index ["token_digest"], name: "index_kayaktalkie_sessions_on_token_digest", unique: true
   end
@@ -539,7 +573,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_040000) do
   add_foreign_key "guide_skills", "guides"
   add_foreign_key "guide_skills", "skills"
   add_foreign_key "kayaktalkie_accounts", "kayaktalkie_accounts", column: "created_by_id"
+  add_foreign_key "kayaktalkie_field_reports", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_field_reports", "kayaktalkie_accounts", column: "resolved_by_id"
+  add_foreign_key "kayaktalkie_field_reports", "kayaktalkie_teams"
   add_foreign_key "kayaktalkie_positions", "kayaktalkie_accounts"
+  add_foreign_key "kayaktalkie_report_deliveries", "kayaktalkie_field_reports", on_delete: :cascade
+  add_foreign_key "kayaktalkie_report_deliveries", "kayaktalkie_sessions", on_delete: :cascade
   add_foreign_key "kayaktalkie_sessions", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_speed_alerts", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_team_memberships", "kayaktalkie_accounts"

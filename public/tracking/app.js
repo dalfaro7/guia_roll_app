@@ -285,6 +285,7 @@ async function openDashboard(user) {
     L.control.scale({ imperial: false, maxWidth: 100 }).addTo(map);
     fit(); render();
     if (accountMapArea) restoreMapArea();
+    window.KayakFieldReports?.start(map);
   }
 }
 $('userSelect').onchange = () => selectMapUser($('userSelect').value);

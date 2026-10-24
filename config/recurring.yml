@@ -10,6 +10,12 @@
 #     schedule: at 5am every day
 
 production:
+  recover_kayaktalkie_report_notifications:
+    class: KayaktalkieRecoverReportNotificationsJob
+    schedule: every minute
+  expire_kayaktalkie_field_reports:
+    class: KayaktalkieExpireFieldReportsJob
+    schedule: every hour
   recover_expired_voice_turns:
     class: VoiceRecoverExpiredJob
     schedule: every minute

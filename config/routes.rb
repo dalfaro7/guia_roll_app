@@ -1,4 +1,12 @@
 Rails.application.routes.draw do
+  post 'api/push/token', to: 'kayaktalkie_push#update'
+  delete 'api/push/token', to: 'kayaktalkie_push#destroy'
+  get 'api/field_reports/:id', to: 'kayaktalkie_field_reports#show'
+
+  get 'api/field_reports', to: 'kayaktalkie_field_reports#index'
+  post 'api/field_reports', to: 'kayaktalkie_field_reports#create'
+  post 'api/field_reports/:id/resolve', to: 'kayaktalkie_field_reports#resolve'
+
   get 'kayaktalkie/password/new', to: 'kayaktalkie_passwords#new', as: :new_kayaktalkie_password
   post 'kayaktalkie/password', to: 'kayaktalkie_passwords#create', as: :kayaktalkie_password
   get 'kayaktalkie/password/edit', to: 'kayaktalkie_passwords#edit', as: :edit_kayaktalkie_password
