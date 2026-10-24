@@ -3,9 +3,9 @@ class TrackingApiController < ActionController::API
   include ActionController::RequestForgeryProtection
   include KayaktalkieAuthentication
   before_action :authenticate_kayaktalkie!, except: :login
-  before_action :require_kayaktalkie_map!, only: [:users, :me, :map_voice]
+  before_action :require_kayaktalkie_map!, only: [:users, :me, :map_voice, :map_area]
   before_action :require_kayaktalkie_admin!, only: [:alerts, :ack, :report]
-  before_action :check_kayak_csrf!, only: [:location, :logout]
+  before_action :check_kayak_csrf!, only: [:location, :logout, :map_area]
   rate_limit to: 15, within: 15.minutes, only: :login, with: -> { render json: { error: 'Demasiados intentos. Espera 15 minutos.' }, status: :too_many_requests }
   def login
     account = KayaktalkieAccount.find_by(phone: KayaktalkieAccount.normalize_phone(params[:phone].presence || params[:email]))
@@ -32,6 +32,18 @@ class TrackingApiController < ActionController::API
   end
   def me
     render json: @account.client_profile
+  end
+  def map_area
+    area = params.require(:area).permit(:lat, :lng, :zoom).to_h
+    limits = { 'lat' => -85.051129..85.051129, 'lng' => -180..180, 'zoom' => 0..19 }
+    unless limits.all? { |key, range| area[key].is_a?(Numeric) && area[key].finite? && range.cover?(area[key]) }
+      return render json: { error: 'Área inválida.' }, status: :unprocessable_entity
+    end
+    @account.with_lock do
+      # An old browser preference must never overwrite an existing server preference.
+      @account.update!(map_area: area) unless params[:import] == true && @account.map_area.present?
+    end
+    render json: { area: @account.map_area }
   end
   def map_voice
     floors = VoiceFloor.where(room_key: @account.allowed_channels.select(:room_key)).where('expires_at > ?', Time.current).where.not(holder_identity: nil)

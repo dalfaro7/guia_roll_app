@@ -102,3 +102,10 @@ header.dashboard-status{justify-content:flex-end;margin-bottom:20px}
 .recent-map-user .recent-user-speed{font-size:10px;font-weight:700;color:#365b4c;margin-top:3px}
 .recent-map-user.speed-warning{animation:speed-warning-flash 1s steps(1,end) infinite}.recent-map-user.speed-warning .recent-user-speed{color:inherit}
 @media(prefers-reduced-motion:reduce){.recent-map-user.speed-warning{animation:none;background:#f59b32;color:#472700}}
+
+/* One compact tracking summary, with the team list immediately below. */
+.map-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:210px;gap:0;padding:7px 4px;background:#fffffff5;border:1px solid #d7e0da;border-radius:8px;box-shadow:0 2px 8px #173f321a}
+.map-stats>div{text-align:center;padding:0 5px;min-width:0}.map-stats>div+div{border-left:1px solid #e0e8e2}
+.map-stats span{display:block;font-size:9px;line-height:1.2;color:#64796e;white-space:nowrap}.map-stats strong{display:block;font:700 14px/1.3 'DM Sans',sans-serif;margin-top:2px;font-variant-numeric:tabular-nums}
+.map-team-menu{top:72px;max-height:calc(100% - 84px)}
+@media(max-width:650px){.map-stats{width:190px;padding:6px 3px}.map-stats strong{font-size:13px}.map-team-menu{top:64px;max-height:calc(100% - 76px)}}

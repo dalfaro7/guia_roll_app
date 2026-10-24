@@ -29,6 +29,7 @@ Rails.application.routes.draw do
   post "api/login", to: "tracking_api#login"
   post "api/logout", to: "tracking_api#logout"
   post "api/location", to: "tracking_api#location"
+  post "api/map/area", to: "tracking_api#map_area"
   get "api/me", to: "tracking_api#me"
   get "api/users", to: "tracking_api#users"
   get "api/alerts", to: "tracking_api#alerts"

@@ -132,17 +132,22 @@ test('smart search ignores accents case and word order and selects a suggestion 
   h.element('search').value='inexistente';h.element('search').oninput();assert.equal(h.element('searchSuggestions').hidden,true);
 });
 
-test('my area persists center and zoom per account and cancels follow when restored',()=>{
-  const h=harness(), storage=new Map();
-  h.context.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};
+test('my area saves remotely and preserves previous preference when the network fails',async()=>{
+  const h=harness();let sent;
+  h.context.fetch=async(url,options)=>{sent={url,options};return {ok:true,json:async()=>({area:JSON.parse(options.body).area})};};
   h.context.testMap.getCenter=()=>({lat:10.4,lng:-84.6});h.context.testMap.getZoom=()=>15;
-  h.run('dashboardAccountId=7;saveMapArea()');assert.equal(storage.size,1);
+  await h.run('dashboardAccountId=7;saveMapArea()');
+  assert.equal(sent.url,'/api/map/area');assert.equal(sent.options.headers['X-CSRF-Token'],'csrf');
   h.context.next=[user()];h.run('users=next;render()');h.element('userSelect').value='1';
   h.element('myArea').onclick();assert.equal(h.element('userSelect').value,'');
-  assert.equal(h.context.testMap.zoom,15);assert.equal(h.views.at(-1)[0][0],10.4);assert.ok(Math.abs(h.views.at(-1)[0][1]+84.6)<1e-9);
-  h.run('dashboardAccountId=8');assert.equal(h.run('savedMapArea()'),null);
-  h.run('dashboardAccountId=7');assert.equal(h.run('savedMapArea().zoom'),15);
-  storage.set('kayaktalkie.map-area.v1.7','invalid');assert.equal(h.run('savedMapArea()'),null);
-  h.context.localStorage.setItem=()=>{throw new Error('blocked')};h.element('saveArea').onclick();
-  assert.match(h.element('mapAreaStatus').textContent,/No se pudo guardar/);
+  assert.equal(h.context.testMap.zoom,15);assert.match(h.element('mapAreaStatus').textContent,/Mi área/);
+  h.context.fetch=async()=>{throw new Error('offline')};
+  h.context.testMap.getZoom=()=>12;await h.run('saveMapArea()');
+  assert.equal(h.run('savedMapArea().zoom'),15);assert.equal(h.element('saveArea').disabled,false);
+  assert.match(h.element('mapAreaStatus').textContent,/No se pudo guardar en el servidor/);
+});
+test('legacy area is validated and read only for the signed in account',()=>{
+  const h=harness();h.context.localStorage={getItem:key=>key.endsWith('.7')?JSON.stringify({lat:10,lng:-84,zoom:16}):null};
+  h.run('dashboardAccountId=7');assert.equal(h.run('legacyMapArea().zoom'),16);
+  h.run('dashboardAccountId=8');assert.equal(h.run('legacyMapArea()'),null);
 });

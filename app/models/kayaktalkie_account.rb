@@ -38,7 +38,7 @@ class KayaktalkieAccount < ApplicationRecord
     voice_channels.enabled.where(kayaktalkie_team_id: kayaktalkie_teams.select(:id))
   end
   def client_profile
-    { id: id, name: name, role: role, teams: kayaktalkie_teams.order(:name).map { |t| {id: t.id,name: t.name} },
+    { id: id, name: name, role: role, map_area: map_access? ? map_area : nil, teams: kayaktalkie_teams.order(:name).map { |t| {id: t.id,name: t.name} },
       voice_channels: allowed_channels.map(&:client_profile),
       capabilities: { voice: allowed_channels.exists?, share_location: can_share_location?, map: map_access?, manage_accounts: admin? } }
   end

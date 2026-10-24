@@ -98,8 +98,9 @@ function followSelectedUser() {
   }
 }
 let dashboardAccountId = null;
+let accountMapArea = null;
 const areaKey = () => `kayaktalkie.map-area.v1.${dashboardAccountId}`;
-function savedMapArea() {
+function legacyMapArea() {
   if (dashboardAccountId == null) return null;
   try {
     const area = JSON.parse(localStorage.getItem(areaKey()));
@@ -107,14 +108,19 @@ function savedMapArea() {
       Number.isFinite(area.lng) && Math.abs(area.lng) <= 180 && Number.isFinite(area.zoom) && area.zoom >= 0 && area.zoom <= 19 ? area : null;
   } catch { return null; }
 }
-function saveMapArea() {
+function savedMapArea() { return accountMapArea; }
+async function saveMapArea() {
   if (!map || dashboardAccountId == null) return;
   const center = map.getCenter();
   const area = {lat:center.lat, lng:((center.lng + 180) % 360 + 360) % 360 - 180, zoom:map.getZoom()};
+  $('saveArea').disabled = true;
   try {
-    localStorage.setItem(areaKey(), JSON.stringify(area));
-    text($('mapAreaStatus'), 'Área guardada en este navegador.');
-  } catch { text($('mapAreaStatus'), 'No se pudo guardar: el almacenamiento del navegador no está disponible.'); }
+    const result = await api('map/area', {area});
+    accountMapArea = result.area;
+    try { localStorage.removeItem(areaKey()); } catch {}
+    text($('mapAreaStatus'), 'Área guardada en tu cuenta. Disponible en cualquier computadora.');
+  } catch { text($('mapAreaStatus'), 'No se pudo guardar en el servidor. Intenta nuevamente.'); }
+  finally { $('saveArea').disabled = false; }
 }
 function restoreMapArea() {
   const area = savedMapArea();
@@ -258,6 +264,14 @@ $('openReports').onclick = showReports; $('closeReports').onclick = () => $('rep
 async function refresh() { if (refreshInFlight) return; refreshInFlight = true; try { users = await api('users'); render(); if (dashboardRole === 'admin') await refreshAlerts(); if ($('reportDialog').open) await loadReport(); $('updated').textContent = 'Panel actualizado ' + new Date().toLocaleTimeString('es-CR'); $('status').textContent = ''; } catch (error) { $('status').textContent = error.message; if (error.status === 401) { clearInterval(timer); stopMapVoice?.(); stopMapVoice = null; $('dashboard').hidden = true; location.href = '/kayaktalkie/login'; $('reportDialog').close(); } } finally { refreshInFlight = false; } }
 async function openDashboard(user) {
   dashboardRole = user.role; dashboardAccountId = user.id;
+  accountMapArea = user.map_area || null;
+  const legacy = !accountMapArea && legacyMapArea();
+  if (legacy) {
+    try {
+      accountMapArea = (await api('map/area', {area: legacy, import: true})).area;
+      try { localStorage.removeItem(areaKey()); } catch {}
+    } catch { text($('mapAreaStatus'), 'No se pudo transferir tu área anterior. Pulsa Guardar área para volver a intentar.'); }
+  }
   if (!['admin','operator'].includes(user.role)) throw new Error('Este panel es para administradores. Usa la app móvil para compartir ubicación.');
   $('dashboard').hidden = false;
   if (!stopMapVoice && window.KayakMapVoice) stopMapVoice = window.KayakMapVoice.start(identities => {speakingIdentities = identities;updateSpeaking();}, status => {$('mapVoiceStatus').textContent = status;});
@@ -270,6 +284,7 @@ async function openDashboard(user) {
     tiles.on('tileerror', () => { $('status').textContent = 'Algunas partes del mapa no se pudieron cargar. Revisa tu conexión.'; });
     L.control.scale({ imperial: false, maxWidth: 100 }).addTo(map);
     fit(); render();
+    if (accountMapArea) restoreMapArea();
   }
 }
 $('userSelect').onchange = () => selectMapUser($('userSelect').value);
