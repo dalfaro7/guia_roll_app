@@ -1,15 +1,12 @@
 <section id="voicePanel" class="map-voice-panel" aria-labelledby="voiceHeading">
-  <h2 id="voiceHeading">Walkie-talkie</h2>
-  <p>Habla con tu equipo desde el mapa.</p>
-  <details class="voice-settings"><summary>Configuración del canal</summary>
-  <label for="voiceChannel">Canal</label>
-  <select id="voiceChannel"><% VoiceChannel.enabled.order(:name).each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select>
-  </details>
-  <button id="voiceJoin" type="button">Activar recepción</button>
-  <button id="voiceTalk" type="button" disabled aria-pressed="false">HABLAR</button>
-  <p class="voice-key-hint">Mantén pulsado el botón o la tecla <kbd>M</kbd></p>
-  <p id="voiceStatus" role="status">Desconectado</p>
-  <details class="voice-settings"><summary>Sonido y conexión</summary><div class="voice-options"><button id="voiceMute" type="button" class="secondary" disabled>Silenciar recepción</button><button id="voiceLeave" type="button" class="secondary" disabled>Salir del canal</button></div></details>
-  <p id="voiceError" role="alert"></p><div id="voiceAudio"></div>
-  <small>Mantén M para hablar. Máximo 30 s por turno. Desconecta para cambiar de canal. Audio en vivo, sin grabaciones.</small>
+<h2 id="voiceHeading">Walkie-talkie</h2>
+<p>Habla con tu equipo desde el mapa.</p>
+<label for="voiceChannel">Canal</label>
+<select id="voiceChannel"><option value="">Selecciona un canal…</option><% VoiceChannel.enabled.order(:name).each do |channel| %><option value="<%= channel.id %>"><%= channel.name %></option><% end %></select>
+<p id="voiceStatus" role="status">Selecciona un canal para conectar</p>
+<button id="voiceTalk" type="button" disabled aria-pressed="false" aria-label="Mantener pulsado para hablar"><span class="radio-symbol" aria-hidden="true">●</span><span id="voiceTalkLabel">HABLAR</span><span class="radio-hint">Mantén pulsado</span></button>
+<p class="voice-key-hint">O mantén la tecla <kbd>M</kbd> para hablar</p>
+<button id="voiceMute" type="button" class="secondary" disabled aria-pressed="false">Silenciar recepción</button>
+<p id="voiceError" role="alert"></p><div id="voiceAudio"></div>
+<small>Máximo 30 s por turno. Audio en vivo, sin grabaciones.</small>
 </section>

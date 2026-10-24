@@ -71,7 +71,9 @@ class VoiceTest < ActionDispatch::IntegrationTest
     follow_redirect!
     assert_response :success
     assert_select '#map'
-    assert_select 'aside #voiceJoin', count: 1
+    assert_select 'aside #voiceJoin', count: 0
+    assert_select 'aside #voiceMute', count: 1
+    assert_select '#voiceChannel option[value=""]', count: 1
     assert_select 'aside #voiceTalk[disabled]', count: 1
     assert_select 'a[href="/tracking/voice"]', count: 0
     user.update!(role: :operador)
