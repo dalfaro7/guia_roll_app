@@ -7,6 +7,18 @@ class KayaktalkieAccount < ApplicationRecord
   has_many :kayaktalkie_teams, through: :kayaktalkie_team_memberships
   has_one :kayaktalkie_position, dependent: :restrict_with_error
   has_many :kayaktalkie_speed_alerts, dependent: :restrict_with_error
+  belongs_to :created_by, class_name: 'KayaktalkieAccount', optional: true
+  before_validation { self.email = email.to_s.strip.downcase.presence }
+  validates :email, format: {with: URI::MailTo::EMAIL_REGEXP}, uniqueness: {case_sensitive: false}, allow_nil: true, length: {maximum: 254}
+  attr_accessor :password_confirmation
+  validates :password, confirmation: true
+  after_update :invalidate_password_access
+  def invalidate_password_access
+    if saved_change_to_encrypted_password? || saved_change_to_email? || saved_change_to_active?
+      update_columns(reset_password_digest: nil, reset_password_sent_at: nil)
+    end
+    kayaktalkie_sessions.destroy_all if saved_change_to_encrypted_password? || (saved_change_to_active? && !active?)
+  end
   attr_reader :password
   before_validation { self.phone = self.class.normalize_phone(phone) }
   validates :phone, presence: true, uniqueness: true, format: { with: /\A\+[1-9]\d{7,14}\z/ }

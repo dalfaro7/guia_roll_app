@@ -5,3 +5,5 @@
 <%= f.label :phone, 'Teléfono' %><%= f.telephone_field :phone, required: true, autocomplete: 'username', placeholder: '8888 8888' %>
 <%= f.label :password, 'Contraseña' %><%= f.password_field :password, required: true, autocomplete: 'current-password' %>
 <%= f.submit 'Iniciar sesión' %><% end %>
+
+<%= link_to 'Olvidé mi contraseña',new_kayaktalkie_password_path %>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -94,13 +94,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_000000) do
   create_table "kayaktalkie_accounts", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.string "email"
     t.string "encrypted_password", null: false
     t.boolean "location_enabled", default: true, null: false
     t.string "name", null: false
     t.string "phone", null: false
+    t.string "reset_password_digest"
+    t.datetime "reset_password_sent_at"
     t.string "role", default: "staff", null: false
     t.datetime "updated_at", null: false
+    t.index "lower((email)::text)", name: "unique_kayak_email", unique: true, where: "(email IS NOT NULL)"
+    t.index ["created_by_id"], name: "index_kayaktalkie_accounts_on_created_by_id"
     t.index ["phone"], name: "index_kayaktalkie_accounts_on_phone", unique: true
+    t.index ["reset_password_digest"], name: "index_kayaktalkie_accounts_on_reset_password_digest", unique: true
     t.check_constraint "length(TRIM(BOTH FROM name)) > 0", name: "kayaktalkie_name"
     t.check_constraint "role::text = ANY (ARRAY['admin'::character varying, 'operator'::character varying, 'staff'::character varying]::text[])", name: "kayaktalkie_role"
   end
@@ -210,9 +217,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_000000) do
     t.string "day_off_source"
     t.boolean "holiday_paid", default: false, null: false
     t.text "notes"
-    t.bigint "office_day_credit_id"
+    t.bigint "office_day_credit_id", null: false
     t.bigint "office_employee_id", null: false
-    t.bigint "office_vacation_credit_id"
+    t.bigint "office_vacation_credit_id", null: false
     t.integer "status"
     t.datetime "updated_at", null: false
     t.index ["office_day_credit_id"], name: "index_office_employee_days_on_office_day_credit_id"
@@ -526,6 +533,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_000000) do
   add_foreign_key "guide_days", "work_days"
   add_foreign_key "guide_skills", "guides"
   add_foreign_key "guide_skills", "skills"
+  add_foreign_key "kayaktalkie_accounts", "kayaktalkie_accounts", column: "created_by_id"
   add_foreign_key "kayaktalkie_positions", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_sessions", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_speed_alerts", "kayaktalkie_accounts"

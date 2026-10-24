@@ -54,7 +54,7 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
   end
   test 'phone is the login without email and equivalent formats cannot duplicate' do
     assert_equal '+50688881234', @account.phone
-    assert_not @account.has_attribute?(:email)
+    assert_nil @account.email
     ['8888 1234', '+506 8888-1234', '50688881234'].each do |phone|
       post '/api/login', params: {phone: phone, password: 'Test-location-123456'}, as: :json
       assert_response :success
@@ -73,7 +73,7 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     post '/kayaktalkie/login', params: {phone: @admin.phone,password: 'Test-admin-123456'}
     get '/tracking/accounts'
     assert_select 'input[type=tel]'
-    assert_select 'input[type=email]', count: 0
+    assert_select 'input[type=email][required]', count: 0
   end
   test 'episodes split across Costa Rica midnight and gaps and keep acknowledgements' do
     time = Time.zone.parse('2026-10-23 23:59:59')

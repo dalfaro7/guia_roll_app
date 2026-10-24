@@ -1,4 +1,13 @@
 Rails.application.routes.draw do
+  get 'kayaktalkie/password/new', to: 'kayaktalkie_passwords#new', as: :new_kayaktalkie_password
+  post 'kayaktalkie/password', to: 'kayaktalkie_passwords#create', as: :kayaktalkie_password
+  get 'kayaktalkie/password/edit', to: 'kayaktalkie_passwords#edit', as: :edit_kayaktalkie_password
+  patch 'kayaktalkie/password', to: 'kayaktalkie_passwords#update'
+  get 'kayaktalkie/profile', to: 'kayaktalkie_profiles#edit', as: :kayaktalkie_profile
+  patch 'kayaktalkie/profile', to: 'kayaktalkie_profiles#update'
+  get 'kayaktalkie/collaborators', to: 'kayaktalkie_collaborators#index', as: :kayaktalkie_collaborators
+  post 'kayaktalkie/collaborators', to: 'kayaktalkie_collaborators#create'
+  patch 'kayaktalkie/collaborators/:id', to: 'kayaktalkie_collaborators#update', as: :kayaktalkie_collaborator
   post "tracking/teams", to: "kayaktalkie_dashboard#create_team", as: :tracking_teams
   get 'kayaktalkie/login', to: 'kayaktalkie#new', as: :kayaktalkie_login
   post 'kayaktalkie/login', to: 'kayaktalkie#create'

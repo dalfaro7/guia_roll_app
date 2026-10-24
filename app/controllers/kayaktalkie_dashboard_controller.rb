@@ -37,7 +37,7 @@ class KayaktalkieDashboardController < ActionController::Base
   end
   private
   def save_account(account, creating:)
-    attrs=params.require(:kayaktalkie_account).permit(:name,:phone,:password,:role,:active,:location_enabled)
+    attrs=params.require(:kayaktalkie_account).permit(:name,:phone,:email,:password,:role,:active,:location_enabled)
     attrs.delete(:password) if !creating && attrs[:password].blank?
     # Do not let the currently signed-in admin lock themselves out.
     if account.id == @account.id && ((attrs[:role].present? && attrs[:role]!='admin') || attrs[:active]=='0')

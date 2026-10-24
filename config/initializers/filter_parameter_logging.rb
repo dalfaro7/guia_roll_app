@@ -10,3 +10,5 @@ Rails.application.config.filter_parameters += [
 Rails.application.config.filter_parameters += [:latitude, :longitude, :accuracy, :capturedAt, :speedMps]
 
 Rails.application.config.filter_parameters += [:phone]
+
+Rails.application.config.filter_parameters += [:token, :current_password, :password_confirmation]

@@ -1,5 +1,6 @@
 <%= form_with scope: :kayaktalkie_account, namespace: "account_#{account.id || 'new'}", url: account.persisted? ? tracking_account_channels_path(account) : tracking_accounts_path, method: account.persisted? ? :patch : :post do |f| %>
 <%= f.label :name, 'Nombre' %><%= f.text_field :name, value: account.name, required: true %>
+<%= f.label :email, 'Correo de recuperación (opcional)' %><%= f.email_field :email, value: account.email %>
 <%= f.label :phone, 'Teléfono' %><%= f.telephone_field :phone, value: account.phone, required: true %>
 <%= f.label :role, 'Rol' %><%= f.select :role, [['Staff','staff'],['Operador','operator'],['Admin','admin']], selected: account.role %>
 <%= f.label :password, account.persisted? ? 'Nueva contraseña (dejar vacía para conservar)' : 'Contraseña inicial' %><%= f.password_field :password, minlength: 12, required: !account.persisted?, autocomplete: 'new-password' %>

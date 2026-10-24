@@ -1,0 +1,2 @@
+<h1>Recuperar contraseña</h1><p>Ingresa el correo registrado en tu cuenta. Si aún no tienes uno, contacta con tu operador o administrador.</p><% if @notice %><p role="status"><%= @notice %></p><% end %><% if @error %><p role="alert"><%= @error %></p><% end %>
+<%= form_with url:kayaktalkie_password_path do |f| %><%= f.label :email,'Correo electrónico' %><%= f.email_field :email,required:true,autocomplete:'email' %><%= f.submit 'Enviar enlace' %><% end %><%= link_to 'Volver al inicio de sesión',kayaktalkie_login_path %>
