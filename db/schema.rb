@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_060000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_25_071000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -207,6 +207,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_060000) do
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "kayaktalkie_work_zones", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "kayaktalkie_team_id", null: false
+    t.float "latitude", null: false
+    t.float "longitude", null: false
+    t.string "name", limit: 80, null: false
+    t.bigint "operator_id", null: false
+    t.integer "radius_m", default: 500, null: false
+    t.datetime "updated_at", null: false
+    t.index ["kayaktalkie_team_id"], name: "index_kayaktalkie_work_zones_on_kayaktalkie_team_id"
+    t.index ["operator_id"], name: "index_kayaktalkie_work_zones_on_operator_id"
   end
 
   create_table "location_slots", force: :cascade do |t|
@@ -583,6 +596,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_060000) do
   add_foreign_key "kayaktalkie_speed_alerts", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_team_memberships", "kayaktalkie_accounts"
   add_foreign_key "kayaktalkie_team_memberships", "kayaktalkie_teams"
+  add_foreign_key "kayaktalkie_work_zones", "kayaktalkie_accounts", column: "operator_id"
+  add_foreign_key "kayaktalkie_work_zones", "kayaktalkie_teams"
   add_foreign_key "location_slots", "work_days"
   add_foreign_key "manual_day_offs", "guides"
   add_foreign_key "monthly_balances", "guides"

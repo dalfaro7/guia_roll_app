@@ -1,4 +1,9 @@
 Rails.application.routes.draw do
+  get 'api/map/zones', to: 'kayaktalkie_work_zones#index'
+  post 'api/map/zones', to: 'kayaktalkie_work_zones#create'
+  patch 'api/map/zones/:id', to: 'kayaktalkie_work_zones#update'
+  delete 'api/map/zones/:id', to: 'kayaktalkie_work_zones#destroy'
+
   post 'api/push/token', to: 'kayaktalkie_push#update'
   delete 'api/push/token', to: 'kayaktalkie_push#destroy'
   get 'api/field_reports/:id', to: 'kayaktalkie_field_reports#show'

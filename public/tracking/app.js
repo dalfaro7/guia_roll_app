@@ -288,6 +288,7 @@ async function openDashboard(user) {
     fit(); render();
     if (accountMapArea) restoreMapArea();
     window.KayakFieldReports?.start(map);
+    window.KayakWorkZones?.start(map);
   }
 }
 $('userSelect').onchange = () => selectMapUser($('userSelect').value);
