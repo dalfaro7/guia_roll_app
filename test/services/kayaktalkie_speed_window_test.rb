@@ -44,4 +44,15 @@ class KayaktalkieSpeedWindowTest < ActiveSupport::TestCase
     h,r=window((0..100).map { |i| point(i*30,i*0.001) })
     assert_equal 11,h.size; assert_equal 'ready',r[:status]
   end
+  test 'last valid estimate survives warmup and poor accuracy for at most five minutes' do
+    h, ready = window((0..10).map { |i| point(i*30) })
+    assert_equal 300000, ready[:calculated_at]
+    h, pending = KayaktalkieSpeedWindow.call(h, point(330,0,0,100), ready)
+    assert_equal 0, pending[:last_valid]['kmh']
+    h, pending = KayaktalkieSpeedWindow.call(h, point(360), pending)
+    assert_equal 300000, pending[:last_valid]['calculated_at']
+    _, expired = KayaktalkieSpeedWindow.call(h, point(601), pending)
+    assert_nil expired[:last_valid]
+  end
+
 end

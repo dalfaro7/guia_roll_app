@@ -9,15 +9,19 @@ function prune(nodes, ids, dispose = entry => entry.node.remove()) {
 }
 function speedDisplay(u) {
   const estimate = u.speed_estimate;
-  const stale = !u.captured_at || Date.now() - u.captured_at > 180000;
-  if (estimate?.status === 'ready' && Number.isFinite(estimate.kmh)) {
-    return {value: `${stale ? 'Última estimada' : 'Estimada'}: ${estimate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
-      note: 'Promedio de 5 min', title: `50% extremos (${estimate.endpoints_kmh.toFixed(1)} km/h) + 50% tramos (${estimate.segments_kmh.toFixed(1)} km/h). ${estimate.samples} puntos.`};
+  const candidate = estimate?.status === 'ready' ? estimate : estimate?.last_valid;
+  const calculatedAt = candidate?.calculated_at ?? (estimate?.status === 'ready' ? u.captured_at : null);
+  const age = Date.now() - calculatedAt;
+  if (candidate && Number.isFinite(candidate.kmh) && calculatedAt && age >= -60000 && age <= 300000) {
+    return {value: `Estimada: ${candidate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
+      note: `Último cálculo · ${new Date(calculatedAt).toLocaleTimeString('es-CR', {timeZone: 'America/Costa_Rica'})}`,
+      title: 'Último promedio válido de cinco minutos. Se conserva durante un máximo de cinco minutos desde su cálculo.'};
   }
+  const stale = !u.captured_at || Date.now() - u.captured_at > 180000;
   const gps = Number.isFinite(u.speed_kmh) && u.speed_kmh >= 0;
-  return {value: gps ? `${stale ? 'Última GPS' : 'GPS'}: ${u.speed_kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h` : 'Velocidad GPS no disponible',
-    note: stale ? 'Sin datos recientes' : estimate?.status === 'poor_accuracy' ? 'Promedio pendiente: GPS impreciso' : `Reuniendo 5 min · ${estimate?.samples || 0} lecturas`,
-    title: 'La velocidad GPS es la reportada por el teléfono. El promedio necesita cinco minutos de lecturas válidas y continuas.'};
+  return {value: gps ? `${stale ? 'Última GPS' : 'GPS'}: ${u.speed_kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h` : 'Velocidad no disponible',
+    note: 'Sin cálculo válido en los últimos 5 min',
+    title: 'No hay un promedio reciente disponible. La velocidad GPS, cuando aparece, es la lectura del teléfono.'};
 }
 function radioIndicator(guideId) {
   const icon = document.createElement('i'); icon.className = 'voice-intercom'; icon.dataset.guideId = guideId;

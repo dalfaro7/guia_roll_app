@@ -44,10 +44,14 @@ test('refresh keeps user controls and marker identity, moves marker and focuses 
 test('speed shows zero GPS honestly during warmup, unavailable for missing GPS, and estimated speed when ready',()=>{
   const h=harness();h.context.u=user();
   assert.match(h.run('speedDisplay(u).value'),/GPS: 0 km\/h/);
-  h.context.u.speed_kmh=null;assert.equal(h.run('speedDisplay(u).value'),'Velocidad GPS no disponible');
+  h.context.u.speed_kmh=null;assert.equal(h.run('speedDisplay(u).value'),'Velocidad no disponible');
   h.context.u.speed_estimate={status:'ready',kmh:12,endpoints_kmh:10,segments_kmh:14,samples:11};
   assert.equal(h.run('speedDisplay(u).value'),'Estimada: 12 km/h');
-  h.context.u.captured_at=Date.now()-190000;assert.match(h.run('speedDisplay(u).value'),/Última estimada/);
+  h.context.u.captured_at=Date.now()-190000;assert.equal(h.run('speedDisplay(u).value'),'Estimada: 12 km/h');
+  h.context.u.speed_estimate={status:'warming_up',last_valid:{kmh:7,calculated_at:Date.now()-120000}};
+  assert.equal(h.run('speedDisplay(u).value'),'Estimada: 7 km/h');
+  h.context.u.speed_estimate.last_valid.calculated_at=Date.now()-301000;
+  assert.equal(h.run('speedDisplay(u).value'),'Velocidad no disponible');
 });
 test('overlapping dashboard refreshes share one request and never restart voice',async()=>{
   const h=harness();let finish,calls=0;h.context.fetch=()=>{calls++;return new Promise(resolve=>finish=resolve);};

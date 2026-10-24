@@ -9,7 +9,21 @@ class KayaktalkieSpeedWindow
     h = Math.sin((lat2-lat1)/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin((b['lon']-a['lon'])*rad/2)**2
     6_371_008.8 * 2 * Math.asin(Math.sqrt(h.clamp(0, 1)))
   end
-  def self.call(samples, point)
+  def self.call(samples, point, previous = {})
+    history, result = calculate(samples, point)
+    if result[:status] == 'ready'
+      result[:calculated_at] = point['t'] * 1000
+    else
+      previous = previous.stringify_keys
+      last = previous['status'] == 'ready' ? previous.except('last_valid') : previous['last_valid']
+      if last && last['calculated_at'].is_a?(Numeric) && last['kmh'].is_a?(Numeric) &&
+          (point['t'] * 1000 - last['calculated_at']).between?(0, WINDOW * 1000)
+        result[:last_valid] = last
+      end
+    end
+    [history, result]
+  end
+  def self.calculate(samples, point)
     return [[], {status: 'poor_accuracy'}] if point['accuracy'] > MAX_ACCURACY
     samples = samples.select { |p| p['t'] < point['t'] }
     samples = [] if samples.any? && point['t'] - samples.last['t'] > MAX_GAP

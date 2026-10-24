@@ -103,11 +103,14 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     item=response.parsed_body.find { |u| u['id']==@account.id }
     assert_equal 'ready',item.dig('speed_estimate','status')
     assert_not item.key?('speed_samples')
+    KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>0.011,'accuracy'=>100.0,'capturedAt'=>(started+310).to_f*1000})
+    assert_in_delta 13.3434, position.reload.speed_estimate.dig('last_valid','kmh'), 0.001
     team=KayaktalkieTeam.first!
     @account.kayaktalkie_team_memberships.create!(kayaktalkie_team:team)
     KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>0.011,'accuracy'=>5.0,'capturedAt'=>(started+330).to_f*1000})
     assert_equal 1,position.reload.speed_samples.size
     assert_equal 'warming_up',position.speed_estimate['status']
+    assert_nil position.speed_estimate['last_valid']
   end
 
 end
