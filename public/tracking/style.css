@@ -63,3 +63,9 @@ header.dashboard-status{justify-content:flex-end;margin-bottom:20px}
 .kayak-marker.speed-warning .marker-speed{color:inherit}
 @media(prefers-reduced-motion:reduce){.kayak-marker.speed-warning .marker-label{animation:none;background:#f59b32;color:#472700;outline:2px solid #c8670a}}
 @media(max-width:650px){.map-stats{width:106px;right:8px;top:8px;gap:5px}.map-stats article{padding:7px 8px}.map-stats strong{font-size:20px}.map-stats span{font-size:10px}#map{height:70vh;min-height:440px}}
+
+.map-toolbar{gap:16px;flex-wrap:wrap}.map-toolbar>b{flex-shrink:0}
+.map-user-controls{display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap}
+.map-user-controls input,.map-user-controls select{flex:1;min-width:170px;width:auto;max-width:280px;padding:10px 12px;border:1px solid #d7e0da;border-radius:8px;background:#fff;color:#193731;font:inherit;font-size:13px}
+#userSearchStatus{font-size:12px;color:#647b70}#userSearchStatus:empty{display:none}
+@media(max-width:650px){.map-user-controls{flex-basis:100%}.map-user-controls input,.map-user-controls select{min-width:0;max-width:none;width:100%;flex-basis:100%}}

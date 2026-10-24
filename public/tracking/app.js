@@ -49,24 +49,22 @@ function render() {
   $('online').textContent = users.filter(u => u.captured_at && Date.now() - u.captured_at < 180000).length;
   const ids = new Set(users.map(u => u.id));
   prune(userNodes, ids);
+  const query = $('search').value.trim().toLocaleLowerCase('es');
+  let matches = 0;
   for (const u of users) {
     let entry = userNodes.get(u.id);
     if (!entry) {
-      const button = document.createElement('button'); button.className = 'user';
-      const strong = document.createElement('strong'), name = document.createTextNode(''), detail = document.createElement('span');
-      strong.append(name, radioIndicator(u.id)); button.append(strong, detail);
-      entry = {node: button, name, detail, user: u};
-      button.onclick = () => { const current = entry.user; if (map && current.latitude != null) map.setView([current.latitude, current.longitude], 15); };
-      userNodes.set(u.id, entry); $('users').append(button);
+      const option = document.createElement('option'); option.value = String(u.id);
+      entry = {node: option}; userNodes.set(u.id, entry); $('userSelect').append(option);
     }
-    entry.user = u;
-    if (entry.name.nodeValue !== u.name) entry.name.nodeValue = u.name;
-    entry.node.hidden = !u.name.toLowerCase().includes($('search').value.toLowerCase());
-    text(entry.detail, u.captured_at ? `${Date.now() - u.captured_at < 180000 ? '● Reciente' : '○ Sin señal reciente'} · ${new Date(u.captured_at).toLocaleTimeString('es-CR')} · ±${Math.round(u.accuracy)} m` : '○ Aún sin ubicación');
+    const matched = u.name.toLocaleLowerCase('es').includes(query);
+    entry.node.hidden = !matched; entry.node.disabled = !matched;
+    text(entry.node, u.name + (u.latitude == null ? ' · sin ubicación' : ''));
+    if (matched) matches++;
   }
-  let empty = $('users').querySelector('.users-empty');
-  if (!empty) { empty = document.createElement('p'); empty.className = 'users-empty'; empty.textContent = 'Agrega usuarios para empezar.'; $('users').append(empty); }
-  empty.hidden = users.length !== 0;
+  const selected = users.find(u => String(u.id) === $('userSelect').value);
+  if (!selected || !selected.name.toLocaleLowerCase('es').includes(query)) $('userSelect').value = '';
+  text($('userSearchStatus'), matches ? '' : 'No hay usuarios que coincidan');
   if (!map) { updateSpeaking(); return; }
   const located = new Set(users.filter(u => u.latitude != null).map(u => u.id));
   prune(markerNodes, located, entry => entry.marker.remove());
@@ -156,5 +154,10 @@ async function openDashboard(user) {
     fit(); render();
   }
 }
+$('userSelect').onchange = () => {
+  const user = users.find(u => String(u.id) === $('userSelect').value);
+  if (map && user?.latitude != null) map.setView([user.latitude, user.longitude], 15);
+  text($('userSearchStatus'), user && user.latitude == null ? 'Este usuario aún no tiene ubicación' : '');
+};
 $('search').oninput = render; $('fit').onclick = fit;
 api('me').then(openDashboard).catch(() => { location.href = '/kayaktalkie/login'; });

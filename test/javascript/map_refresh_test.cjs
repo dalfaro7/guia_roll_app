@@ -30,16 +30,16 @@ function harness() {
   return {context, element, created, views, run:code=>vm.runInContext(code,context)};
 }
 const user = () => ({id:1,name:'Test user',latitude:10,longitude:-84,captured_at:Date.now(),accuracy:5,speed_kmh:0,speed_estimate:{status:'warming_up',samples:3}});
-test('refresh keeps user controls and marker identity, moves marker and focuses latest coordinates only on click',()=>{
+test('refresh preserves selector and marker, filters options, and selection centers latest coordinates',()=>{
   const h=harness();h.context.next=[user()];h.run('users=next;render()');
-  const button=h.element('users').children[0], marker=h.created[0];
-  button.disabled=true;
+  const option=h.element('userSelect').children[0], marker=h.created[0];
+  h.element('userSelect').value='1';
   h.context.next=[{...user(),latitude:10.1,name:'Updated user'}];h.run('users=next;render()');
-  assert.equal(h.element('users').children[0],button);assert.equal(button.disabled,true);
+  assert.equal(h.element('userSelect').children[0],option);assert.equal(h.element('userSelect').value,'1');
   assert.equal(h.created.length,1);assert.equal(marker.updates,1);assert.equal(h.views.length,0);
-  button.onclick();assert.equal(h.views[0][0][0],10.1);
-  h.element('search').value='unmatched';h.run('render()');assert.equal(button.hidden,true);assert.equal(h.created.length,1);
-  h.run('users=[];render()');assert.equal(marker.removed,true);assert.equal(button.removed,true);
+  h.element('userSelect').onchange();assert.equal(h.views[0][0][0],10.1);
+  h.element('search').value='unmatched';h.run('render()');assert.equal(option.hidden,true);assert.equal(h.element('userSelect').value,'');
+  h.run('users=[];render()');assert.equal(marker.removed,true);assert.equal(option.removed,true);
 });
 test('speed shows zero GPS honestly during warmup, unavailable for missing GPS, and estimated speed when ready',()=>{
   const h=harness();h.context.u=user();
