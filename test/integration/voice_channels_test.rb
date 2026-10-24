@@ -128,6 +128,10 @@ class VoiceChannelsTest < ActionDispatch::IntegrationTest
 end
 
 class VoiceCutoffTest < ActiveSupport::TestCase
+  test 'extended room client retains the real Twirp RPC route' do
+    assert_equal LiveKit::RoomServiceClient.service_full_name, VoiceRoomClient.service_full_name
+    assert_equal LiveKit::RoomServiceClient.rpcs.fetch('RemoveParticipant'), VoiceRoomClient.rpcs.fetch('RemoveParticipant')
+  end
   test 'strict removal includes room limited admin grant and token cutoff in protobuf' do
     client = VoiceRoomClient.new('https://example.test', api_key: 'test', api_secret: 'test-secret')
     call = nil
