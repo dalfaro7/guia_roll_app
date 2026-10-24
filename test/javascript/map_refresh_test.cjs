@@ -8,7 +8,7 @@ function harness() {
   class Element {
     constructor(tag) { this.tag = tag; this.children = []; this.dataset = {}; this.value = ''; this.textContent = ''; this.className = ''; this.classList = {toggle: () => {}}; all.push(this); }
     append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
-    insertBefore(node, before) { node.parent = this; this.children.splice(this.children.indexOf(before), 0, node); }
+    insertBefore(node, before) { if (node.parent) node.parent.children = node.parent.children.filter(n => n !== node); node.parent = this; if (before == null) this.children.push(node); else this.children.splice(this.children.indexOf(before), 0, node); }
     remove() { if (this.parent) this.parent.children = this.parent.children.filter(n => n !== this); this.removed = true; }
     querySelector(selector) { return this.children.find(n => selector.startsWith('.') ? n.className.split(' ').includes(selector.slice(1)) : n.tag === selector); }
     replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
@@ -25,7 +25,7 @@ function harness() {
   });
   const source = fs.readFileSync(path.join(__dirname,'../../public/tracking/app.js'),'utf8').replace(/api\('me'\)\.then\(openDashboard\)[\s\S]*$/, '');
   vm.runInContext(source, context);
-  context.testMap = {zoom:12, panTo:(...args)=>views.push(args), fitBounds:()=>{}};
+  context.testMap = {zoom:12, setView(coords,zoom){this.zoom=zoom;views.push([coords]);}, panTo:(...args)=>views.push(args), fitBounds:()=>{}};
   vm.runInContext('map = testMap',context);
   return {context, element, created, views, run:code=>vm.runInContext(code,context)};
 }
@@ -88,4 +88,30 @@ test('selected user follows new positions without zooming; unchanged points and 
   assert.equal(h.views.length,2);assert.equal(h.views[1][0][0],10.2);assert.equal(h.context.testMap.zoom,16);
   h.run('fit()');assert.equal(h.element('userSelect').value,'');
   h.context.next=[{...user(),latitude:10.3}];h.run('users=next;render()');assert.equal(h.views.length,2);
+});
+
+test('recent team menu filters fifteen minutes and selection zooms to 200m',()=>{
+  const h=harness(), now=Date.now();
+  h.context.next=[{...user(),id:1,name:'Ana',captured_at:now-120000},{...user(),id:2,name:'Zoe',captured_at:now-899000},{...user(),id:3,captured_at:now-901000},{...user(),id:4,latitude:null},{...user(),id:5,captured_at:now+120000}];
+  h.run('users=next;render()');
+  const list=h.element('recentUsers');
+  assert.equal(list.children.length,2);
+  assert.equal(list.children[0].children[0].textContent,'Ana');
+  assert.equal(h.element('recentUsersEmpty').hidden,true);
+  const button=list.children[0]; button.onclick();
+  assert.equal(h.element('userSelect').value,'1');
+  assert.equal(h.context.testMap.zoom,16);
+  assert.equal(list.children[0],button);
+  h.context.next=[{...user(),id:1,captured_at:now-901000}];h.run('users=next;render()');
+  assert.equal(list.children.length,0);assert.equal(h.element('recentUsersEmpty').hidden,false);
+});
+
+test('dropdown and unique search select the same 200m scale and center',()=>{
+  const h=harness();h.context.next=[user()];h.run('users=next;render()');
+  h.element('userSelect').value='1';h.element('userSelect').onchange();
+  assert.equal(h.context.testMap.zoom,16);assert.deepEqual(Array.from(h.views.at(-1)[0]),[10,-84]);
+  h.context.testMap.zoom=8;h.element('search').value='Test';
+  h.element('search').onkeydown({key:'Enter',preventDefault(){}});
+  assert.equal(h.context.testMap.zoom,16);assert.equal(h.element('userSelect').value,'1');
+  assert.deepEqual(Array.from(h.views.at(-1)[0]),[10,-84]);
 });

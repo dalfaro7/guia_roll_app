@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 let users = [], map, markers = new Map(), timer, dashboardRole;
 let speakingIdentities = [], stopMapVoice;
+const recentUserNodes = new Map();
 const userNodes = new Map(), markerNodes = new Map(), alertNodes = new Map();
 let refreshInFlight = false, alertsRequest = 0, reportRequest = 0, lastReport = '';
 function text(node, value) { if (node.textContent !== String(value)) node.textContent = value; }
@@ -44,6 +45,22 @@ async function api(path, body) {
 }
 const boundsCR = [[8.0, -86.0], [11.3, -82.5]];
 let lastFollowPosition = null;
+// Match the metric scale control (100px): its rounded bar reads about 200m.
+function selectionZoom(latitude) {
+  return Math.max(0, Math.min(19, Math.floor(Math.log2(156543.03392 * Math.cos(latitude * Math.PI / 180) * 100 / 200))));
+}
+function selectMapUser(id) {
+  const user = users.find(u => String(u.id) === String(id));
+  $('search').value = '';
+  $('userSelect').value = user ? String(user.id) : '';
+  lastFollowPosition = null;
+  if (map && Number.isFinite(user?.latitude) && Number.isFinite(user?.longitude)) {
+    map.setView([user.latitude, user.longitude], selectionZoom(user.latitude), {animate:false});
+    lastFollowPosition = `${user.id}:${user.latitude}:${user.longitude}`;
+  }
+  render();
+  text($('userSearchStatus'), user && user.latitude == null ? 'Este usuario aún no tiene ubicación' : '');
+}
 function followSelectedUser() {
   const user = users.find(u => String(u.id) === $('userSelect').value);
   if (!map || user?.latitude == null || user?.longitude == null) { lastFollowPosition = null; return; }
@@ -56,6 +73,33 @@ function followSelectedUser() {
 function fit() {
   $('userSelect').value = ''; lastFollowPosition = null;
   if (map) map.fitBounds(boundsCR);
+}
+function renderRecentUsers() {
+  const now = Date.now();
+  const recent = users.filter(u => Number.isFinite(u.latitude) && Number.isFinite(u.longitude) &&
+    Number.isFinite(u.captured_at) && now - u.captured_at >= -60000 && now - u.captured_at <= 900000)
+    .sort((a,b) => a.name.localeCompare(b.name, 'es') || a.id - b.id);
+  prune(recentUserNodes, new Set(recent.map(u => u.id)));
+  text($('recentUserCount'), recent.length);
+  $('recentUsersEmpty').hidden = recent.length > 0;
+  for (const u of recent) {
+    let entry = recentUserNodes.get(u.id);
+    if (!entry) {
+      const node = document.createElement('button'); node.type = 'button'; node.className = 'recent-map-user';
+      const name = document.createElement('strong'), status = document.createElement('small');
+      node.append(name, status);
+      node.onclick = () => selectMapUser(u.id);
+      entry = {node, name, status}; recentUserNodes.set(u.id, entry);
+    }
+    text(entry.name, u.name);
+    const age = Math.max(0, now - u.captured_at);
+    text(entry.status, age < 60000 ? 'Ubicación hace menos de 1 min' : `Última ubicación hace ${Math.floor(age / 60000)} min`);
+    entry.node.classList.toggle('recent', age < 180000);
+    entry.node.setAttribute('aria-pressed', String($('userSelect').value === String(u.id)));
+    // Move the existing button only when its alphabetical position changed.
+    const index = recent.indexOf(u);
+    if ($('recentUsers').children[index] !== entry.node) $('recentUsers').insertBefore(entry.node, $('recentUsers').children[index] || null);
+  }
 }
 function render() {
   $('total').textContent = users.length;
@@ -78,6 +122,7 @@ function render() {
   const selected = users.find(u => String(u.id) === $('userSelect').value);
   if (!selected || !selected.name.toLocaleLowerCase('es').includes(query)) $('userSelect').value = '';
   text($('userSearchStatus'), matches ? '' : 'No hay usuarios que coincidan');
+  renderRecentUsers();
   if (!map) { updateSpeaking(); return; }
   const located = new Set(users.filter(u => u.latitude != null).map(u => u.id));
   prune(markerNodes, located, entry => entry.marker.remove());
@@ -87,7 +132,7 @@ function render() {
     if (!entry) {
     const content = document.createElement('div'); content.className = 'kayak-marker';
     content.innerHTML = '<svg width="42" height="52" viewBox="0 0 42 52" aria-hidden="true"><g transform="rotate(24 21 26)"><path d="M21 2C11 12 9 36 21 50C33 36 31 12 21 2Z" fill="#efa83e" stroke="#805020" stroke-width="1.5"/><path d="M21 6v10m0 20v10" stroke="#fff3c9" stroke-width="2" stroke-linecap="round"/><ellipse cx="21" cy="26" rx="6" ry="10" fill="#173f32"/><ellipse cx="21" cy="27" rx="3.5" ry="6" fill="#7fb2a0"/><path d="M7 32L35 20" stroke="#173f32" stroke-width="2.5" stroke-linecap="round"/><path d="M3 32l5-3 4 5-6 3zM30 18l6-3 3 5-6 3z" fill="#17634d" stroke="#fff" stroke-width=".7"/></g></svg>';
-    const label = document.createElement('span'); label.className = 'marker-label';
+    const label = document.createElement('span'); label.className = 'marker-label'; label.tabIndex = 0;
     const name = document.createTextNode(''); label.append(name, radioIndicator(u.id)); content.append(label);
     const speed = document.createElement('small'); speed.className = 'marker-speed';
     const note = document.createElement('small'); note.className = 'marker-speed-note'; label.append(speed, note);
@@ -100,7 +145,7 @@ function render() {
     entry.marker.options.title = u.name;
     const element = entry.marker.getElement(); if (element && element.title !== u.name) element.title = u.name;
     entry.content.classList.toggle('stale', Date.now() - u.captured_at > 180000);
-    const display = speedDisplay(u); entry.content.classList.toggle('speed-warning', display.overLimit === true); text(entry.speed, display.value); text(entry.note, display.note); entry.speed.title = display.title;
+    const display = speedDisplay(u); entry.content.classList.toggle('speed-warning', display.overLimit === true); text(entry.speed, display.value.replace('Estimada:', 'Prom.:').replace('Velocidad no disponible', 'Sin velocidad')); text(entry.note, display.note); entry.speed.title = display.title; entry.note.parentNode?.setAttribute('aria-label', `${u.name}. ${display.value}. ${display.note}`);
   }
   followSelectedUser();
   updateSpeaking();
@@ -164,14 +209,19 @@ async function openDashboard(user) {
     map = L.map('map').setView([9.75, -84.1], 8);
     const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
     tiles.on('tileerror', () => { $('status').textContent = 'Algunas partes del mapa no se pudieron cargar. Revisa tu conexión.'; });
-    L.control.scale({ imperial: false }).addTo(map);
+    L.control.scale({ imperial: false, maxWidth: 100 }).addTo(map);
     fit(); render();
   }
 }
-$('userSelect').onchange = () => {
-  const user = users.find(u => String(u.id) === $('userSelect').value);
-  lastFollowPosition = null; followSelectedUser();
-  text($('userSearchStatus'), user && user.latitude == null ? 'Este usuario aún no tiene ubicación' : '');
+$('userSelect').onchange = () => selectMapUser($('userSelect').value);
+$('search').onkeydown = event => {
+  if (event.key !== 'Enter') return;
+  const query = $('search').value.trim().toLocaleLowerCase('es');
+  if (!query) return;
+  const matches = users.filter(u => u.name.toLocaleLowerCase('es').includes(query));
+  const exact = matches.find(u => u.name.toLocaleLowerCase('es') === query);
+  if (exact || matches.length === 1) { event.preventDefault(); selectMapUser((exact || matches[0]).id); }
+  else text($('userSearchStatus'), matches.length ? 'Selecciona un usuario de la lista' : 'No hay usuarios que coincidan');
 };
 $('search').oninput = render; $('fit').onclick = fit;
 api('me').then(openDashboard).catch(() => { location.href = '/kayaktalkie/login'; });
