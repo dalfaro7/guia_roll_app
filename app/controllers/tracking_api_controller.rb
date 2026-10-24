@@ -44,7 +44,7 @@ class TrackingApiController < ActionController::API
     render json: visible.includes(:kayaktalkie_sessions).where(active: true, location_enabled: true).map { |account|
       p = positions[account.id]
       p = nil if p && !@account.admin? && (p.team_ids_at_capture & @account.kayaktalkie_team_ids).empty?
-      { id: account.id, name: account.name, voice_identities: account.kayaktalkie_sessions.select { |mobile| mobile.expires_at > Time.current }.map { |mobile| "mobile-#{mobile.id}" }, latitude: p&.latitude, longitude: p&.longitude, accuracy: p&.accuracy, speed_kmh: p&.speed_kmh, captured_at: millis(p&.captured_at), received_at: millis(p&.received_at) }
+      { id: account.id, name: account.name, voice_identities: account.kayaktalkie_sessions.select { |mobile| mobile.expires_at > Time.current }.map { |mobile| "mobile-#{mobile.id}" }, latitude: p&.latitude, longitude: p&.longitude, accuracy: p&.accuracy, speed_kmh: p&.speed_kmh, speed_estimate: p&.speed_estimate, captured_at: millis(p&.captured_at), received_at: millis(p&.received_at) }
     }
   end
 

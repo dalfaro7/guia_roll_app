@@ -87,4 +87,27 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     assert_equal 110, alert.reload.peak_kmh
     assert alert.acknowledged_at
   end
+  test 'five minute estimate persists through ingestion without exposing raw samples' do
+    started = 5.minutes.ago
+    (0..10).each do |i|
+      KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>i*0.001,'accuracy'=>5.0,'capturedAt'=>(started+i*30).to_f*1000,'speedMps'=>30.0})
+    end
+    position=KayaktalkiePosition.find_by!(kayaktalkie_account:@account)
+    assert_equal 11,position.speed_samples.size
+    assert_equal 'ready',position.speed_estimate['status']
+    assert_in_delta 13.3434,position.speed_estimate['kmh'],0.001
+    assert_equal 108,position.speed_kmh
+    assert_equal 108,KayaktalkieSpeedAlert.where(kayaktalkie_account:@account).last.peak_kmh
+    post '/kayaktalkie/login',params:{phone:@admin.phone,password:'Test-admin-123456'}
+    get '/api/users'
+    item=response.parsed_body.find { |u| u['id']==@account.id }
+    assert_equal 'ready',item.dig('speed_estimate','status')
+    assert_not item.key?('speed_samples')
+    team=KayaktalkieTeam.first!
+    @account.kayaktalkie_team_memberships.create!(kayaktalkie_team:team)
+    KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>0.011,'accuracy'=>5.0,'capturedAt'=>(started+330).to_f*1000})
+    assert_equal 1,position.reload.speed_samples.size
+    assert_equal 'warming_up',position.speed_estimate['status']
+  end
+
 end

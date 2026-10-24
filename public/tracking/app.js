@@ -42,8 +42,15 @@ function render() {
     content.innerHTML = '<svg width="42" height="52" viewBox="0 0 42 52" aria-hidden="true"><g transform="rotate(24 21 26)"><path d="M21 2C11 12 9 36 21 50C33 36 31 12 21 2Z" fill="#efa83e" stroke="#805020" stroke-width="1.5"/><path d="M21 6v10m0 20v10" stroke="#fff3c9" stroke-width="2" stroke-linecap="round"/><ellipse cx="21" cy="26" rx="6" ry="10" fill="#173f32"/><ellipse cx="21" cy="27" rx="3.5" ry="6" fill="#7fb2a0"/><path d="M7 32L35 20" stroke="#173f32" stroke-width="2.5" stroke-linecap="round"/><path d="M3 32l5-3 4 5-6 3zM30 18l6-3 3 5-6 3z" fill="#17634d" stroke="#fff" stroke-width=".7"/></g></svg>';
     const label = document.createElement('span'); label.className = 'marker-label'; label.textContent = u.name; label.append(radioIndicator(u.id)); content.append(label);
     const speed = document.createElement('small'); speed.className = 'marker-speed';
-    if (u.speed_kmh > 90) speed.classList.add('over-limit');
-    speed.textContent = Number.isFinite(u.speed_kmh) && u.speed_kmh >= 0 ? `${Date.now() - u.captured_at > 180000 ? 'Última: ' : ''}${u.speed_kmh.toLocaleString('es-CR', { maximumFractionDigits: 1 })} km/h` : 'Velocidad no disponible';
+    const estimate = u.speed_estimate;
+    const stale = Date.now() - u.captured_at > 180000;
+    if (estimate?.status === 'ready' && Number.isFinite(estimate.kmh)) {
+      speed.textContent = `${stale ? 'Última estimada' : 'Estimada'} · 5 min: ${estimate.kmh.toLocaleString('es-CR', { maximumFractionDigits: 1 })} km/h`;
+      speed.title = `50% extremos (${estimate.endpoints_kmh.toFixed(1)} km/h) + 50% tramos (${estimate.segments_kmh.toFixed(1)} km/h). ${estimate.samples} puntos.`;
+    } else {
+      speed.textContent = estimate?.status === 'poor_accuracy' ? 'Estimada: GPS impreciso' : 'Estimada: reuniendo 5 min de datos';
+      if (stale) speed.textContent = 'Estimada: sin datos recientes';
+    }
     label.append(speed);
     markers.set(u.id, L.marker([u.latitude, u.longitude], { icon: L.divIcon({ html: content, className: 'kayak-icon', iconSize: [140, 96], iconAnchor: [70, 52] }), title: u.name }).addTo(map));
   }
