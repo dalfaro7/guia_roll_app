@@ -12,7 +12,7 @@
   function card(r){
     const box=el('div');box.className='field-report-card';const picture=el('img');picture.src=iconPath(r);picture.alt='';if(r.kind==='emergency_sos')picture.className='sos-blink';picture.width=40;picture.height=40;box.append(picture,el('strong',title(r)),el('p',r.author),el('p',new Date(r.observed_at).toLocaleString('es-CR')));
     const locate=el('button','Ver en mapa');locate.onclick=()=>{document.getElementById('fieldReportsDialog').close();document.getElementById('userSelect').value='';document.getElementById('search').value='';map.setView([r.latitude,r.longitude],16);nodes.get(r.id)?.marker.openPopup();};box.append(locate);
-    const resolve=el('button','Marcar resuelto');resolve.onclick=async()=>{if(!confirm('¿Marcar este reporte como resuelto?'))return;resolve.disabled=true;try{await json('/api/field_reports/'+r.id+'/resolve',{method:'POST',headers:{'X-CSRF-Token':document.querySelector('meta[name=csrf-token]').content}});await refresh();}catch(e){document.getElementById('fieldReportsStatus').textContent=e.message;resolve.disabled=false;}};box.append(resolve);return box;
+    const resolve=el('button','Marcar resuelto');resolve.onclick=async()=>{if(!confirm('¿Marcar este reporte como resuelto?'))return;resolve.disabled=true;try{await json('/api/field_reports/'+r.id+'/resolve',{method:'POST',headers:{'X-CSRF-Token':document.querySelector('meta[name=csrf-token]').content}});await refresh();}catch(e){document.getElementById('fieldReportsStatus').textContent=e.message;resolve.disabled=false;}};if(r.can_resolve)box.append(resolve);return box;
   }
   async function refresh(){
     if(running)return;running=true;

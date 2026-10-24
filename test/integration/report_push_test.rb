@@ -18,11 +18,11 @@ class ReportPushTest < ActionDispatch::IntegrationTest
     @report=KayaktalkieFieldReport.create!(kayaktalkie_account:@accounts[0],kayaktalkie_team:@team,client_id:'push-report-test-123456',kind:'road_closed',latitude:10,longitude:-84,accuracy:10,observed_at:Time.current)
   end
   def auth(i) = {'Authorization'=>"Bearer #{@tokens[i]}"}
-  test 'notification detail enforces current team and expiration' do
+  test 'notification detail anonymizes other teams and enforces expiration' do
     get "/api/field_reports/#{@report.id}",headers:auth(1);assert_response :success
-    get "/api/field_reports/#{@report.id}",headers:auth(2);assert_response :not_found
+    get "/api/field_reports/#{@report.id}",headers:auth(2);assert_response :success;assert_equal 'Usuario incógnito',response.parsed_body['author']
     @accounts[1].kayaktalkie_team_memberships.delete_all
-    get "/api/field_reports/#{@report.id}",headers:auth(1);assert_response :not_found
+    get "/api/field_reports/#{@report.id}",headers:auth(1);assert_response :success;assert_equal 'Usuario incógnito',response.parsed_body['author']
     @report.update_columns(created_at:61.minutes.ago)
     get "/api/field_reports/#{@report.id}",headers:auth(3);assert_response :not_found
   end

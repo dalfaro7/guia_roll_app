@@ -30,9 +30,11 @@ class KayaktalkieFieldReport < ApplicationRecord
   def self.visible_to(account)
     account.admin? ? all : where(kayaktalkie_team_id: account.kayaktalkie_team_ids)
   end
-  def client_profile
-    {id: id, kind: kind, animal: animal, description: description, team_id: kayaktalkie_team_id,
-     team: kayaktalkie_team.name, author: kayaktalkie_account.name, latitude: latitude, longitude: longitude,
+  def client_profile(viewer:)
+    same_team = viewer.kayaktalkie_team_ids.include?(kayaktalkie_team_id)
+    {id: id, kind: kind, animal: animal, description: description, team_id: same_team ? kayaktalkie_team_id : nil,
+     team: same_team ? kayaktalkie_team.name : nil, author: same_team ? kayaktalkie_account.name : "Usuario incógnito",
+     can_resolve: viewer.map_access? && (viewer.admin? || same_team), latitude: latitude, longitude: longitude,
      accuracy: accuracy, observed_at: observed_at.iso8601, received_at: created_at.iso8601, expires_at: expires_at.iso8601,
      resolved_at: resolved_at&.iso8601}
   end

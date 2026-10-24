@@ -22,7 +22,9 @@ class FieldReportsTest < ActionDispatch::IntegrationTest
     post '/api/field_reports',params:@params,headers:auth(@staff),as: :json
     assert_response :success;assert_equal id,response.parsed_body['id']
     get '/api/field_reports',headers:auth(@operator);assert_equal [id],response.parsed_body['items'].map { |r|r['id'] }
-    get '/api/field_reports',headers:auth(@outsider);assert_empty response.parsed_body['items']
+    get '/api/field_reports',headers:auth(@outsider);assert_equal [id],response.parsed_body['items'].map { |r|r['id'] };assert_equal 'Usuario incógnito',response.parsed_body['items'][0]['author'];assert_nil response.parsed_body['items'][0]['team_id'];assert_nil response.parsed_body['items'][0]['team'];assert_equal false,response.parsed_body['items'][0]['can_resolve']
+    get "/api/field_reports/#{id}",headers:auth(@outsider);assert_response :success;assert_equal 'Usuario incógnito',response.parsed_body['author']
+    get "/api/field_reports/#{id}",headers:auth(@operator);assert_equal @staff.name,response.parsed_body['author']
     post "/api/field_reports/#{id}/resolve",headers:auth(@outsider);assert_response :not_found
     post "/api/field_reports/#{id}/resolve",headers:auth(@staff);assert_response :forbidden
     post "/api/field_reports/#{id}/resolve",headers:auth(@operator);assert_response :success
