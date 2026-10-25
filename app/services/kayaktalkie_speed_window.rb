@@ -1,7 +1,7 @@
-# Five-minute displacement estimate, not instantaneous speed.
+# One-minute segment average, refreshed at most once per minute.
 class KayaktalkieSpeedWindow
-  WINDOW = 300.0
-  MAX_GAP = 120.0
+  WINDOW = 60.0
+  MAX_GAP = 30.0
   MAX_ACCURACY = 50.0
   def self.distance(a, b)
     rad = Math::PI / 180
@@ -10,6 +10,16 @@ class KayaktalkieSpeedWindow
     6_371_008.8 * 2 * Math.asin(Math.sqrt(h.clamp(0, 1)))
   end
   def self.call(samples, point, previous = {})
+    previous = previous.stringify_keys
+    last = previous['status'] == 'ready' ? previous.except('last_valid') : previous['last_valid']
+    last = nil unless last && last['window_seconds'] == WINDOW.to_i
+    previous = last || {}
+    if last && point['accuracy'] <= MAX_ACCURACY && samples.any? &&
+        point['t'] - samples.last['t'] <= MAX_GAP &&
+        (point['t'] * 1000 - last['calculated_at']).between?(0, 59_999)
+      history = (samples.select { |p| p['t'] < point['t'] } + [point]).last(64)
+      return [history, {status: 'waiting_refresh', last_valid: last}]
+    end
     history, result = calculate(samples, point)
     if result[:status] == 'ready'
       result[:calculated_at] = point['t'] * 1000
@@ -29,7 +39,7 @@ class KayaktalkieSpeedWindow
     samples = [] if samples.any? && point['t'] - samples.last['t'] > MAX_GAP
     points = samples + [point]
     cutoff = point['t'] - WINDOW
-    # Keep the boundary anchor, at most five minutes plus one capture interval.
+    # Keep the boundary anchor, at most one minute plus one capture interval.
     anchor = points.rindex { |p| p['t'] <= cutoff }
     points = points.drop(anchor) if anchor
     points = points.last(64)
@@ -49,7 +59,7 @@ class KayaktalkieSpeedWindow
     # Sum(distance)/sum(time) is the duration-weighted mean of segment speeds.
     endpoints = direct/WINDOW*3.6
     segments = path/WINDOW*3.6
-    [points, {status: 'ready', kmh: (endpoints+segments)/2,
+    [points, {status: 'ready', kmh: segments,
               endpoints_kmh: endpoints, segments_kmh: segments,
               window_seconds: WINDOW.to_i, samples: points.size}]
   end

@@ -14,23 +14,23 @@ class KayaktalkieSpeedWindowTest < ActiveSupport::TestCase
     assert_equal 'ready',r[:status]; assert_equal 0,r[:kmh]
   end
   test 'thirty and sixty second samples yield same straight line estimate' do
-    [30,60].each do |interval|
+    [10,30].each do |interval|
       _,r=window((0..300).step(interval).map { |t| point(t,t*0.00001) })
       assert_equal 'ready',r[:status]
       assert_in_delta 4.003, r[:kmh],0.001
-      assert_equal 300/interval+1,r[:samples]
+      assert_equal 60/interval+1,r[:samples]
     end
   end
-  test 'return trip combines zero endpoints with positive path at equal weight' do
-    _,r=window((0..10).map { |i| point(i*30,(i<=5 ? i : 10-i)*0.001) })
+  test 'return trip preserves full segment distance' do
+    _,r=window((0..10).map { |i| point(i*6,(i<=5 ? i : 10-i)*0.001) })
     assert_in_delta 0,r[:endpoints_kmh],0.0001
-    assert_in_delta r[:segments_kmh]/2,r[:kmh],0.0001
+    assert_in_delta r[:segments_kmh],r[:kmh],0.0001
   end
   test 'irregular captures use exact window and elapsed time' do
-    history,r=window([0,40,90,150,210,260,310].map { |t| point(t,t*0.00001) })
+    history,r=window([0,10,25,40,55,70].map { |t| point(t,t*0.00001) })
     assert_in_delta 4.003,r[:kmh],0.001
-    assert_equal 300,r[:window_seconds]
-    assert_equal 0,history.first['t']
+    assert_equal 60,r[:window_seconds]
+    assert_equal 10,history.first['t']
   end
   test 'warmup gaps and poor precision do not fabricate speed' do
     h,r=window([point(0),point(30)])
@@ -42,17 +42,27 @@ class KayaktalkieSpeedWindowTest < ActiveSupport::TestCase
   end
   test 'history remains bounded' do
     h,r=window((0..100).map { |i| point(i*30,i*0.001) })
-    assert_equal 11,h.size; assert_equal 'ready',r[:status]
+    assert_equal 3,h.size; assert_equal 'ready',r[:status]
   end
-  test 'last valid estimate survives warmup and poor accuracy for at most five minutes' do
+  test 'last valid estimate survives warmup and poor accuracy for at most one minute' do
     h, ready = window((0..10).map { |i| point(i*30) })
     assert_equal 300000, ready[:calculated_at]
     h, pending = KayaktalkieSpeedWindow.call(h, point(330,0,0,100), ready)
     assert_equal 0, pending[:last_valid]['kmh']
     h, pending = KayaktalkieSpeedWindow.call(h, point(360), pending)
     assert_equal 300000, pending[:last_valid]['calculated_at']
-    _, expired = KayaktalkieSpeedWindow.call(h, point(601), pending)
+    _, expired = KayaktalkieSpeedWindow.call(h, point(361), pending)
     assert_nil expired[:last_valid]
   end
 
+  test 'new samples only update average after one minute' do
+    h,ready=window((0..6).map { |i| point(i*10,i*0.001) })
+    h,pending=KayaktalkieSpeedWindow.call(h,point(70,0.007),ready)
+    assert_equal 'waiting_refresh',pending[:status]
+    assert_equal 60000,pending[:last_valid]['calculated_at']
+    [80,90,100,110].each { |t| h,pending=KayaktalkieSpeedWindow.call(h,point(t,t*0.0001),pending) }
+    _,fresh=KayaktalkieSpeedWindow.call(h,point(120,0.012),pending)
+    assert_equal 'ready',fresh[:status]
+    assert_equal 120000,fresh[:calculated_at]
+  end
 end

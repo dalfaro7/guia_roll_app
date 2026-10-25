@@ -5,7 +5,7 @@ class TrackingApiController < ActionController::API
   before_action :authenticate_kayaktalkie!, except: :login
   before_action :require_kayaktalkie_map!, only: [:users, :me, :map_voice, :map_area, :operators]
   before_action :require_kayaktalkie_admin!, only: [:alerts, :ack, :report]
-  before_action :check_kayak_csrf!, only: [:location, :logout, :map_area]
+  before_action :check_kayak_csrf!, only: [:location, :location_batch, :logout, :map_area]
   rate_limit to: 15, within: 15.minutes, only: :login, with: -> { render json: { error: 'Demasiados intentos. Espera 15 minutos.' }, status: :too_many_requests }
   def login
     account = KayaktalkieAccount.find_by(phone: KayaktalkieAccount.normalize_phone(params[:phone].presence || params[:email]))
@@ -29,6 +29,19 @@ class TrackingApiController < ActionController::API
     render json: { ok: true }
   rescue KayaktalkieTrackingIngest::InvalidPosition
     render json: { error: 'Coordenadas, fecha o velocidad inválidas.' }, status: :bad_request
+  end
+  def location_batch
+    return render json: {error:'Sin permiso de ubicación.'}, status: :forbidden unless @account.can_share_location?
+    samples=params[:samples]
+    raise KayaktalkieTrackingIngest::InvalidPosition unless samples.is_a?(Array) && samples.size.between?(1,60)
+    rows=samples.map do |sample|
+      raise KayaktalkieTrackingIngest::InvalidPosition unless sample.is_a?(ActionController::Parameters)
+      sample.permit(:latitude,:longitude,:accuracy,:capturedAt,:speedMps).to_h
+    end
+    accepted=KayaktalkieTrackingIngest.batch(@account,rows)
+    render json: {ok:true,accepted:accepted}
+  rescue KayaktalkieTrackingIngest::InvalidPosition
+    render json: {error:'Lote de ubicaciones inválido.'}, status: :bad_request
   end
   def me
     render json: @account.client_profile

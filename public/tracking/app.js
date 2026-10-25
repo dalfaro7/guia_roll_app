@@ -40,15 +40,15 @@ function speedDisplay(u) {
   const candidate = estimate?.status === 'ready' ? estimate : estimate?.last_valid;
   const calculatedAt = candidate?.calculated_at ?? (estimate?.status === 'ready' ? u.captured_at : null);
   const age = Date.now() - calculatedAt;
-  if (candidate && Number.isFinite(candidate.kmh) && calculatedAt && age >= -60000 && age <= 300000) {
-    return {overLimit: candidate.kmh > 90, value: `Estimada: ${candidate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
+  if (candidate?.window_seconds === 60 && Number.isFinite(candidate.kmh) && calculatedAt && age >= -60000 && age <= 60000) {
+    return {overLimit: candidate.kmh > 90, value: `Prom. 1 min: ${candidate.kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h`,
       note: `Último cálculo · ${new Date(calculatedAt).toLocaleTimeString('es-CR', {timeZone: 'America/Costa_Rica'})}`,
-      title: 'Último promedio válido de cinco minutos. Se conserva durante un máximo de cinco minutos desde su cálculo.'};
+      title: 'Promedio por desplazamiento del último minuto. Se recalcula cada minuto con posiciones válidas.'};
   }
   const stale = !u.captured_at || Date.now() - u.captured_at > 180000;
   const gps = Number.isFinite(u.speed_kmh) && u.speed_kmh >= 0;
   return {value: gps ? `${stale ? 'Última GPS' : 'GPS'}: ${u.speed_kmh.toLocaleString('es-CR', {maximumFractionDigits: 1})} km/h` : 'Velocidad no disponible',
-    note: 'Sin cálculo válido en los últimos 5 min',
+    note: 'Esperando promedio válido de 1 min',
     title: 'No hay un promedio reciente disponible. La velocidad GPS, cuando aparece, es la lectura del teléfono.'};
 }
 function radioIndicator(guideId) {

@@ -42,6 +42,7 @@ Rails.application.routes.draw do
   post "tracking/accounts", to: "kayaktalkie_dashboard#create_account"
   post "api/login", to: "tracking_api#login"
   post "api/logout", to: "tracking_api#logout"
+  post "api/location/batch", to: "tracking_api#location_batch"
   post "api/location", to: "tracking_api#location"
   post "api/map/area", to: "tracking_api#map_area"
   get "api/me", to: "tracking_api#me"
