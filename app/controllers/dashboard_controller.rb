@@ -177,6 +177,8 @@ class DashboardController < ApplicationController
         {
           guide: guide,
           worked: worked,
+          worked_days: monthly_status_days[[guide.id, "worked"]].to_i,
+          assigned_tasks: monthly_status_days[[guide.id, "assigned_task"]].to_i,
           outside_roll: outside_roll_days.fetch(guide.id),
           days_off: monthly_status_days[[guide.id, "day_off"]].to_i,
           penalized_days: monthly_status_days[[guide.id, "penalized"]].to_i,

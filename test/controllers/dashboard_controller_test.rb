@@ -22,7 +22,7 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     guide = Guide.create!(name: "Equity Counter Guide", priority: 900, active: true)
     empty_guide = Guide.create!(name: "Equity Empty Guide", priority: 901, active: true)
     month = Date.current.next_month.beginning_of_month
-    %w[day_off day_off penalized worked assigned_task standby vacation].each_with_index do |status, index|
+    %w[day_off day_off penalized worked worked assigned_task standby vacation].each_with_index do |status, index|
       day = WorkDay.create!(date: month + index)
       record = day.guide_days.find_by!(guide: guide)
       record.update!(status: status, status_note: "Dashboard test")
@@ -35,11 +35,14 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select 'tr[data-equity-guide="Equity Counter Guide"]' do
       assert_select "td:nth-child(2)", text: "2"
       assert_select "td:nth-child(3)", text: "1"
-      assert_select "td:nth-child(5) strong", text: "2"
+      assert_select "td:nth-child(5) strong", text: "1"
+      assert_select "td:nth-child(6) strong", text: "2"
     end
     assert_select 'tr[data-equity-guide="Equity Empty Guide"]' do
       assert_select "td:nth-child(2)", text: "0"
       assert_select "td:nth-child(3)", text: "0"
+      assert_select "td:nth-child(5) strong", text: "0"
+      assert_select "td:nth-child(6) strong", text: "0"
     end
   end
 
