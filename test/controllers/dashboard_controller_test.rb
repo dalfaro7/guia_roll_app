@@ -33,16 +33,16 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     get dashboard_url(month: month.strftime("%Y-%m"))
     assert_response :success
     assert_select 'tr[data-equity-guide="Equity Counter Guide"]' do
-      assert_select "td:nth-child(2)", text: "2"
-      assert_select "td:nth-child(3)", text: "1"
-      assert_select "td:nth-child(5) strong", text: "1"
-      assert_select "td:nth-child(6) strong", text: "2"
+      assert_select "td:nth-child(6)", text: "2"
+      assert_select "td:nth-child(7)", text: "1"
+      assert_select "td:nth-child(3) strong", text: "1"
+      assert_select "td:nth-child(2) strong", text: "2"
     end
     assert_select 'tr[data-equity-guide="Equity Empty Guide"]' do
-      assert_select "td:nth-child(2)", text: "0"
-      assert_select "td:nth-child(3)", text: "0"
-      assert_select "td:nth-child(5) strong", text: "0"
-      assert_select "td:nth-child(6) strong", text: "0"
+      assert_select "td:nth-child(6)", text: "0"
+      assert_select "td:nth-child(7)", text: "0"
+      assert_select "td:nth-child(3) strong", text: "0"
+      assert_select "td:nth-child(2) strong", text: "0"
     end
   end
 
