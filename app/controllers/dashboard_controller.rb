@@ -742,12 +742,14 @@ class DashboardController < ApplicationController
     #
     # Incluso meses sin incidentes aparecen con 0.
     # ========================================================
+    monthly_incident_counts = monthly_incident_counts.transform_keys(&:to_i)
+
     @incidents_by_month =
       (1..12).map do |month_number|
 
         count =
           monthly_incident_counts[
-            month_number.to_f
+            month_number
           ].to_i
 
         [

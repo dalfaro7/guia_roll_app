@@ -43,4 +43,12 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "annual incident total includes grouped PostgreSQL month values" do
+    day = WorkDay.create!(date: Date.current + 1.day)
+    RollNote.create!(work_day: day, created_by: @user, note_type: :incident, note: "Test incident")
+    get dashboard_url(incident_year: day.date.year)
+    assert_response :success
+    assert_select ".equity-incident-summary span:last-child strong", text: "1"
+  end
+
 end

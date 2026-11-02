@@ -9,7 +9,7 @@
       <div><%= label_tag :month, 'Mes de asignaciones' %><%= month_field_tag :month, @month.strftime('%Y-%m'), class: 'form-control' %></div><%= submit_tag 'Actualizar', class: 'btn btn-primary' %>
     <% end %>
   </header>
-  <nav class="equity-nav" aria-label="Secciones del dashboard"><a href="#equity-summary">Resumen</a><a href="#equity-guides">Detalle por guía</a><a href="#equity-roles">Roles especiales</a><a href="#equity-incidents">Incidentes</a></nav>
+  <nav class="equity-nav" aria-label="Secciones del panel"><a href="#equity-summary">Resumen</a><a href="#equity-guides">Detalle por guía</a><a href="#equity-roles">Roles especiales</a><a href="#equity-incidents">Incidentes</a></nav>
   <section id="equity-summary" aria-label="Resumen mensual">
     <div class="equity-period"><h2><%= months[@month.month - 1] %> <%= @month.year %></h2><span><%= @guides.size %> guías activos</span></div>
     <div class="equity-kpis">
