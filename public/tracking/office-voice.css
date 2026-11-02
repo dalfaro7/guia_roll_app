@@ -8,3 +8,31 @@
 @media(max-width:760px){.identity img{width:88px;height:88px}.identity{gap:12px}.identity p{max-width:120px}}
 
 .account-management{width:min(1000px,100%);margin:auto;padding:30px;background:#fff;border-radius:18px}.account-management form{padding:20px;margin:18px 0;border:1px solid #dce6df;border-radius:12px;display:grid;gap:12px}.account-management label{display:block}.account-management fieldset{display:grid;gap:12px;padding:16px;border:1px solid #dce6df;border-radius:10px}.account-management input:not([type=checkbox]),.account-management select{width:100%;padding:12px;border:1px solid #b8cfc2;border-radius:8px}.account-management input[type=checkbox]{width:auto;margin-right:10px}.account-management summary{padding:18px;border-bottom:1px solid #dce6df;cursor:pointer}.account-management input[type=submit]{background:#17634d;color:white;cursor:pointer;font-weight:700}
+
+/* Assigned channels remain visible while account forms are collapsed. */
+.existing-account { margin: 12px 0; }
+.existing-account > summary { padding: 12px; cursor: pointer; }
+.account-channel-list { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.account-channel-label { font-weight: 600; }
+.account-channel-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; background: #e4f1ec; color: #174c3c; overflow-wrap: anywhere; }
+.account-channel-empty { color: #596c64; }
+
+.account-delete-link { color: #a52222; font-weight: 600; }
+.account-delete-button { background: #a52222; color: #fff; margin-top: 16px; }
+
+.account-navigation { margin: 16px 0 24px; }
+.account-home-link { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; background: #17634d; color: #fff; font-weight: 700; text-decoration: none; }
+.account-home-link:hover { background: #104c3b; }
+.account-home-link:focus-visible { outline: 3px solid #2684ff; outline-offset: 3px; }
+
+.account-open-button { width: 100%; text-align: left; padding: 16px; background: #fff; color: #173e32; border: 1px solid #dce6df; border-radius: 12px; cursor: pointer; font: inherit; }
+.account-open-button:hover { background: #f0f7f3; border-color: #17634d; }
+.account-open-button:focus-visible { outline: 3px solid #2684ff; outline-offset: 2px; }
+.account-edit-hint { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; color: #17634d; }
+.account-editor { width: min(680px, calc(100vw - 24px)); max-height: 88dvh; padding: 20px; border: 0; border-radius: 16px; box-sizing: border-box; overflow-y: auto; color: #173e32; }
+.account-editor::backdrop { background: rgb(12 30 24 / 60%); }
+.account-editor-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; position: sticky; top: -20px; background: white; padding: 12px 0; z-index: 1; }
+.account-editor-header h2 { margin: 0; font-size: 20px; overflow-wrap: anywhere; }
+.account-editor-header button { min-height: 44px; flex-shrink: 0; cursor: pointer; }
+body.account-modal-open { overflow: hidden; }
+.account-editor .account-delete-link { display: inline-block; padding: 10px 0; }

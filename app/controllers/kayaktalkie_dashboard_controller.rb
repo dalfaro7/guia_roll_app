@@ -33,7 +33,18 @@ class KayaktalkieDashboardController < ActionController::Base
     save_account(account, creating: true)
   end
   def update_channels
-    save_account(KayaktalkieAccount.find(params[:id]), creating: false)
+    save_account(KayaktalkieAccount.kept.find(params[:id]), creating: false)
+  end
+  def confirm_delete
+    @target_account = KayaktalkieAccount.kept.find(params[:id])
+    return redirect_to tracking_accounts_path, alert: 'No puedes eliminar tu propia cuenta.' if @target_account.id == @account.id
+  end
+  def destroy_account
+    target = KayaktalkieAccount.kept.find(params[:id])
+    return redirect_to tracking_accounts_path, alert: 'No puedes eliminar tu propia cuenta.' if target.id == @account.id
+    return redirect_to confirm_delete_tracking_account_path(target), alert: 'Confirma la eliminación.' unless params[:confirm_delete] == '1'
+    KayaktalkieAccess.assign!(target, attributes: {active: false, location_enabled: false, deleted_at: Time.current}, team_ids: [], channel_ids: [])
+    redirect_to tracking_accounts_path, notice: 'Usuario eliminado. Sus registros históricos se conservaron.', status: :see_other
   end
   private
   def save_account(account, creating:)
@@ -46,11 +57,12 @@ class KayaktalkieDashboardController < ActionController::Base
     KayaktalkieAccess.assign!(account, attributes: attrs, team_ids: params[:team_ids], channel_ids: params[:voice_channel_ids])
     redirect_to tracking_accounts_path, notice: 'Cuenta y permisos guardados.'
   rescue ActiveRecord::RecordInvalid, ArgumentError => e
+    @editing_account = account if account.persisted?
     invalid(e.message)
   end
   def load_accounts
     @channels=VoiceChannel.includes(:kayaktalkie_team).enabled
-    @accounts=KayaktalkieAccount.includes(:kayaktalkie_teams,:voice_channels).order(:name)
+    @accounts=KayaktalkieAccount.kept.includes(:kayaktalkie_teams, voice_channels: :kayaktalkie_team).order(:name)
     @teams=KayaktalkieTeam.order(:name)
   end
   def invalid(message)

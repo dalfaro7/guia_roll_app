@@ -1,0 +1,9 @@
+<h1>Eliminar usuario</h1>
+<p>Vas a eliminar a <strong><%= @target_account.name %></strong> (<%= @target_account.phone %>).</p>
+<p>Se cerrarán sus sesiones y se retirarán sus equipos y canales. No podrá iniciar sesión ni aparecerá en las listas de cuentas. Sus reportes históricos se conservarán; su teléfono y correo seguirán reservados.</p>
+<p>Los equipos, canales y demás usuarios se conservarán. Esta eliminación no borra definitivamente sus datos históricos.</p>
+<%= form_with url: tracking_account_path(@target_account), method: :delete, local: true do %>
+  <label><%= check_box_tag :confirm_delete, '1', false, required: true %> Confirmo eliminar a <%= @target_account.name %>.</label>
+  <%= submit_tag 'Eliminar usuario', class: 'account-delete-button' %>
+<% end %>
+<p><%= link_to 'Cancelar y volver', tracking_accounts_path %></p>

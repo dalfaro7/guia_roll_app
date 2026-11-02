@@ -1,5 +1,7 @@
 require 'bcrypt'
 class KayaktalkieAccount < ApplicationRecord
+  scope :kept, -> { where(deleted_at: nil) }
+  validate { errors.add(:active, 'no puede activarse una cuenta eliminada') if deleted_at.present? && active? }
   has_many :kayaktalkie_sessions, dependent: :restrict_with_error
   has_many :voice_memberships, dependent: :destroy
   has_many :voice_channels, through: :voice_memberships
@@ -31,7 +33,7 @@ class KayaktalkieAccount < ApplicationRecord
   def staff? = role == 'staff'
   def map_access? = admin? || operator?
   def display_name = name
-  def available? = active?
+  def available? = active? && deleted_at.nil?
   def can_share_location? = active? && location_enabled?
   def allowed_channels
     return VoiceChannel.enabled if admin?

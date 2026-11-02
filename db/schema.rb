@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_25_071000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_02_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_071000) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.bigint "created_by_id"
+    t.datetime "deleted_at"
     t.string "email"
     t.string "encrypted_password", null: false
     t.boolean "location_enabled", default: true, null: false
@@ -107,6 +108,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_25_071000) do
     t.datetime "updated_at", null: false
     t.index "lower((email)::text)", name: "unique_kayak_email", unique: true, where: "(email IS NOT NULL)"
     t.index ["created_by_id"], name: "index_kayaktalkie_accounts_on_created_by_id"
+    t.index ["deleted_at"], name: "index_kayaktalkie_accounts_on_deleted_at"
     t.index ["phone"], name: "index_kayaktalkie_accounts_on_phone", unique: true
     t.index ["reset_password_digest"], name: "index_kayaktalkie_accounts_on_reset_password_digest", unique: true
     t.check_constraint "length(TRIM(BOTH FROM name)) > 0", name: "kayaktalkie_name"

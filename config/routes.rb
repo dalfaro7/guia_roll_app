@@ -31,6 +31,8 @@ Rails.application.routes.draw do
   get "api/map/voice", to: "tracking_api#map_voice"
   get 'api/voice/channels', to: 'voice#channels'
   post 'tracking/channels', to: 'kayaktalkie_dashboard#create_channel', as: :tracking_channels
+  get 'tracking/accounts/:id/delete', to: 'kayaktalkie_dashboard#confirm_delete', as: :confirm_delete_tracking_account
+  delete 'tracking/accounts/:id', to: 'kayaktalkie_dashboard#destroy_account', as: :tracking_account
   patch 'tracking/accounts/:id/channels', to: 'kayaktalkie_dashboard#update_channels', as: :tracking_account_channels
   get "tracking/voice", to: "kayaktalkie_dashboard#voice", as: :tracking_voice
   post "api/voice/join", to: "voice#join"

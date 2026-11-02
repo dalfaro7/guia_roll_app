@@ -17,7 +17,7 @@ class KayaktalkieCollaboratorsController < ActionController::Base
   end
   private
   def manageable
-    scope=KayaktalkieAccount.where(role:'staff',created_by_id:@account.id)
+    scope=KayaktalkieAccount.kept.where(role:'staff',created_by_id:@account.id)
     # Reassignment by an admin removes the former operator's management access.
     scope.where.not(id: KayaktalkieTeamMembership.where.not(kayaktalkie_team_id:@account.kayaktalkie_team_ids).select(:kayaktalkie_account_id))
   end

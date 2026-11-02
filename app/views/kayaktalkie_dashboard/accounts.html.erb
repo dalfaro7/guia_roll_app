@@ -1,9 +1,37 @@
 <main class="account-management"><h1>KayakTalkie · Equipos y cuentas</h1>
-<p><%= link_to 'Volver al mapa', tracking_path, data: {turbo: false} %></p>
+<nav aria-label="Navegación de KayakTalkie" class="account-navigation"><%= link_to '← Inicio de KayakTalkie', tracking_path, class: 'account-home-link', data: {turbo: false} %></nav>
 <p>Admin: acceso global. Operador: mapa de sus equipos y canales asignados. Staff: voz y ubicación habilitada.</p>
 <% if @error %><p role="alert"><%= @error %></p><% end %>
 <h2>Crear equipo independiente</h2><%= form_with scope: :kayaktalkie_team, url: tracking_teams_path do |f| %><%= f.label :name, 'Nombre del equipo' %><%= f.text_field :name, required: true, maxlength: 80 %><%= f.submit 'Crear equipo' %><% end %>
 <h2>Crear canal</h2><%= form_with scope: :voice_channel, url: tracking_channels_path do |f| %><%= f.label :name, 'Nombre del canal' %><%= f.text_field :name, required: true, maxlength: 80 %><%= f.label :kayaktalkie_team_id, 'Equipo propietario' %><%= f.collection_select :kayaktalkie_team_id, @teams, :id, :name %><%= f.submit 'Crear canal' %><% end %>
 <h2>Nueva cuenta</h2><%= render 'account_form', account: KayaktalkieAccount.new(role: 'staff', active: true, location_enabled: false) %>
-<h2>Cuentas existentes</h2><% @accounts.each do |account| %><details><summary><%= account.name %> · <%= account.role %> · <%= account.phone %></summary><%= render 'account_form', account: account %></details><% end %>
+<h2>Cuentas existentes</h2>
+<% @accounts.each do |account| %>
+  <div class="existing-account">
+    <button type="button" class="account-open-button" data-account-dialog="account-dialog-<%= account.id %>" aria-haspopup="dialog" aria-controls="account-dialog-<%= account.id %>">
+      <span><%= account.name %> · <%= account.role %> · <%= account.phone %></span>
+      <span class="account-channel-list">
+        <span class="account-channel-label">Canales asignados:</span>
+        <% if account.voice_channels.empty? %>
+          <span class="account-channel-empty">Sin canales asignados</span>
+        <% else %>
+          <% account.voice_channels.sort_by { |channel| [channel.kayaktalkie_team.name.downcase, channel.name.downcase] }.each do |channel| %>
+            <span class="account-channel-badge"><%= channel.kayaktalkie_team.name %> / <%= channel.name %><%= ' · Inactivo' unless channel.active? %></span>
+          <% end %>
+        <% end %>
+      </span>
+      <span class="account-edit-hint">Editar datos y permisos →</span>
+    </button>
+    <dialog id="account-dialog-<%= account.id %>" class="account-editor" aria-labelledby="account-title-<%= account.id %>" <%= 'data-reopen' if @editing_account&.id == account.id %>>
+      <header class="account-editor-header"><h2 id="account-title-<%= account.id %>">Editar a <%= account.name %></h2><button type="button" data-close-account aria-label="Cerrar edición">Cerrar ×</button></header>
+      <% if @editing_account&.id == account.id && @error %><p role="alert"><%= @error %></p><% end %>
+    <%= render 'account_form', account: (@editing_account&.id == account.id ? @editing_account : account) %>
+    <% unless account.id == @account.id %>
+      <p><%= link_to 'Eliminar usuario', confirm_delete_tracking_account_path(account), class: 'account-delete-link' %></p>
+    <% end %>
+    </dialog>
+  </div>
+<% end %>
 </main>
+
+<script src="/tracking/accounts.js?v=1" defer></script>
