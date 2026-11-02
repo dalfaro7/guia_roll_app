@@ -1,17 +1,30 @@
-<div class="container p-2">
+<% content_for :title, "Operación del #{l(@work_day.date, format: :long)}" %>
+<% content_for :head do %><link rel="stylesheet" href="/work-day.css?v=1"><% end %>
+<div class="container p-2 work-day-page">
+    <header class="work-day-hero">
+      <div><span class="work-day-eyebrow">PROGRAMACIÓN DE GUÍAS</span><h1><%= l(@work_day.date, format: :long) %></h1><p>Organiza el equipo y revisa los detalles de la operación.</p></div>
+      <span class="work-day-state"><%= roll_status_label(@work_day.status) %></span>
+    </header>
+    <nav class="work-day-nav" aria-label="Secciones del día">
+      <a href="#day-overview">Resumen</a><a href="#day-transport">Transporte</a>
+      <% if @work_day.draft? %><a href="#day-availability">Disponibilidad</a><% end %>
+      <% if @work_day.generated? %><a href="#day-roles">Roles</a><% end %>
+      <% if @work_day.published? %><a href="#day-assigned">Equipo asignado</a><% end %>
+      <a href="#day-fairness">Equidad</a>
+    </nav>
     <div class="container px-4">
-        <div class="bg-dark text-white d-flex justify-content-end align-items-center gap-2 p-2 flex-wrap">
+        <div class="work-day-actions d-flex align-items-center gap-2 flex-wrap">
 
             <% if @work_day.draft? || @work_day.generated? %>
             <%= link_to "Configurar ubicaciones",
                     locations_work_day_path(@work_day),
-                    class: "btn btn-outline-light" %>
+                    class: "btn btn-outline-primary" %>
             <% end %>
 
             <% if @work_day.draft? %>
             <%= link_to "Editar requisitos de puestos",
                     edit_slots_work_day_path(@work_day),
-                    class: "btn btn-outline-light" %>
+                    class: "btn btn-outline-primary" %>
             <% end %>
 
             <% if @work_day.generated? %>
@@ -67,23 +80,10 @@
                   class: "btn btn-light" %>
         </div>
 
-        <div class="container mt-1">
+        <div class="container mt-1" id="day-overview">
             <div class="row">
-                <div class="col text-center">
-                    <h1 class="fs-3">Fecha de operación:</h1>
-                    <span class="fs-3"><%= @work_day.date %></span>
-
-                    <br><br>
-
-                    <p>
-                        <strong>Guías solicitados:</strong>
-                        <%= @work_day.guides_requested %>
-                    </p>
-
-                    <p>
-                        <strong>Estado:</strong>
-                        <%= roll_status_label(@work_day.status) %>
-                    </p>
+                <div class="col work-day-summary">
+                  <div class="card"><div class="card-body"><span class="work-day-eyebrow">EQUIPO SOLICITADO</span><strong class="work-day-total"><%= @work_day.guides_requested || 0 %></strong><p>Guías para esta operación</p><small>Revisa la disponibilidad antes de generar los roles.</small></div></div>
                 </div>
 
                 <div class="col">
@@ -94,7 +94,7 @@
                         </div>
 
                         <div class="card-body">
-                            <table class="table table-sm">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>Ubicación</th>
@@ -112,7 +112,7 @@
                                     </tr>
                                     <% end %>
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
                     <% end %>
@@ -126,7 +126,7 @@
                         </div>
 
                         <div class="card-body">
-                            <table class="table table-sm">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>Guía</th>
@@ -274,7 +274,7 @@
                                     </tr>
                                     <% end %>
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
                 </div>
@@ -283,11 +283,11 @@
                     <% if @work_day.draft? %>
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            Mayores saldos de días libres
+                            Mayores saldos de días libres <small class="d-block">Solo guías activos · prioridad 2</small>
                         </div>
 
                         <div class="card-body">
-                            <table class="table table-sm">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>Guía</th>
@@ -297,6 +297,7 @@
 
                                 <tbody>
                                     <% Guide.active
+                      .where(priority: 2)
                       .order(day_off_balance: :desc)
                       .limit(5)
                       .each do |guide| %>
@@ -312,7 +313,7 @@
                                     </tr>
                                     <% end %>
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
                     <% end %>
@@ -322,10 +323,8 @@
 
         <!-- FAIRNESS DIAGNOSTIC -->
         <div class="container mt-4">
-            <div class="card border-secondary">
-                <div class="card-header bg-secondary text-white">
-                    <strong>Diagnóstico de equidad</strong>
-                </div>
+            <details class="card border-secondary" id="day-fairness">
+                <summary class="card-header">Diagnóstico de equidad <small>Ver criterios y posición de cada guía</small></summary>
 
                 <div class="card-body">
                     <p class="text-muted mb-3">
@@ -334,7 +333,7 @@
                         incluye en estos cálculos.
                     </p>
 
-                    <table class="table table-sm table-bordered table-hover align-middle">
+                    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm table-bordered table-hover align-middle">
                         <thead>
                             <tr>
                                 <th>Posición</th>
@@ -444,7 +443,7 @@
                             </tr>
                             <% end %>
                         </tbody>
-                    </table>
+                    </table></div>
 
                     <small class="text-muted">
                         Orden de clasificación:
@@ -453,12 +452,12 @@
                         El saldo de entrada aplica durante el mes de activación o el del primer día como guía si ocurre después.
                     </small>
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- TRANSPORTATION -->
         <div class="container mt-4">
-            <h4 class="mt-4">Transporte</h4>
+            <h2 class="mt-4" id="day-transport">Transporte</h2>
 
             <div class="row">
                 <% ["Privado", "Sara-3&4", "Balsa", "PM"].each do |loc| %>
@@ -477,7 +476,7 @@
 
     <!-- AVAILABILITY -->
     <% if @work_day.draft? %>
-    <h2>Configurar disponibilidad</h2>
+    <h2 id="day-availability">Disponibilidad del equipo</h2><p class="work-day-hint">Selecciona el estado de cada guía. Las penalizaciones y tareas asignadas requieren una nota. Guarda al terminar.</p>
 
     <%= form_with url: update_availability_work_day_path(@work_day),
                   method: :patch do %>
@@ -485,7 +484,7 @@
     <%= hidden_field_tag :audit_screen, "work_day_show" %>
     <%= hidden_field_tag :audit_component, "set_availability_form" %>
 
-    <table class="table table-bordered">
+    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered">
         <thead>
             <tr>
                 <th>#</th>
@@ -545,7 +544,7 @@
             </tr>
             <% end %>
         </tbody>
-    </table>
+    </table></div>
 
     <%= submit_tag "Guardar disponibilidad",
                      class: "btn btn-info" %>
@@ -554,13 +553,13 @@
 
     <!-- EDIT ROLES -->
     <% if @work_day.generated? %>
-    <h2>Editar roles</h2>
+    <h2 id="day-roles">Roles del equipo</h2><p class="work-day-hint">Compara el rol actual con el nuevo y guarda los cambios antes de publicar.</p>
 
     <%= form_with url: update_roles_work_day_path(@work_day),
                   method: :patch,
                   local: true do %>
 
-    <table class="table table-bordered">
+    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered">
         <thead>
             <tr>
                 <th>#</th>
@@ -654,7 +653,7 @@
             </tr>
             <% end %>
         </tbody>
-    </table>
+    </table></div>
 
     <div class="text-center">
         <%= submit_tag "Guardar roles",
@@ -775,9 +774,9 @@
 
     <!-- PUBLISHED VIEW -->
     <% if @work_day.published? %>
-    <h3>Guías asignados</h3>
+    <h2 id="day-assigned">Equipo asignado</h2>
 
-    <table class="table table-bordered w-auto">
+    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered w-auto">
         <thead>
             <tr>
                 <th>#</th>
@@ -1050,7 +1049,7 @@
             </tr>
             <% end %>
         </tbody>
-    </table>
+    </table></div>
 
     <!-- BALSA OPERATION SUMMARY -->
     <%
@@ -1154,8 +1153,8 @@
     <hr>
 
     <!-- DELETE BUTTON -->
-    <div class="mt-4">
-        <%= button_to "X) Eliminar programación",
+    <details class="work-day-danger"><summary>Acciones de eliminación</summary><p>Eliminar esta programación restaura los saldos. Esta acción no se puede deshacer.</p>
+        <%= button_to "Eliminar programación",
                   delete_with_reset_work_day_path(@work_day),
                   method: :delete,
                   class: "btn btn-outline-danger btn-sm",
@@ -1163,7 +1162,7 @@
                     turbo: false,
                     confirm: "Esto eliminará permanentemente la programación y restaurará los saldos. ¿Continuar?"
                   } %>
-    </div>
+    </details>
 </div>
 
 <script>
