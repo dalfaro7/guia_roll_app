@@ -1,4 +1,8 @@
 class Guide < ApplicationRecord
+  has_many :guide_activity_changes, dependent: :destroy
+  after_create :record_activity_change
+  after_update :record_activity_change, if: :saved_change_to_active?
+
   has_many :guide_skills, dependent: :destroy
   has_many :skills, through: :guide_skills
 
@@ -35,6 +39,11 @@ class Guide < ApplicationRecord
   end
 
   private
+
+  def record_activity_change
+    guide_activity_changes.create!(active: active == true, recorded_at: Time.current)
+  end
+
 
   # Un cambio de prioridad puede alterar el resultado de rolls
   # futuros que ya fueron generados, por lo que se reinician.

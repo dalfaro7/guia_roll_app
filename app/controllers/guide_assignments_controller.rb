@@ -22,14 +22,14 @@ class GuideAssignmentsController < ApplicationController
 
     if params[:range_guide_id].present?
       if params[:start_date].blank? || params[:end_date].blank?
-        @range_error = "Enter both a start date and an end date."
+        @range_error = "Indica las fechas inicial y final."
       else
         begin
           start_date = Date.iso8601(params[:start_date])
           end_date = Date.iso8601(params[:end_date])
 
           if end_date < start_date
-            @range_error = "End date must be on or after start date."
+            @range_error = "La fecha final debe ser igual o posterior a la inicial."
           else
             guide = Guide.find(params[:range_guide_id])
             @range = start_date..end_date
@@ -41,7 +41,7 @@ class GuideAssignmentsController < ApplicationController
                       .order("work_days.date ASC")
           end
         rescue Date::Error
-          @range_error = "Enter valid start and end dates."
+          @range_error = "Indica fechas válidas."
         end
       end
     end

@@ -75,7 +75,7 @@ def remove_day_off
   record&.destroy
 
   redirect_to day_off_report_path(month: date.strftime("%Y-%m")),
-              notice: "Day off removed."
+              notice: "Día libre eliminado."
 
 end
 

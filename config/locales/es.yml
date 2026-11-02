@@ -1,0 +1,254 @@
+{
+  "es": {
+    "attributes": {
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "password_confirmation": "Confirmación de contraseña",
+      "current_password": "Contraseña actual",
+      "remember_me": "Recordarme",
+      "priority": "Prioridad",
+      "date": "Fecha",
+      "guides_requested": "Guías solicitados",
+      "day_off_balance": "Saldo de días libres",
+      "alias": "Alias",
+      "company": "Empresa",
+      "plate": "Placa",
+      "capacity": "Capacidad",
+      "phone": "Teléfono",
+      "status": "Estado",
+      "status_note": "Nota del estado"
+    },
+    "activerecord": {
+      "models": {
+        "user": "usuario",
+        "guide": "guía",
+        "bus": "bus",
+        "work_day": "programación"
+      },
+      "errors": {
+        "messages": {
+          "blank": "no puede estar en blanco",
+          "taken": "ya está en uso",
+          "invalid": "no es válido",
+          "confirmation": "no coincide con %{attribute}",
+          "too_short": "es demasiado corto (mínimo %{count} caracteres)",
+          "too_long": "es demasiado largo (máximo %{count} caracteres)",
+          "wrong_length": "debe tener %{count} caracteres",
+          "not_a_number": "no es un número",
+          "not_an_integer": "debe ser un número entero",
+          "greater_than": "debe ser mayor que %{count}",
+          "greater_than_or_equal_to": "debe ser mayor o igual que %{count}",
+          "less_than": "debe ser menor que %{count}",
+          "less_than_or_equal_to": "debe ser menor o igual que %{count}",
+          "equal_to": "debe ser igual a %{count}",
+          "inclusion": "no está incluido en la lista",
+          "exclusion": "está reservado",
+          "accepted": "debe aceptarse",
+          "present": "debe estar en blanco",
+          "required": "debe existir",
+          "other_than": "debe ser distinto de %{count}",
+          "odd": "debe ser impar",
+          "even": "debe ser par",
+          "already_confirmed": "ya se confirmó; intenta iniciar sesión",
+          "confirmation_period_expired": "debe confirmarse en %{period}; solicita otra confirmación",
+          "expired": "caducó; solicita uno nuevo",
+          "not_found": "no se encontró",
+          "not_locked": "no estaba bloqueado",
+          "not_saved": {
+            "one": "No se pudo guardar %{resource} por un error:",
+            "other": "No se pudo guardar %{resource} por %{count} errores:"
+          }
+        }
+      }
+    },
+    "errors": {
+      "format": "%{attribute} %{message}",
+      "messages": {
+        "blank": "no puede estar en blanco",
+        "taken": "ya está en uso",
+        "invalid": "no es válido",
+        "confirmation": "no coincide con %{attribute}",
+        "too_short": "es demasiado corto (mínimo %{count} caracteres)",
+        "too_long": "es demasiado largo (máximo %{count} caracteres)",
+        "wrong_length": "debe tener %{count} caracteres",
+        "not_a_number": "no es un número",
+        "not_an_integer": "debe ser un número entero",
+        "greater_than": "debe ser mayor que %{count}",
+        "greater_than_or_equal_to": "debe ser mayor o igual que %{count}",
+        "less_than": "debe ser menor que %{count}",
+        "less_than_or_equal_to": "debe ser menor o igual que %{count}",
+        "equal_to": "debe ser igual a %{count}",
+        "inclusion": "no está incluido en la lista",
+        "exclusion": "está reservado",
+        "accepted": "debe aceptarse",
+        "present": "debe estar en blanco",
+        "required": "debe existir",
+        "other_than": "debe ser distinto de %{count}",
+        "odd": "debe ser impar",
+        "even": "debe ser par",
+        "already_confirmed": "ya se confirmó; intenta iniciar sesión",
+        "confirmation_period_expired": "debe confirmarse en %{period}; solicita otra confirmación",
+        "expired": "caducó; solicita uno nuevo",
+        "not_found": "no se encontró",
+        "not_locked": "no estaba bloqueado",
+        "not_saved": {
+          "one": "No se pudo guardar %{resource} por un error:",
+          "other": "No se pudo guardar %{resource} por %{count} errores:"
+        }
+      }
+    },
+    "helpers": {
+      "submit": {
+        "create": "Crear %{model}",
+        "update": "Actualizar %{model}",
+        "submit": "Guardar %{model}"
+      },
+      "select": {
+        "prompt": "Selecciona una opción"
+      }
+    },
+    "support": {
+      "array": {
+        "words_connector": ", ",
+        "two_words_connector": " y ",
+        "last_word_connector": " y "
+      }
+    },
+    "date": {
+      "formats": {
+        "default": "%d/%m/%Y",
+        "short": "%d de %b",
+        "long": "%d de %B de %Y"
+      },
+      "day_names": [
+        "domingo",
+        "lunes",
+        "martes",
+        "miércoles",
+        "jueves",
+        "viernes",
+        "sábado"
+      ],
+      "abbr_day_names": [
+        "dom",
+        "lun",
+        "mar",
+        "mié",
+        "jue",
+        "vie",
+        "sáb"
+      ],
+      "month_names": [
+        null,
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre"
+      ],
+      "abbr_month_names": [
+        null,
+        "ene",
+        "feb",
+        "mar",
+        "abr",
+        "may",
+        "jun",
+        "jul",
+        "ago",
+        "sep",
+        "oct",
+        "nov",
+        "dic"
+      ],
+      "order": [
+        "day",
+        "month",
+        "year"
+      ]
+    },
+    "time": {
+      "formats": {
+        "default": "%d/%m/%Y %H:%M",
+        "short": "%d/%m %H:%M",
+        "long": "%d de %B de %Y %H:%M"
+      },
+      "am": "a. m.",
+      "pm": "p. m."
+    },
+    "devise": {
+      "confirmations": {
+        "confirmed": "Tu correo se confirmó correctamente.",
+        "send_instructions": "Recibirás un correo con instrucciones de confirmación.",
+        "send_paranoid_instructions": "Si el correo está registrado, recibirás instrucciones de confirmación."
+      },
+      "failure": {
+        "already_authenticated": "Ya has iniciado sesión.",
+        "inactive": "Tu cuenta aún no está activada.",
+        "invalid": "Correo o contraseña incorrectos.",
+        "locked": "Tu cuenta está bloqueada.",
+        "last_attempt": "Queda un intento antes de bloquear tu cuenta.",
+        "not_found_in_database": "Correo o contraseña incorrectos.",
+        "timeout": "Tu sesión caducó. Inicia sesión nuevamente.",
+        "unauthenticated": "Inicia sesión para continuar.",
+        "unconfirmed": "Confirma tu correo antes de continuar."
+      },
+      "mailer": {
+        "confirmation_instructions": {
+          "subject": "Confirma tu cuenta"
+        },
+        "reset_password_instructions": {
+          "subject": "Recuperar contraseña"
+        },
+        "unlock_instructions": {
+          "subject": "Desbloquear cuenta"
+        },
+        "email_changed": {
+          "subject": "Correo actualizado"
+        },
+        "password_change": {
+          "subject": "Contraseña actualizada"
+        }
+      },
+      "omniauth_callbacks": {
+        "failure": "No se pudo iniciar sesión con %{kind}: %{reason}.",
+        "success": "Sesión iniciada con %{kind}."
+      },
+      "passwords": {
+        "no_token": "Abre el enlace completo del correo de recuperación para cambiar tu contraseña.",
+        "send_instructions": "Recibirás un correo con instrucciones para recuperar tu contraseña.",
+        "send_paranoid_instructions": "Si el correo está registrado, recibirás un enlace de recuperación.",
+        "updated": "Contraseña actualizada. Has iniciado sesión.",
+        "updated_not_active": "Tu contraseña se actualizó correctamente."
+      },
+      "registrations": {
+        "destroyed": "Tu cuenta se canceló correctamente.",
+        "signed_up": "Tu cuenta se creó correctamente.",
+        "signed_up_but_inactive": "Tu cuenta se creó, pero aún no está activa.",
+        "signed_up_but_locked": "Tu cuenta se creó, pero está bloqueada.",
+        "signed_up_but_unconfirmed": "Revisa tu correo para confirmar la cuenta.",
+        "update_needs_confirmation": "Cuenta actualizada. Confirma tu nuevo correo mediante el enlace enviado.",
+        "updated": "Tu cuenta se actualizó correctamente.",
+        "updated_but_not_signed_in": "Tu cuenta se actualizó. Inicia sesión con tu nueva contraseña."
+      },
+      "sessions": {
+        "signed_in": "Sesión iniciada correctamente.",
+        "signed_out": "Sesión cerrada correctamente.",
+        "already_signed_out": "Sesión cerrada correctamente."
+      },
+      "unlocks": {
+        "send_instructions": "Recibirás instrucciones para desbloquear tu cuenta por correo.",
+        "send_paranoid_instructions": "Si la cuenta existe, recibirás instrucciones para desbloquearla.",
+        "unlocked": "Tu cuenta se desbloqueó. Inicia sesión para continuar."
+      }
+    }
+  }
+}

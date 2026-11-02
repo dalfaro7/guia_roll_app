@@ -20,6 +20,8 @@ module GuiaRollApp
     #
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
+    config.i18n.default_locale = :es
+    config.i18n.available_locales = [:es, :en]
     config.time_zone = "Central America"
     config.active_record.default_timezone = :local
     # config.time_zone = "Central Time (US & Canada)"

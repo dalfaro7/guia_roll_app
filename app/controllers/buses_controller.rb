@@ -19,7 +19,7 @@ class BusesController < ApplicationController
     @bus = Bus.new(bus_params)
 
     if @bus.save
-      redirect_to buses_path, notice: "Bus created successfully."
+      redirect_to buses_path, notice: "Bus creado correctamente."
     else
       render :new
     end
@@ -27,7 +27,7 @@ class BusesController < ApplicationController
 
   def update
     if @bus.update(bus_params)
-      redirect_to buses_path, notice: "Bus updated successfully."
+      redirect_to buses_path, notice: "Bus actualizado correctamente."
     else
       render :edit
     end
@@ -35,7 +35,7 @@ class BusesController < ApplicationController
 
   def destroy
     @bus.destroy
-    redirect_to buses_path, notice: "Bus deleted."
+    redirect_to buses_path, notice: "Bus eliminado."
   end
 
   private

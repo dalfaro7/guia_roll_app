@@ -53,7 +53,7 @@ class GuidesController < ApplicationController
     if @guide.save
       redirect_to(
         guides_path,
-        notice: "Guide created successfully."
+        notice: "Guía creado correctamente."
       )
     else
       Rails.logger.info(
@@ -72,7 +72,7 @@ class GuidesController < ApplicationController
     if @guide.update(guide_params)
       redirect_to(
         guides_path,
-        notice: "Guide updated successfully."
+        notice: "Guía actualizado correctamente."
       )
     else
       render :edit,

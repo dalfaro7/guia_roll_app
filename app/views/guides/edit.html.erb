@@ -1,6 +1,6 @@
 <div class="container p-3">
     <div class="card p-4">
-        <h3 class="mb-4">Edit Guide</h3>
+        <h3 class="mb-4">Editar guía</h3>
 
         <%= form_with model: @guide do |f| %>
         <div class="mb-3">
@@ -26,14 +26,14 @@
                            class: "form-control" %>
 
             <small class="text-muted">
-                Last updated:
-                <%= @guide.day_off_balance_updated_at&.strftime("%Y-%m-%d %H:%M") || "never" %>
+                Última actualización:
+                <%= @guide.day_off_balance_updated_at&.strftime("%Y-%m-%d %H:%M") || "Sin actualizaciones" %>
             </small>
         </div>
 
         <hr>
 
-        <h4 class="mb-3">Skills</h4>
+        <h4 class="mb-3">Habilidades</h4>
 
         <div class="mb-3 border rounded p-3">
             <%= collection_check_boxes(
@@ -41,7 +41,7 @@
               :skill_ids,
               Skill.order(:name),
               :id,
-              :name
+              ->(skill) { roll_skill_label(skill.name) }
             ) do |skill| %>
 
             <div class="form-check mb-1">
@@ -60,10 +60,10 @@
       %>
 
         <div class="d-flex gap-2">
-            <%= f.submit "Update Guide",
+            <%= f.submit "Actualizar guía",
                      class: "btn btn-primary" %>
 
-            <%= link_to "Back",
+            <%= link_to "Volver",
                     guides_path,
                     class: "btn btn-secondary" %>
         </div>

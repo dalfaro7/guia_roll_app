@@ -36,7 +36,7 @@ class RollNotesController < ApplicationController
       .order(created_at: :desc)
 rescue Date::Error
   redirect_to roll_notes_path,
-              alert: "Invalid date."
+              alert: "Fecha no válida."
 end
 
   def create
@@ -88,7 +88,7 @@ end
   # solamente el usuario que creó la nota puede eliminarla.
   unless @roll_note.created_by_id == current_user.id
     redirect_to roll_notes_path(date: work_day.date),
-                alert: "You can only delete notes created by your user."
+                alert: "Solo puedes eliminar tus propias notas."
     return
   end
 

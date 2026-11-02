@@ -1,6 +1,6 @@
 <div class="container p-3">
 
-<h2>Configure Slot Requirements</h2>
+<h2>Configurar requisitos de puestos</h2>
 
 <% skills = Skill.all %>
 
@@ -15,9 +15,9 @@
 <table class="table">
 
 <tr>
-<th>Slot</th>
+<th>Puesto</th>
 <% skills.each do |skill| %>
-<th><%= skill.name %></th>
+<th><%= roll_skill_label(skill.name) %></th>
 <% end %>
 </tr>
 
@@ -26,7 +26,7 @@
 <tr>
 
 <td>
-<strong>Slot <%= index + 1 %></strong>
+<strong>Puesto <%= index + 1 %></strong>
 </td>
 
 <% skills.each do |skill| %>
@@ -69,7 +69,7 @@ end
 <% end %>
 
 <div class="text-center mt-4">
-<%= submit_tag "Update All Locations", class: "btn btn-success btn-lg" %>
+<%= submit_tag "Actualizar todas las ubicaciones", class: "btn btn-success btn-lg" %>
 </div>
 
 <% end %>

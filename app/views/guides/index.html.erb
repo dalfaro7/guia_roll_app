@@ -1,8 +1,8 @@
 <div class="container p-3">
     <div class="d-flex align-items-center mb-3">
-        <h3 class="mb-0 me-2">Guides</h3>
+        <h3 class="mb-0 me-2">Guías</h3>
 
-        <%= link_to "New Guide",
+        <%= link_to "Nuevo guía",
                 new_guide_path,
                 class: "btn btn-info" %>
     </div>
@@ -14,7 +14,7 @@
 
         <div class="row">
             <div class="col-md-4">
-                <label>Name</label>
+                <label>Nombre</label>
 
                 <%= text_field_tag :name,
                              params[:name],
@@ -22,7 +22,7 @@
             </div>
 
             <div class="col-md-3">
-                <label>Priority</label>
+                <label>Prioridad</label>
 
                 <%= select_tag :priority,
                          options_for_select(
@@ -32,26 +32,26 @@
                              .pluck(:priority),
                            params[:priority]
                          ),
-                         include_blank: "All",
+                         include_blank: "Todos",
                          class: "form-control" %>
             </div>
 
             <div class="col-md-3">
-                <label>Skill</label>
+                <label>Habilidad</label>
 
                 <%= select_tag :skill_id,
                          options_from_collection_for_select(
                            Skill.order(:name),
                            :id,
-                           :name,
+                           ->(skill) { roll_skill_label(skill.name) },
                            params[:skill_id]
                          ),
-                         include_blank: "All",
+                         include_blank: "Todos",
                          class: "form-control" %>
             </div>
 
             <div class="col-md-2 d-flex align-items-end">
-                <%= submit_tag "Search",
+                <%= submit_tag "Buscar",
                          class: "btn btn-primary w-100" %>
             </div>
         </div>
@@ -63,15 +63,15 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Name</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Skills</th>
-                <th>Day Off Balance</th>
-                <th>Last Day Off Balance Update</th>
+                <th>Nombre</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Habilidades</th>
+                <th>Saldo de días libres</th>
+                <th>Última actualización del saldo</th>
                 <th>ID</th>
-                <th>Fairness Since</th>
-                <th>Actions</th>
+                <th>Equidad desde</th>
+                <th>Acciones</th>
             </tr>
         </thead>
 
@@ -105,14 +105,14 @@
 
                 <td>
                     <% if guide.active? %>
-                    <span class="badge bg-success">Active</span>
+                    <span class="badge bg-success">Activo</span>
                     <% else %>
-                    <span class="badge bg-secondary">Inactive</span>
+                    <span class="badge bg-secondary">Inactivo</span>
                     <% end %>
                 </td>
 
                 <td>
-                    <%= guide.skills.map(&:name).join(", ") %>
+                    <%= guide.skills.map { |skill| roll_skill_label(skill.name) }.join(", ") %>
                 </td>
 
                 <% day_off_balance = guide.day_off_balance.to_i %>
@@ -134,7 +134,7 @@
                 </td>
 
                 <td class="text-nowrap">
-                    <%= link_to "Edit",
+                    <%= link_to "Editar",
                         edit_guide_path(guide),
                         class: "btn btn-sm btn-primary" %>
 
@@ -145,7 +145,7 @@
                 Al volver a activar al guía se iniciará un ciclo nuevo.
               %>
 
-                    <%= button_to "Deactivate",
+                    <%= button_to "Desactivar",
                             toggle_active_guide_path(guide),
                             method: :patch,
                             class: "btn btn-sm btn-danger",
@@ -163,7 +163,7 @@
                 de fairness desde la fecha actual.
               %>
 
-                    <%= button_to "Activate",
+                    <%= button_to "Activar",
                             toggle_active_guide_path(guide),
                             method: :patch,
                             class: "btn btn-sm btn-success",

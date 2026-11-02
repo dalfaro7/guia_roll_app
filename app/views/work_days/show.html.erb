@@ -3,13 +3,13 @@
         <div class="bg-dark text-white d-flex justify-content-end align-items-center gap-2 p-2 flex-wrap">
 
             <% if @work_day.draft? || @work_day.generated? %>
-            <%= link_to "Configure Locations",
+            <%= link_to "Configurar ubicaciones",
                     locations_work_day_path(@work_day),
                     class: "btn btn-outline-light" %>
             <% end %>
 
             <% if @work_day.draft? %>
-            <%= link_to "Edit Slot Requirements",
+            <%= link_to "Editar requisitos de puestos",
                     edit_slots_work_day_path(@work_day),
                     class: "btn btn-outline-light" %>
             <% end %>
@@ -26,13 +26,13 @@
             <% end %>
 
             <% if @work_day.draft? %>
-            <%= button_to "Generate Roles",
+            <%= button_to "Generar roles",
                       generate_roles_work_day_path(@work_day),
                       method: :patch,
                       class: "btn btn-success",
                       data: {
                         turbo: false,
-                        confirm: "Generate roles for this day?"
+                        confirm: "¿Generar los roles de este día?"
                       } %>
             <% end %>
 
@@ -70,19 +70,19 @@
         <div class="container mt-1">
             <div class="row">
                 <div class="col text-center">
-                    <h1 class="fs-3">Operation Date:</h1>
+                    <h1 class="fs-3">Fecha de operación:</h1>
                     <span class="fs-3"><%= @work_day.date %></span>
 
                     <br><br>
 
                     <p>
-                        <strong>Guides Requested:</strong>
+                        <strong>Guías solicitados:</strong>
                         <%= @work_day.guides_requested %>
                     </p>
 
                     <p>
-                        <strong>Status:</strong>
-                        <%= @work_day.status %>
+                        <strong>Estado:</strong>
+                        <%= roll_status_label(@work_day.status) %>
                     </p>
                 </div>
 
@@ -90,16 +90,16 @@
                     <% if @work_day.draft? %>
                     <div class="card">
                         <div class="card-header bg-dark text-white">
-                            Trips
+                            Viajes
                         </div>
 
                         <div class="card-body">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Location</th>
-                                        <th>Guides</th>
-                                        <th>Passengers</th>
+                                        <th>Ubicación</th>
+                                        <th>Guías</th>
+                                        <th>Pasajeros</th>
                                     </tr>
                                 </thead>
 
@@ -129,9 +129,9 @@
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Guide</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
+                                        <th>Guía</th>
+                                        <th>Estado</th>
+                                        <th>Acción</th>
                                     </tr>
                                 </thead>
 
@@ -152,20 +152,20 @@
 
                                         <td>
                                             <% if gd.vacation? %>
-                                            <span class="badge bg-danger">Vacation</span>
+                                            <span class="badge bg-danger">Vacaciones</span>
 
                                             <% elsif gd.day_off? %>
-                                            <span class="badge bg-warning text-dark">Day Off</span>
+                                            <span class="badge bg-warning text-dark">Día libre</span>
 
                                             <% elsif gd.assigned_task? %>
-                                            <span class="badge bg-info text-dark">Assigned Task</span>
+                                            <span class="badge bg-info text-dark">Tarea asignada</span>
 
                                             <small class="text-muted d-block">
                                                 <%= gd.status_note %>
                                             </small>
 
                                             <% elsif gd.penalized? %>
-                                            <span class="badge bg-dark">Penalized</span>
+                                            <span class="badge bg-dark">Penalizado</span>
 
                                             <small class="text-muted d-block">
                                                 <%= gd.status_note %>
@@ -195,7 +195,7 @@
                                                         Mover de tarea asignada a la programación
                                                     </h5>
 
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar">
                                                     </button>
                                                 </div>
 
@@ -224,7 +224,7 @@
                                                     <%= hidden_field_tag :guide_day_id, gd.id %>
 
                                                     <div class="mb-3">
-                                                        <%= label_tag :location, "Location" %>
+                                                        <%= label_tag :location, "Ubicación" %>
 
                                                         <%= select_tag :location,
                                                  options_for_select(
@@ -266,7 +266,7 @@
 
                                         <td>
                                             <span class="badge bg-info text-dark">
-                                                Manual Off
+                                                Libre manual
                                             </span>
                                         </td>
 
@@ -283,15 +283,15 @@
                     <% if @work_day.draft? %>
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            Top Day-Off Balance
+                            Mayores saldos de días libres
                         </div>
 
                         <div class="card-body">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>Guide</th>
-                                        <th>Balance</th>
+                                        <th>Guía</th>
+                                        <th>Saldo</th>
                                     </tr>
                                 </thead>
 
@@ -324,30 +324,30 @@
         <div class="container mt-4">
             <div class="card border-secondary">
                 <div class="card-header bg-secondary text-white">
-                    <strong>Fairness Diagnostic</strong>
+                    <strong>Diagnóstico de equidad</strong>
                 </div>
 
                 <div class="card-body">
                     <p class="text-muted mb-3">
-                        This table shows each guide's fairness position immediately
-                        before the operation date. The current WorkDay itself is not
-                        included in these calculations.
+                        Esta tabla muestra la posición de equidad de cada guía justo
+                        antes de la fecha de operación. El día actual no se
+                        incluye en estos cálculos.
                     </p>
 
                     <table class="table table-sm table-bordered table-hover align-middle">
                         <thead>
                             <tr>
-                                <th>Rank</th>
-                                <th>Guide</th>
-                                <th>Status</th>
-                                <th>Priority</th>
-                                <th>Fairness Since</th>
-                                <th>Guided Days</th>
-                                <th>Entry Balance</th>
-                                <th>Ranking Days</th>
-                                <th>Worked Days</th>
-                                <th>Consecutive</th>
-                                <th>Waiting Since</th>
+                                <th>Posición</th>
+                                <th>Guía</th>
+                                <th>Estado</th>
+                                <th>Prioridad</th>
+                                <th>Equidad desde</th>
+                                <th>Días como guía</th>
+                                <th>Saldo de entrada</th>
+                                <th>Días para la clasificación</th>
+                                <th>Días trabajados</th>
+                                <th>Consecutivos</th>
+                                <th>En espera desde</th>
                             </tr>
                         </thead>
 
@@ -396,17 +396,17 @@
                                 <td>
                                     <% if guide_day.worked? %>
                                     <span class="badge bg-success">
-                                        Worked
+                                        Trabajó
                                     </span>
 
                                     <% elsif guide_day.assigned_task? %>
                                     <span class="badge bg-info text-dark">
-                                        Assigned Task
+                                        Tarea asignada
                                     </span>
 
                                     <% else %>
                                     <span class="badge bg-secondary">
-                                        Standby
+                                        En espera
                                     </span>
                                     <% end %>
                                 </td>
@@ -447,10 +447,10 @@
                     </table>
 
                     <small class="text-muted">
-                        Ranking order:
-                        Priority → New Entrant → Ranking Days → Consecutive Days →
-                        Previous Day Status → Waiting Since → Technical ID.
-                        Entry Balance applies through the activation month, or through the month of the first guided day if that occurs later.
+                        Orden de clasificación:
+                        Prioridad → Nuevo ingreso → Días para la clasificación → Días consecutivos →
+                        Estado del día anterior → En espera desde → Identificador interno.
+                        El saldo de entrada aplica durante el mes de activación o el del primer día como guía si ocurre después.
                     </small>
                 </div>
             </div>
@@ -458,7 +458,7 @@
 
         <!-- TRANSPORTATION -->
         <div class="container mt-4">
-            <h4 class="mt-4">Transportation</h4>
+            <h4 class="mt-4">Transporte</h4>
 
             <div class="row">
                 <% ["Privado", "Sara-3&4", "Balsa", "PM"].each do |loc| %>
@@ -477,7 +477,7 @@
 
     <!-- AVAILABILITY -->
     <% if @work_day.draft? %>
-    <h2>Set Availability</h2>
+    <h2>Configurar disponibilidad</h2>
 
     <%= form_with url: update_availability_work_day_path(@work_day),
                   method: :patch do %>
@@ -489,9 +489,9 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Guide</th>
-                <th>Status</th>
-                <th>Day Off Balance</th>
+                <th>Guía</th>
+                <th>Estado</th>
+                <th>Saldo de días libres</th>
             </tr>
         </thead>
 
@@ -517,11 +517,11 @@
                     <%= select_tag "availability[#{gd.id}][status]",
                                options_for_select(
                                  [
-                                   ["Standby", "standby"],
-                                   ["Day Off", "day_off"],
-                                   ["Vacation", "vacation"],
-                                   ["Penalized", "penalized"],
-                                   ["Assigned Task", "assigned_task"]
+                                   ["En espera", "standby"],
+                                   ["Día libre", "day_off"],
+                                   ["Vacaciones", "vacation"],
+                                   ["Penalizado", "penalized"],
+                                   ["Tarea asignada", "assigned_task"]
                                  ],
                                  gd.status
                                ),
@@ -532,7 +532,7 @@
 
                     <%= text_field_tag "availability[#{gd.id}][status_note]",
                                    gd.status_note,
-                                   placeholder: "Required for Penalized or Assigned Task",
+                                   placeholder: "Obligatorio para penalización o tarea asignada",
                                    class: "form-control form-control-sm mt-1 availability-note",
                                    id: "status_note_#{gd.id}" %>
                 </td>
@@ -547,14 +547,14 @@
         </tbody>
     </table>
 
-    <%= submit_tag "Save Availability",
+    <%= submit_tag "Guardar disponibilidad",
                      class: "btn btn-info" %>
     <% end %>
     <% end %>
 
     <!-- EDIT ROLES -->
     <% if @work_day.generated? %>
-    <h2>Edit Roles</h2>
+    <h2>Editar roles</h2>
 
     <%= form_with url: update_roles_work_day_path(@work_day),
                   method: :patch,
@@ -564,13 +564,13 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>Guide</th>
-                <th>Current Primary</th>
-                <th>New Primary</th>
-                <th>Current Secondary</th>
-                <th>New Secondary</th>
-                <th>Current Location</th>
-                <th>New Location</th>
+                <th>Guía</th>
+                <th>Rol principal actual</th>
+                <th>Nuevo rol principal</th>
+                <th>Rol secundario actual</th>
+                <th>Nuevo rol secundario</th>
+                <th>Ubicación actual</th>
+                <th>Nueva ubicación</th>
             </tr>
         </thead>
 
@@ -615,26 +615,26 @@
                 </td>
 
                 <td>
-                    <%= gd.role_primary.presence || "-" %>
+                    <%= roll_role_label(gd.role_primary) %>
                 </td>
 
                 <td>
                     <%= select_tag "roles[#{gd.id}][role_primary]",
                                options_for_select(
-                                 primary_roles,
+                                 primary_roles.map { |role| [roll_role_label(role), role] },
                                  gd.role_primary
                                ),
                                include_blank: true %>
                 </td>
 
                 <td>
-                    <%= gd.role_secondary.presence || "-" %>
+                    <%= roll_role_label(gd.role_secondary) %>
                 </td>
 
                 <td>
                     <%= select_tag "roles[#{gd.id}][role_secondary]",
                                options_for_select(
-                                 secondary_roles,
+                                 secondary_roles.map { |role| [roll_role_label(role), role] },
                                  gd.role_secondary
                                ),
                                include_blank: true %>
@@ -657,7 +657,7 @@
     </table>
 
     <div class="text-center">
-        <%= submit_tag "Save Roles",
+        <%= submit_tag "Guardar roles",
                        class: "btn btn-primary" %>
     </div>
     <% end %>
@@ -667,7 +667,7 @@
     <!-- FORCE GUIDE ASSIGNMENT -->
     <div class="card mt-4">
         <div class="card-header">
-            Force Guide Assignment
+            Asignar guía manualmente
         </div>
 
         <div class="card-body">
@@ -676,7 +676,7 @@
 
             <div class="row">
                 <div class="col-md-4">
-                    <label>Location</label>
+                    <label>Ubicación</label>
 
                     <%= select_tag :location,
                              options_for_select(
@@ -687,13 +687,13 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label>Required Skills</label>
+                    <label>Habilidades requeridas</label>
 
                     <%= select_tag "skills[]",
                              options_from_collection_for_select(
                                Skill.all,
                                :id,
-                               :name,
+                               ->(skill) { roll_skill_label(skill.name) },
                                Skill.find_by(name: "ClassIII")&.id
                              ),
                              multiple: true,
@@ -702,17 +702,17 @@
                 </div>
 
                 <div class="col-md-3 d-flex align-items-end">
-                    <%= submit_tag "Force Assign",
+                    <%= submit_tag "Asignar manualmente",
                              class: "btn btn-warning" %>
                 </div>
             </div>
             <% end %>
 
             <div class="mt-3">
-                <strong>Next eligible guide:</strong>
+                <strong>Próximo guía elegible:</strong>
 
                 <span id="preview_guide">
-                    Select skills to preview
+                    Selecciona habilidades para ver la vista previa
                 </span>
             </div>
         </div>
@@ -747,19 +747,19 @@
                         if (data.name) {
                             preview.innerHTML =
                                 data.name +
-                                " | Priority: " + data.priority +
+                                " | Prioridad: " + data.priority +
                                 " | Días trabajados en el ciclo de equidad: " +
                                 data.monthly_worked_days;
                         } else {
                             preview.innerHTML =
-                                "No standby guide meets requirements";
+                                "Ningún guía en espera cumple los requisitos";
                         }
                     })
                     .catch(error => {
-                        console.error("Preview error:", error);
+                        console.error("Error de vista previa:", error);
 
                         preview.innerHTML =
-                            "Error loading preview";
+                            "Error al cargar la vista previa";
                     });
             }
 
@@ -775,17 +775,17 @@
 
     <!-- PUBLISHED VIEW -->
     <% if @work_day.published? %>
-    <h3>Assigned Guides</h3>
+    <h3>Guías asignados</h3>
 
     <table class="table table-bordered w-auto">
         <thead>
             <tr>
                 <th>#</th>
-                <th>Guide</th>
-                <th>Location</th>
-                <th>Primary Role</th>
-                <th>Secondary Role</th>
-                <th>Status</th>
+                <th>Guía</th>
+                <th>Ubicación</th>
+                <th>Rol principal</th>
+                <th>Rol secundario</th>
+                <th>Estado</th>
             </tr>
         </thead>
 
@@ -866,11 +866,11 @@
                 </td>
 
                 <td>
-                    <%= guide_day.role_primary.presence || "-" %>
+                    <%= roll_role_label(guide_day.role_primary) %>
                 </td>
 
                 <td>
-                    <%= guide_day.role_secondary.presence || "-" %>
+                    <%= roll_role_label(guide_day.role_secondary) %>
                 </td>
 
                 <td>
@@ -1017,7 +1017,7 @@
                 <td>-</td>
 
                 <td>
-                    Vacation
+                    Vacaciones
                 </td>
             </tr>
             <% end %>
@@ -1086,7 +1086,7 @@
 
                 <div class="col-md-3 mb-3">
                     <h6 class="text-muted">
-                        Boat Guides asignados
+                        Guías de balsa asignados
                     </h6>
 
                     <span class="fs-3 fw-bold">
@@ -1131,19 +1131,19 @@
             <div class="alert alert-danger mb-0">
                 Faltan
                 <strong><%= guide_difference.abs %></strong>
-                Boat Guide(s) para la operación de Balsa.
+                guías de balsa para la operación de Balsa.
             </div>
 
             <% elsif guide_difference > 0 %>
             <div class="alert alert-warning mb-0">
                 Hay
                 <strong><%= guide_difference %></strong>
-                Boat Guide(s) adicionales sobre la recomendación.
+                guías de balsa adicionales sobre la recomendación.
             </div>
 
             <% else %>
             <div class="alert alert-success mb-0">
-                La cantidad de Boat Guides asignados coincide con la
+                La cantidad de Guías de balsa asignados coincide con la
                 recomendación del sistema.
             </div>
             <% end %>

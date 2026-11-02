@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
     <title><%= content_for(:title) || "Programación de Guías" %></title>
@@ -39,12 +39,12 @@
 <body>
     <header class="roll-header">
       <div class="roll-header__identity">
-        <strong>Arenal Rafting Staffing</strong>
+        <strong>Personal de Arenal Rafting</strong>
         <% if user_signed_in? %><span><%= current_user.name %></span><% end %>
       </div>
       <nav class="roll-header__nav" aria-label="Navegación principal">
         <div class="roll-header__links">
-          <% [["Programación de guías", work_days_path], ["Asignaciones", guide_assignments_path], ["Guías", guides_path], ["Días libres", day_off_report_path], ["Buses", buses_path], ["Dashboard", dashboard_path], ["Auditoría", audit_logs_path]].each do |label, path| %>
+          <% [["Programación de guías", work_days_path], ["Asignaciones", guide_assignments_path], ["Guías", guides_path], ["Días libres", day_off_report_path], ["Buses", buses_path], ["Panel de equidad", dashboard_path], ["Auditoría", audit_logs_path]].each do |label, path| %>
             <%= link_to label, path, class: "roll-header__link", aria: { current: current_page?(path) ? "page" : nil } %>
           <% end %>
           <% if current_user&.admin? || current_user&.recursos_humanos? %>
@@ -56,7 +56,7 @@
         </div>
         <div class="roll-header__app">
           <%= link_to kayaktalkie_login_path, class: "roll-header__kayak", data: { turbo: false } do %>
-            <span class="roll-header__badge">new</span>
+            <span class="roll-header__badge">nuevo</span>
             <span>KayakTalkie&amp;GPS</span><span aria-hidden="true">↗</span>
           <% end %>
         </div>

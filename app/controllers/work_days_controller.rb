@@ -98,7 +98,7 @@ class WorkDaysController < ApplicationController
 
       redirect_to(
         work_day_path(work_day),
-        notice: "#{service.guide.name} was forced into #{location}"
+        notice: "#{service.guide.name} se asignó manualmente a #{location}"
       )
     rescue => e
       redirect_to(
@@ -199,7 +199,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       @work_day,
-      notice: "Availability updated."
+      notice: "Disponibilidad actualizada."
     )
   rescue ActiveRecord::RecordInvalid => e
     redirect_to(
@@ -238,7 +238,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       @work_day,
-      notice: "Roles updated successfully."
+      notice: "Roles actualizados correctamente."
     )
   end
 
@@ -259,7 +259,7 @@ class WorkDaysController < ApplicationController
     unless @work_day.generated?
       redirect_to(
         @work_day,
-        alert: "Only generated days can be published."
+        alert: "Solo se pueden publicar programaciones generadas."
       )
       return
     end
@@ -267,9 +267,9 @@ class WorkDaysController < ApplicationController
     if @work_day.assigned_roll_count != @work_day.required_roll_count
       redirect_to(
         @work_day,
-        alert: "Assignments incomplete. Assigned " \
-               "#{@work_day.assigned_roll_count} of " \
-               "#{@work_day.required_roll_count} required slots."
+        alert: "Asignaciones incompletas. Se asignaron " \
+               "#{@work_day.assigned_roll_count} de " \
+               "#{@work_day.required_roll_count} puestos requeridos."
       )
       return
     end
@@ -377,7 +377,7 @@ class WorkDaysController < ApplicationController
 
     redirect_to(
       @work_day,
-      notice: "Slots created successfully."
+      notice: "Puestos creados correctamente."
     )
   end
 

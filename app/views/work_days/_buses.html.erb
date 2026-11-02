@@ -8,28 +8,28 @@
 
         <p>
 
-            Total Passengers:
+            Total de pasajeros:
             <strong>
                 <%= work_day.passengers_for(location) %>
             </strong>
 
             <br>
 
-            Total Bus Capacity:
+            Capacidad total de buses:
             <strong>
                 <%= work_day.bus_capacity_for(location) %>
             </strong>
 
             <br>
 
-            Remaining Seats:
+            Asientos disponibles:
             <strong class="<%= 'text-danger fw-bold' if work_day.seats_remaining_for(location) < 0 %>">
                 <%= work_day.seats_remaining_for(location) %>
             </strong>
 
             <% if work_day.seats_remaining_for(location) < 0 %>
             <span class="badge bg-danger ms-2">
-                Need more buses
+                Se necesitan más buses
             </span>
             <% end %>
 
@@ -45,15 +45,15 @@
                 <span>
                     <strong><%= assignment.bus.alias %></strong>
                     <br>
-                    - Seats used: <%= assignment.seats_assigned %> <br>
-                    - Remaining seats: <%= assignment.bus.capacity - assignment.seats_assigned%>
+                    - Asientos ocupados: <%= assignment.seats_assigned %> <br>
+                    - Asientos disponibles: <%= assignment.bus.capacity - assignment.seats_assigned%>
                 </span>
 
-                <%= link_to "Remove",
+                <%= link_to "Quitar",
               bus_assignment_path(assignment),
               method: :delete,
               class: "btn btn-sm btn-outline-danger",
-              data: { confirm: "Remove bus?" } %>
+              data: { confirm: "¿Quitar este bus?" } %>
 
             </li>
 
@@ -81,14 +81,14 @@
         <div class="col-md-4">
 
             <%= f.number_field :seats_assigned,
-            placeholder: "Seats",
+            placeholder: "Asientos",
             class: "form-control" %>
 
         </div>
 
         <div class="col-md-3">
 
-            <%= f.submit "Add",
+            <%= f.submit "Agregar",
             class: "btn btn-primary w-100" %>
 
         </div>

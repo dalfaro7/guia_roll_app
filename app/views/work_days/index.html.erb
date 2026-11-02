@@ -18,21 +18,21 @@
     <%= form_with url: work_days_path, method: :get, local: true do |f| %>
     <div class="row justify-content-center mb-3">
         <div class="col-md-3">
-            <%= f.label :start_date, "From" %>
+            <%= f.label :start_date, "Desde" %>
             <%= f.date_field :start_date,
                 value: params[:start_date],
                 class: "form-control" %>
         </div>
 
         <div class="col-md-3">
-            <%= f.label :end_date, "To" %>
+            <%= f.label :end_date, "Hasta" %>
             <%= f.date_field :end_date,
                 value: params[:end_date],
                 class: "form-control" %>
         </div>
 
         <div class="col-md-3 d-flex align-items-end gap-2">
-            <%= f.submit "Search", class: "btn btn-info" %>
+            <%= f.submit "Buscar", class: "btn btn-info" %>
             <%= link_to "Last 7 Days",
                 work_days_path,
                 class: "btn btn-secondary" %>
@@ -42,30 +42,30 @@
 
     <table class="table" border="1" cellpadding="8">
         <tr>
-            <th>Date</th>
-            <th>Guides Requested</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Fecha</th>
+            <th>Guías solicitados</th>
+            <th>Estado</th>
+            <th>Acciones</th>
         </tr>
 
         <% @work_days.each do |day| %>
         <tr>
             <td><%= day.date %></td>
             <td><%= day.guides_requested %></td>
-            <td><%= day.status %></td>
+            <td><%= roll_status_label(day.status) %></td>
             <td>
                 <div class="btn-group" role="group">
-                    <%= link_to "View", work_day_path(day), class: "btn btn-info" %>
+                    <%= link_to "Ver", work_day_path(day), class: "btn btn-info" %>
 
                     <% if day.draft? %>
-                    <%= button_to "Generate",
+                    <%= button_to "Generar",
                             generate_roles_work_day_path(day),
                             method: :patch,
                             class: "btn btn-warning" %>
                     <% end %>
 
                     <% if day.generated? %>
-                    <%= button_to "Publish",
+                    <%= button_to "Publicar",
                             publish_work_day_path(day),
                             method: :post,
                             class: "btn btn-success" %>

@@ -1,2 +1,6 @@
-<h1>Buses#show</h1>
-<p>Find me in app/views/buses/show.html.erb</p>
+<div class="container p-3">
+  <h1>Bus <%= @bus.alias %></h1>
+  <dl><dt>Empresa</dt><dd><%= @bus.company %></dd><dt>Placa</dt><dd><%= @bus.plate %></dd><dt>Capacidad</dt><dd><%= @bus.capacity %></dd><dt>Teléfono</dt><dd><%= @bus.phone %></dd></dl>
+  <%= link_to "Editar", edit_bus_path(@bus), class: "btn btn-primary" %>
+  <%= link_to "Volver a buses", buses_path, class: "btn btn-secondary" %>
+</div>

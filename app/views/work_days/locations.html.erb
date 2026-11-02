@@ -1,6 +1,6 @@
 <div class="container text-center">
 
-    <h2>Define Guides and Passengers per Location</h2>
+    <h2>Definir guías y pasajeros por ubicación</h2>
 
     <%= form_with url: create_slots_work_day_path(@work_day), method: :post do %>
 
@@ -8,9 +8,9 @@
 
         <thead>
             <tr>
-                <th>Location</th>
-                <th>Guides Required</th>
-                <th>Passengers</th>
+                <th>Ubicación</th>
+                <th>Guías requeridos</th>
+                <th>Pasajeros</th>
             </tr>
         </thead>
 
@@ -87,12 +87,12 @@
 
     </table>
 
-    <%= submit_tag "Create/Save Operation", class: "btn btn-primary" %>
+    <%= submit_tag "Crear o guardar operación", class: "btn btn-primary" %>
 
     <% end %>
 
     <br>
 
-    <%= link_to "Back", work_day_path(@work_day), class: "btn btn-secondary" %>
+    <%= link_to "Volver", work_day_path(@work_day), class: "btn btn-secondary" %>
 
 </div>

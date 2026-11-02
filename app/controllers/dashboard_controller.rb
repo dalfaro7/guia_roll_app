@@ -80,6 +80,12 @@ class DashboardController < ApplicationController
         .count
 
 
+    # Count recorded dates, not missing calendar days, for each monthly status.
+    outside_roll_days = GuideOutsideRollDays.call(guides: @guides, month: @month)
+    monthly_status_days = GuideDay.joins(:work_day)
+      .where(guide: @guides, work_days: { date: month_range })
+      .group(:guide_id, :status).distinct.count("work_days.date")
+
     # ========================================================
     # 6. TOTAL DE PUESTOS DE TRABAJO ASIGNADOS
     #
@@ -171,6 +177,9 @@ class DashboardController < ApplicationController
         {
           guide: guide,
           worked: worked,
+          outside_roll: outside_roll_days.fetch(guide.id),
+          days_off: monthly_status_days[[guide.id, "day_off"]].to_i,
+          penalized_days: monthly_status_days[[guide.id, "penalized"]].to_i,
           percentage: percentage,
           deviation: deviation
         }
@@ -742,7 +751,7 @@ class DashboardController < ApplicationController
           ].to_i
 
         [
-          Date::ABBR_MONTHNAMES[
+          I18n.t("date.abbr_month_names")[
             month_number
           ],
           count

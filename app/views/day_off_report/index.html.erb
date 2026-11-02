@@ -1,19 +1,19 @@
 <div class="container">
 
-    <h3>Assign Day Off for a Week</h3>
+    <h3>Asignar días libres por semana</h3>
 
     <%= form_with url: assign_day_off_path, method: :post, local: true do %>
 
     <div class="row mb-3">
 
         <div class="col-md-4">
-            <label>Week Start</label>
+            <label>Inicio de semana</label>
             <%= date_field_tag :date, nil, class: "form-control" %>
         </div>
 
     </div>
 
-    <h5>Select Guides</h5>
+    <h5>Seleccionar guías</h5>
 
     <div class="row">
 
@@ -37,35 +37,35 @@
 
     <br>
 
-    <%= submit_tag "Assign Day Off", class: "btn btn-danger" %>
+    <%= submit_tag "Asignar días libres", class: "btn btn-danger" %>
 
     <% end %>
 
     <br><br><br>
     <hr>
 
-    <h3>Monthly Day Off Report</h3>
+    <h3>Reporte mensual de días libres</h3>
 
     <%= form_with url: day_off_report_path, method: :get, local: true do %>
 
     <div class="row mb-3">
 
         <div class="col-md-4">
-            <label>Month</label>
+            <label>Mes</label>
             <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control" %>
         </div>
 
         <div class="col-md-2 d-flex align-items-end">
-            <%= submit_tag "View", class: "btn btn-primary w-100" %>
+            <%= submit_tag "Ver", class: "btn btn-primary w-100" %>
         </div>
 
     </div>
 
     <% end %>
 
-    <span>Simbology<span>
-            <span class="badge bg-warning">Manual DayOff</span>
-            <span class="badge bg-danger">DayOff by Workdayrole</span><br>
+    <span>Simbología<span>
+            <span class="badge bg-warning">Libre manual</span>
+            <span class="badge bg-danger">Libre en la programación</span><br>
 
             <table class="table table-bordered">
 
@@ -73,7 +73,7 @@
 
                     <tr>
 
-                        <th>Guide</th>
+                        <th>Guía</th>
 
                         <% @calendar_days.each do |date| %>
                         <th><%= date.day %></th>
@@ -108,18 +108,18 @@ end
 
                             <% if gd&.day_off? %>
 
-                            <span class="badge bg-danger">OFF</span>
+                            <span class="badge bg-danger">Libre</span>
 
                             <% elsif manual_off %>
 
-                            <%= button_to "OFF",
+                            <%= button_to "Libre",
       remove_day_off_path(
         guide_id: guide.id,
         date: date
       ),
       method: :post,
       class: "badge bg-warning border-0",
-      onclick: "return confirm('Are you sure you want to remove this day off?')" %>
+      onclick: "return confirm('¿Quitar este día libre?')" %>
 
 
                             <% else %>

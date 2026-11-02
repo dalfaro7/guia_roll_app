@@ -4,7 +4,7 @@
         <div>
             <h2 class="mb-1">Notas de la programación</h2>
             <p class="text-muted mb-0">
-                Incidents and operational observations
+                Incidentes y observaciones operativas
             </p>
         </div>
 
@@ -55,7 +55,7 @@
     <div class="alert alert-success">
         Programación publicada:
         <strong>
-            <%= @work_day.date.strftime("%B %d, %Y") %>
+            <%= l(@work_day.date, format: :long) %>
         </strong>
     </div>
 
@@ -65,7 +65,7 @@
     <div class="card mb-4">
 
         <div class="card-header">
-            <strong>Add Note</strong>
+            <strong>Agregar nota</strong>
         </div>
 
         <div class="card-body">
@@ -81,13 +81,13 @@
             <div class="mb-3">
 
                 <label class="form-label">
-                    Type
+                    Tipo
                 </label>
 
                 <%= select_tag "roll_note[note_type]",
                   options_for_select([
-                    ["Incident", "incident"],
-                    ["Observation", "observation"]
+                    ["Incidente", "incident"],
+                    ["Observación", "observation"]
                   ]),
                   class: "form-select" %>
 
@@ -97,7 +97,7 @@
             <div class="mb-3">
 
                 <label class="form-label">
-                    Guides involved
+                    Guías involucrados
                 </label>
 
                 <div class="row">
@@ -139,7 +139,7 @@
             <div class="mb-3">
 
                 <label class="form-label">
-                    Note
+                    Nota
                 </label>
 
                 <%= text_area_tag "roll_note[note]",
@@ -151,7 +151,7 @@
             </div>
 
 
-            <%= submit_tag "Save Note",
+            <%= submit_tag "Guardar nota",
                          class: "btn btn-danger" %>
 
             <% end %>
@@ -181,13 +181,13 @@
                     <% if roll_note.incident? %>
 
                     <span class="badge bg-danger">
-                        Incident
+                        Incidente
                     </span>
 
                     <% else %>
 
                     <span class="badge bg-info text-dark">
-                        Observation
+                        Observación
                     </span>
 
                     <% end %>
@@ -210,7 +210,7 @@
 
             <div class="mb-2">
 
-                <strong>Guides:</strong>
+                <strong>Guías:</strong>
 
                 <%= roll_note.guide_days
                              .map { |gd| gd.guide.name }
@@ -222,7 +222,7 @@
 
 
             <small class="text-muted">
-                Created by:
+                Creado por:
                 <%= roll_note.created_by.name %>
             </small>
 
@@ -231,7 +231,7 @@
 
             <div class="mt-3">
 
-                <%= button_to "Delete",
+                <%= button_to "Eliminar",
           roll_note_path(roll_note),
           method: :delete,
           data: {

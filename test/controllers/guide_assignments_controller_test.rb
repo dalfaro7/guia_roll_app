@@ -46,6 +46,6 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
     }
 
     assert_response :success
-    assert_select ".alert", text: "End date must be on or after start date."
+    assert_select ".alert", text: "La fecha final debe ser igual o posterior a la inicial."
   end
 end

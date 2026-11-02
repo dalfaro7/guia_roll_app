@@ -1,29 +1,29 @@
 <div class="container">
 
-    <h3>Guide Assignment Lookup</h3>
+    <h3>Consulta de asignaciones de guías</h3>
 
     <hr>
 
-    <h3>Daily Assignment</h3>
+    <h3>Asignación del día</h3>
 
     <%= form_with url: guide_assignments_path, method: :get, local: true do %>
 
     <div class="row">
 
         <div class="col-md-4">
-            <label>Guide</label>
+            <label>Guía</label>
             <%= select_tag :guide_id,
 options_from_collection_for_select(@guides, :id, :name, params[:guide_id]),
 class: "form-control" %>
         </div>
 
         <div class="col-md-4">
-            <label>Date</label>
+            <label>Fecha</label>
             <%= date_field_tag :date, params[:date], class: "form-control" %>
         </div>
 
         <div class="col-md-4 d-flex align-items-end">
-            <%= submit_tag "Check Day", class: "btn btn-primary w-100" %>
+            <%= submit_tag "Consultar día", class: "btn btn-primary w-100" %>
         </div>
 
     </div>
@@ -36,11 +36,11 @@ class: "form-control" %>
 
     <div class="card p-3">
 
-        <strong>Guide:</strong> <%= @daily_assignment.guide.name %><br>
-        <strong>Status:</strong> <%= @daily_assignment.status %><br>
-        <strong>Location:</strong> <%= @daily_assignment.location || "-" %><br>
-        <strong>Primary Role:</strong> <%= @daily_assignment.role_primary || "-" %><br>
-        <strong>Secondary Role:</strong> <%= @daily_assignment.role_secondary || "-" %>
+        <strong>Guía:</strong> <%= @daily_assignment.guide.name %><br>
+        <strong>Estado:</strong> <%= roll_status_label(@daily_assignment.status) %><br>
+        <strong>Ubicación:</strong> <%= @daily_assignment.location || "-" %><br>
+        <strong>Rol principal:</strong> <%= roll_role_label(@daily_assignment.role_primary) %><br>
+        <strong>Rol secundario:</strong> <%= roll_role_label(@daily_assignment.role_secondary) %>
 
     </div>
 
@@ -48,29 +48,29 @@ class: "form-control" %>
 
     <hr>
 
-    <h3>Assignments by Date Range</h3>
+    <h3>Asignaciones por rango de fechas</h3>
 
     <%= form_with url: guide_assignments_path, method: :get, local: true do %>
     <div class="row">
         <div class="col-md-3">
-            <%= label_tag :range_guide_id, "Guide" %>
+            <%= label_tag :range_guide_id, "Guía" %>
             <%= select_tag :range_guide_id,
                 options_from_collection_for_select(@guides, :id, :name, params[:range_guide_id]),
                 class: "form-control" %>
         </div>
 
         <div class="col-md-3">
-            <%= label_tag :start_date, "Start Date" %>
+            <%= label_tag :start_date, "Fecha inicial" %>
             <%= date_field_tag :start_date, params[:start_date], class: "form-control", required: true %>
         </div>
 
         <div class="col-md-3">
-            <%= label_tag :end_date, "End Date" %>
+            <%= label_tag :end_date, "Fecha final" %>
             <%= date_field_tag :end_date, params[:end_date], class: "form-control", required: true %>
         </div>
 
         <div class="col-md-3 d-flex align-items-end">
-            <%= submit_tag "View Range", class: "btn btn-success w-100" %>
+            <%= submit_tag "Ver período", class: "btn btn-success w-100" %>
         </div>
     </div>
     <% end %>
@@ -80,33 +80,33 @@ class: "form-control" %>
     <% if @range_error.present? %>
     <div class="alert alert-warning"><%= @range_error %></div>
     <% elsif @range %>
-    <p>Assignments from <%= @range.first %> to <%= @range.last %>.</p>
+    <p>Asignaciones desde <%= @range.first %> hasta <%= @range.last %>.</p>
 
     <% if @range_assignments.any? %>
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Location</th>
-                <th>Primary Role</th>
-                <th>Secondary Role</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Ubicación</th>
+                <th>Rol principal</th>
+                <th>Rol secundario</th>
             </tr>
         </thead>
         <tbody>
             <% @range_assignments.each do |gd| %>
             <tr>
                 <td><%= gd.work_day.date %></td>
-                <td><%= gd.status %></td>
+                <td><%= roll_status_label(gd.status) %></td>
                 <td><%= gd.location || "-" %></td>
-                <td><%= gd.role_primary || "-" %></td>
-                <td><%= gd.role_secondary || "-" %></td>
+                <td><%= roll_role_label(gd.role_primary) %></td>
+                <td><%= roll_role_label(gd.role_secondary) %></td>
             </tr>
             <% end %>
         </tbody>
     </table>
     <% else %>
-    <p>No assignments found in this date range.</p>
+    <p>No hay asignaciones en este período.</p>
     <% end %>
     <% end %>
 

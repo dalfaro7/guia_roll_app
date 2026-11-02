@@ -1,16 +1,16 @@
 <div class="container">
     <h2>Buses</h2>
 
-    <%= link_to "New Bus", new_bus_path %>
+    <%= link_to "Nuevo bus", new_bus_path %>
 
     <table border="1">
         <thead>
             <tr>
                 <th>Alias</th>
-                <th>Company</th>
-                <th>Plate</th>
-                <th>Capacity</th>
-                <th>Phone</th>
+                <th>Empresa</th>
+                <th>Placa</th>
+                <th>Capacidad</th>
+                <th>Teléfono</th>
                 <th></th>
             </tr>
         </thead>
@@ -24,8 +24,8 @@
                 <td><%= bus.capacity %></td>
                 <td><%= bus.phone %></td>
                 <td>
-                    <%= link_to "Edit", edit_bus_path(bus) %>
-                    <%= link_to "Delete", bus_path(bus), method: :delete, data: { confirm: "Delete this bus?" } %>
+                    <%= link_to "Editar", edit_bus_path(bus) %>
+                    <%= link_to "Eliminar", bus_path(bus), method: :delete, data: { confirm: "¿Eliminar este bus?" } %>
                 </td>
             </tr>
             <% end %>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_02_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_02_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -46,6 +46,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000000) do
     t.string "phone"
     t.string "plate"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "guide_activity_changes", force: :cascade do |t|
+    t.boolean "active", null: false
+    t.bigint "guide_id", null: false
+    t.datetime "recorded_at", null: false
+    t.index ["guide_id", "recorded_at"], name: "index_guide_activity_changes_on_guide_id_and_recorded_at"
+    t.index ["guide_id"], name: "index_guide_activity_changes_on_guide_id"
   end
 
   create_table "guide_days", force: :cascade do |t|
@@ -582,6 +590,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_000000) do
   add_foreign_key "audit_logs", "work_days"
   add_foreign_key "bus_assignments", "buses"
   add_foreign_key "bus_assignments", "work_days"
+  add_foreign_key "guide_activity_changes", "guides"
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"
   add_foreign_key "guide_days", "work_days"

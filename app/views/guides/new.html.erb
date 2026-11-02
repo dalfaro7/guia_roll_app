@@ -1,6 +1,6 @@
 <div class="container p-3">
     <div class="card p-4">
-        <h3 class="mb-4">New Guide</h3>
+        <h3 class="mb-4">Nuevo guía</h3>
 
         <%= form_with model: @guide do |f| %>
         <div class="mb-3">
@@ -20,7 +20,7 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Skills</label>
+            <label class="form-label">Habilidades</label>
 
             <div class="border rounded p-3">
                 <%= collection_check_boxes(
@@ -28,7 +28,7 @@
                 :skill_ids,
                 Skill.order(:name),
                 :id,
-                :name
+                ->(skill) { roll_skill_label(skill.name) }
               ) do |skill| %>
 
                 <div class="form-check mb-1">
@@ -51,10 +51,10 @@
       %>
 
         <div class="d-flex gap-2">
-            <%= f.submit "Create Guide",
+            <%= f.submit "Crear guía",
                      class: "btn btn-primary" %>
 
-            <%= link_to "Back",
+            <%= link_to "Volver",
                     guides_path,
                     class: "btn btn-secondary" %>
         </div>
