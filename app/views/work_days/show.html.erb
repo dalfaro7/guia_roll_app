@@ -1,13 +1,13 @@
 <% content_for :title, "Operación del #{l(@work_day.date, format: :long)}" %>
-<% content_for :head do %><link rel="stylesheet" href="/work-day.css?v=2"><script src="/work-day-layout.js?v=1" defer></script><% end %>
+<% content_for :head do %><link rel="stylesheet" href="/work-day.css?v=3"><script src="/work-day-layout.js?v=1" defer></script><% end %>
 <% content_for :work_day_shell, "true" %>
 <div class="container p-2 work-day-page work-day-three-column">
-    <header class="work-day-hero">
+<div class="day-workspace">
+<aside class="day-sidebar day-sidebar-left" aria-label="Menú de la operación">
+    <header class="work-day-hero day-sidebar-heading">
       <div><span class="work-day-eyebrow">PROGRAMACIÓN DE GUÍAS</span><h1><%= l(@work_day.date, format: :long) %></h1><p>Organiza el equipo y revisa los detalles de la operación.</p></div>
       <span class="work-day-state"><%= roll_status_label(@work_day.status) %></span>
     </header>
-<div class="day-workspace">
-<aside class="day-sidebar day-sidebar-left" aria-label="Menú de la operación">
 <details class="day-sidebar-disclosure" open><summary class="day-sidebar-toggle">Menú de acciones</summary>
 <div class="day-menu-content"><span class="work-day-eyebrow">EN ESTE DÍA</span>
     <nav class="work-day-nav" aria-label="Secciones del día">
