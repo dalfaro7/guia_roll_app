@@ -1,10 +1,15 @@
 <% content_for :title, "Operación del #{l(@work_day.date, format: :long)}" %>
-<% content_for :head do %><link rel="stylesheet" href="/work-day.css?v=1"><% end %>
-<div class="container p-2 work-day-page">
+<% content_for :head do %><link rel="stylesheet" href="/work-day.css?v=2"><script src="/work-day-layout.js?v=1" defer></script><% end %>
+<% content_for :work_day_shell, "true" %>
+<div class="container p-2 work-day-page work-day-three-column">
     <header class="work-day-hero">
       <div><span class="work-day-eyebrow">PROGRAMACIÓN DE GUÍAS</span><h1><%= l(@work_day.date, format: :long) %></h1><p>Organiza el equipo y revisa los detalles de la operación.</p></div>
       <span class="work-day-state"><%= roll_status_label(@work_day.status) %></span>
     </header>
+<div class="day-workspace">
+<aside class="day-sidebar day-sidebar-left" aria-label="Menú de la operación">
+<details class="day-sidebar-disclosure" open><summary class="day-sidebar-toggle">Menú de acciones</summary>
+<div class="day-menu-content"><span class="work-day-eyebrow">EN ESTE DÍA</span>
     <nav class="work-day-nav" aria-label="Secciones del día">
       <a href="#day-overview">Resumen</a><a href="#day-transport">Transporte</a>
       <% if @work_day.draft? %><a href="#day-availability">Disponibilidad</a><% end %>
@@ -12,8 +17,7 @@
       <% if @work_day.published? %><a href="#day-assigned">Equipo asignado</a><% end %>
       <a href="#day-fairness">Equidad</a>
     </nav>
-    <div class="container px-4">
-        <div class="work-day-actions d-flex align-items-center gap-2 flex-wrap">
+<span class="work-day-eyebrow">GESTIONAR OPERACIÓN</span>        <div class="work-day-actions d-flex align-items-center gap-2 flex-wrap">
 
             <% if @work_day.draft? || @work_day.generated? %>
             <%= link_to "Configurar ubicaciones",
@@ -80,400 +84,22 @@
                   class: "btn btn-light" %>
         </div>
 
-        <div class="container mt-1" id="day-overview">
-            <div class="row">
-                <div class="col work-day-summary">
-                  <div class="card"><div class="card-body"><span class="work-day-eyebrow">EQUIPO SOLICITADO</span><strong class="work-day-total"><%= @work_day.guides_requested || 0 %></strong><p>Guías para esta operación</p><small>Revisa la disponibilidad antes de generar los roles.</small></div></div>
-                </div>
-
-                <div class="col">
-                    <% if @work_day.draft? %>
-                    <div class="card">
-                        <div class="card-header bg-dark text-white">
-                            Viajes
-                        </div>
-
-                        <div class="card-body">
-                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Ubicación</th>
-                                        <th>Guías</th>
-                                        <th>Pasajeros</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <% ["Sara-3&4", "Balsa", "PM", "Privado"].each do |loc| %>
-                                    <tr>
-                                        <td><%= loc %></td>
-                                        <td><%= @location_counts[loc] || 0 %></td>
-                                        <td><%= @passenger_counts[loc] || 0 %></td>
-                                    </tr>
-                                    <% end %>
-                                </tbody>
-                            </table></div>
-                        </div>
-                    </div>
-                    <% end %>
-                </div>
-
-                <div class="col">
-                    <!-- NOT AVAILABLE GUIDES -->
-                    <div class="card mt-4">
-                        <div class="card-header bg-warning text-white">
-                            <strong>No disponibles</strong>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Guía</th>
-                                        <th>Estado</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <% date = @work_day.date %>
-
-                                    <% @work_day.guide_days
-                    .includes(:guide)
-                    .where(status: [:vacation, :day_off, :assigned_task, :penalized])
-                    .joins(:guide)
-                    .order("guides.priority ASC")
-                    .each do |gd| %>
-
-                                    <tr>
-                                        <td>
-                                            <strong><%= gd.guide.name %></strong>
-                                        </td>
-
-                                        <td>
-                                            <% if gd.vacation? %>
-                                            <span class="badge bg-danger">Vacaciones</span>
-
-                                            <% elsif gd.day_off? %>
-                                            <span class="badge bg-warning text-dark">Día libre</span>
-
-                                            <% elsif gd.assigned_task? %>
-                                            <span class="badge bg-info text-dark">Tarea asignada</span>
-
-                                            <small class="text-muted d-block">
-                                                <%= gd.status_note %>
-                                            </small>
-
-                                            <% elsif gd.penalized? %>
-                                            <span class="badge bg-dark">Penalizado</span>
-
-                                            <small class="text-muted d-block">
-                                                <%= gd.status_note %>
-                                            </small>
-                                            <% end %>
-                                        </td>
-
-                                        <td>
-                                            <% if @work_day.generated? && gd.assigned_task? %>
-                                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#moveAssignedTaskModal_<%= gd.id %>">
-                                                Mover
-                                            </button>
-                                            <% else %>
-                                            -
-                                            <% end %>
-                                        </td>
-                                    </tr>
-
-                                    <% if @work_day.generated? && gd.assigned_task? %>
-                                    <div class="modal fade" id="moveAssignedTaskModal_<%= gd.id %>" tabindex="-1" aria-hidden="true">
-
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-
-                                                <div class="modal-header bg-warning">
-                                                    <h5 class="modal-title">
-                                                        Mover de tarea asignada a la programación
-                                                    </h5>
-
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar">
-                                                    </button>
-                                                </div>
-
-                                                <div class="modal-body">
-                                                    <p>
-                                                        <strong>Guía:</strong>
-                                                        <%= gd.guide.name %>
-                                                    </p>
-
-                                                    <p>
-                                                        <strong>Estado actual:</strong>
-                                                        Tarea Asignada
-                                                    </p>
-
-                                                    <% if gd.status_note.present? %>
-                                                    <p>
-                                                        <strong>Nota:</strong>
-                                                        <%= gd.status_note %>
-                                                    </p>
-                                                    <% end %>
-
-                                                    <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
-                                            method: :post,
-                                            local: true do %>
-
-                                                    <%= hidden_field_tag :guide_day_id, gd.id %>
-
-                                                    <div class="mb-3">
-                                                        <%= label_tag :location, "Ubicación" %>
-
-                                                        <%= select_tag :location,
-                                                 options_for_select(
-                                                   ["Balsa", "Sara-3&4", "Privado", "PM"]
-                                                 ),
-                                                 class: "form-select" %>
-                                                    </div>
-
-                                                    <div class="text-end">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                            Cancelar
-                                                        </button>
-
-                                                        <%= submit_tag "Mover a la programación",
-                                                 class: "btn btn-warning",
-                                                 data: {
-                                                   turbo: false,
-                                                   confirm: "Mover #{gd.guide.name} de tarea asignada a la programación?"
-                                                 } %>
-                                                    </div>
-                                                    <% end %>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <% end %>
-                                    <% end %>
-
-                                    <% ManualDayOff
-                    .includes(:guide)
-                    .where(date: date)
-                    .joins(:guide)
-                    .order("guides.priority ASC")
-                    .each do |manual_off| %>
-
-                                    <tr>
-                                        <td><%= manual_off.guide.name %></td>
-
-                                        <td>
-                                            <span class="badge bg-info text-dark">
-                                                Libre manual
-                                            </span>
-                                        </td>
-
-                                        <td>-</td>
-                                    </tr>
-                                    <% end %>
-                                </tbody>
-                            </table></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col">
-                    <% if @work_day.draft? %>
-                    <div class="card">
-                        <div class="card-header bg-success text-white">
-                            Mayores saldos de días libres <small class="d-block">Solo guías activos · prioridad 2</small>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Guía</th>
-                                        <th>Saldo</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <% Guide.active
-                      .where(priority: 2)
-                      .order(day_off_balance: :desc)
-                      .limit(5)
-                      .each do |guide| %>
-
-                                    <% balance = guide.day_off_balance.to_i %>
-
-                                    <tr>
-                                        <td><%= guide.name %></td>
-
-                                        <td class="<%= 'text-danger fw-bold' if balance.negative? %>">
-                                            <%= balance %>
-                                        </td>
-                                    </tr>
-                                    <% end %>
-                                </tbody>
-                            </table></div>
-                        </div>
-                    </div>
-                    <% end %>
-                </div>
-            </div>
-        </div>
-
-        <!-- FAIRNESS DIAGNOSTIC -->
-        <div class="container mt-4">
-            <details class="card border-secondary" id="day-fairness">
-                <summary class="card-header">Diagnóstico de equidad <small>Ver criterios y posición de cada guía</small></summary>
-
-                <div class="card-body">
-                    <p class="text-muted mb-3">
-                        Esta tabla muestra la posición de equidad de cada guía justo
-                        antes de la fecha de operación. El día actual no se
-                        incluye en estos cálculos.
-                    </p>
-
-                    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm table-bordered table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Posición</th>
-                                <th>Guía</th>
-                                <th>Estado</th>
-                                <th>Prioridad</th>
-                                <th>Equidad desde</th>
-                                <th>Días como guía</th>
-                                <th>Saldo de entrada</th>
-                                <th>Días para la clasificación</th>
-                                <th>Días trabajados</th>
-                                <th>Consecutivos</th>
-                                <th>En espera desde</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <%
-                fairness_guide_days =
-                  @work_day.guide_days
-                    .includes(:guide)
-                    .select do |guide_day|
-                      guide_day.worked? ||
-                        guide_day.standby? ||
-                        guide_day.assigned_task?
-                    end
-
-                # Usa exactamente la misma llave de ranking que utiliza
-                # RoleGeneratorV2 y GuideCandidateRanker.
-                fairness_guide_days =
-                  fairness_guide_days.sort_by do |guide_day|
-                    RollFairnessPolicy.ranking_key_for(
-                      guide_day.guide,
-                      before_date: @work_day.date
-                    )
-                  end
-              %>
-
-                            <% fairness_guide_days.each_with_index do |guide_day, index| %>
-                            <%
-                  guide = guide_day.guide
-
-                  snapshot =
-                    RollFairnessPolicy.fairness_snapshot_for(
-                      guide,
-                      before_date: @work_day.date
-                    )
-                %>
-
-                            <tr class="<%= guide.priority == 3 ? 'table-info' : '' %>">
-                                <td>
-                                    <strong><%= index + 1 %></strong>
-                                </td>
-
-                                <td>
-                                    <%= guide.name %>
-                                </td>
-
-                                <td>
-                                    <% if guide_day.worked? %>
-                                    <span class="badge bg-success">
-                                        Trabajó
-                                    </span>
-
-                                    <% elsif guide_day.assigned_task? %>
-                                    <span class="badge bg-info text-dark">
-                                        Tarea asignada
-                                    </span>
-
-                                    <% else %>
-                                    <span class="badge bg-secondary">
-                                        En espera
-                                    </span>
-                                    <% end %>
-                                </td>
-
-                                <td>
-                                    <%= snapshot[:priority] %>
-                                </td>
-
-                                <td>
-                                    <%= snapshot[:fairness_started_on]&.strftime("%d/%m/%Y") || "-" %>
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        <%= snapshot[:roll_worked_days] %>
-                                    </strong>
-                                </td>
-                                <td>
-                                    <%= snapshot[:entry_roll_balance] %>
-                                </td>
-                                <td>
-                                    <strong><%= snapshot[:ranking_roll_days] %></strong>
-                                </td>
-                                <td>
-                                    <%= snapshot[:service_days] %>
-                                </td>
-
-                                <td>
-                                    <%= snapshot[:consecutive_roll_days] %>
-                                </td>
-
-                                <td>
-                                    <%= snapshot[:waiting_since]&.strftime("%d/%m/%Y") || "-" %>
-                                </td>
-                            </tr>
-                            <% end %>
-                        </tbody>
-                    </table></div>
-
-                    <small class="text-muted">
-                        Orden de clasificación:
-                        Prioridad → Nuevo ingreso → Días para la clasificación → Días consecutivos →
-                        Estado del día anterior → En espera desde → Identificador interno.
-                        El saldo de entrada aplica durante el mes de activación o el del primer día como guía si ocurre después.
-                    </small>
-                </div>
-            </details>
-        </div>
-
-        <!-- TRANSPORTATION -->
-        <div class="container mt-4">
-            <h2 class="mt-4" id="day-transport">Transporte</h2>
-
-            <div class="row">
-                <% ["Privado", "Sara-3&4", "Balsa", "PM"].each do |loc| %>
-                <div class="col-md-6 col-lg-3">
-                    <%= render "buses",
-                       work_day: @work_day,
-                       location: loc %>
-                </div>
-                <% end %>
-            </div>
-        </div>
-    </div>
-
-    <hr>
-    <br>
-
+    <!-- DELETE BUTTON -->
+    <details class="work-day-danger"><summary>Acciones de eliminación</summary><p>Eliminar esta programación restaura los saldos. Esta acción no se puede deshacer.</p>
+        <%= button_to "Eliminar programación",
+                  delete_with_reset_work_day_path(@work_day),
+                  method: :delete,
+                  class: "btn btn-outline-danger btn-sm",
+                  data: {
+                    turbo: false,
+                    confirm: "Esto eliminará permanentemente la programación y restaurará los saldos. ¿Continuar?"
+                  } %>
+    </details></div>
+<footer class="day-user-footer">
+<span class="work-day-eyebrow">SESIÓN ACTUAL</span><strong><%= current_user.name.presence || current_user.email %></strong>
+<%= button_to "Cerrar sesión", destroy_user_session_path, method: :delete, class: "btn day-logout" %>
+</footer></details></aside>
+<main class="day-main" aria-label="Área de trabajo">
     <!-- AVAILABILITY -->
     <% if @work_day.draft? %>
     <h2 id="day-availability">Disponibilidad del equipo</h2><p class="work-day-hint">Selecciona el estado de cada guía. Las penalizaciones y tareas asignadas requieren una nota. Guarda al terminar.</p>
@@ -1152,18 +778,402 @@
 
     <hr>
 
-    <!-- DELETE BUTTON -->
-    <details class="work-day-danger"><summary>Acciones de eliminación</summary><p>Eliminar esta programación restaura los saldos. Esta acción no se puede deshacer.</p>
-        <%= button_to "Eliminar programación",
-                  delete_with_reset_work_day_path(@work_day),
-                  method: :delete,
-                  class: "btn btn-outline-danger btn-sm",
-                  data: {
-                    turbo: false,
-                    confirm: "Esto eliminará permanentemente la programación y restaurará los saldos. ¿Continuar?"
-                  } %>
-    </details>
-</div>
+
+        <!-- FAIRNESS DIAGNOSTIC -->
+        <div class="container mt-4">
+            <details class="card border-secondary" id="day-fairness">
+                <summary class="card-header">Diagnóstico de equidad <small>Ver criterios y posición de cada guía</small></summary>
+
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Esta tabla muestra la posición de equidad de cada guía justo
+                        antes de la fecha de operación. El día actual no se
+                        incluye en estos cálculos.
+                    </p>
+
+                    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm table-bordered table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Posición</th>
+                                <th>Guía</th>
+                                <th>Estado</th>
+                                <th>Prioridad</th>
+                                <th>Equidad desde</th>
+                                <th>Días como guía</th>
+                                <th>Saldo de entrada</th>
+                                <th>Días para la clasificación</th>
+                                <th>Días trabajados</th>
+                                <th>Consecutivos</th>
+                                <th>En espera desde</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <%
+                fairness_guide_days =
+                  @work_day.guide_days
+                    .includes(:guide)
+                    .select do |guide_day|
+                      guide_day.worked? ||
+                        guide_day.standby? ||
+                        guide_day.assigned_task?
+                    end
+
+                # Usa exactamente la misma llave de ranking que utiliza
+                # RoleGeneratorV2 y GuideCandidateRanker.
+                fairness_guide_days =
+                  fairness_guide_days.sort_by do |guide_day|
+                    RollFairnessPolicy.ranking_key_for(
+                      guide_day.guide,
+                      before_date: @work_day.date
+                    )
+                  end
+              %>
+
+                            <% fairness_guide_days.each_with_index do |guide_day, index| %>
+                            <%
+                  guide = guide_day.guide
+
+                  snapshot =
+                    RollFairnessPolicy.fairness_snapshot_for(
+                      guide,
+                      before_date: @work_day.date
+                    )
+                %>
+
+                            <tr class="<%= guide.priority == 3 ? 'table-info' : '' %>">
+                                <td>
+                                    <strong><%= index + 1 %></strong>
+                                </td>
+
+                                <td>
+                                    <%= guide.name %>
+                                </td>
+
+                                <td>
+                                    <% if guide_day.worked? %>
+                                    <span class="badge bg-success">
+                                        Trabajó
+                                    </span>
+
+                                    <% elsif guide_day.assigned_task? %>
+                                    <span class="badge bg-info text-dark">
+                                        Tarea asignada
+                                    </span>
+
+                                    <% else %>
+                                    <span class="badge bg-secondary">
+                                        En espera
+                                    </span>
+                                    <% end %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:priority] %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:fairness_started_on]&.strftime("%d/%m/%Y") || "-" %>
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        <%= snapshot[:roll_worked_days] %>
+                                    </strong>
+                                </td>
+                                <td>
+                                    <%= snapshot[:entry_roll_balance] %>
+                                </td>
+                                <td>
+                                    <strong><%= snapshot[:ranking_roll_days] %></strong>
+                                </td>
+                                <td>
+                                    <%= snapshot[:service_days] %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:consecutive_roll_days] %>
+                                </td>
+
+                                <td>
+                                    <%= snapshot[:waiting_since]&.strftime("%d/%m/%Y") || "-" %>
+                                </td>
+                            </tr>
+                            <% end %>
+                        </tbody>
+                    </table></div>
+
+                    <small class="text-muted">
+                        Orden de clasificación:
+                        Prioridad → Nuevo ingreso → Días para la clasificación → Días consecutivos →
+                        Estado del día anterior → En espera desde → Identificador interno.
+                        El saldo de entrada aplica durante el mes de activación o el del primer día como guía si ocurre después.
+                    </small>
+                </div>
+            </details>
+        </div>
+
+        <!-- TRANSPORTATION -->
+        <div class="container mt-4">
+            <h2 class="mt-4" id="day-transport">Transporte</h2>
+
+            <div class="row">
+                <% ["Privado", "Sara-3&4", "Balsa", "PM"].each do |loc| %>
+                <div class="col-md-6 col-lg-3">
+                    <%= render "buses",
+                       work_day: @work_day,
+                       location: loc %>
+                </div>
+                <% end %>
+            </div>
+        </div>
+
+</main>
+<aside class="day-sidebar day-sidebar-right" aria-label="Resumen operativo">
+<details class="day-sidebar-disclosure" open><summary class="day-sidebar-toggle">Resumen operativo</summary>
+        <div class="container mt-1" id="day-overview">
+            <div class="row">
+                <div class="col work-day-summary">
+                  <div class="card"><div class="card-body"><span class="work-day-eyebrow">EQUIPO SOLICITADO</span><strong class="work-day-total"><%= @work_day.guides_requested || 0 %></strong><p>Guías para esta operación</p><small>Revisa la disponibilidad antes de generar los roles.</small></div></div>
+                </div>
+
+                <div class="col">
+                    <% if @work_day.draft? %>
+                    <div class="card">
+                        <div class="card-header bg-dark text-white">
+                            Viajes
+                        </div>
+
+                        <div class="card-body">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Ubicación</th>
+                                        <th>Guías</th>
+                                        <th>Pasajeros</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <% ["Sara-3&4", "Balsa", "PM", "Privado"].each do |loc| %>
+                                    <tr>
+                                        <td><%= loc %></td>
+                                        <td><%= @location_counts[loc] || 0 %></td>
+                                        <td><%= @passenger_counts[loc] || 0 %></td>
+                                    </tr>
+                                    <% end %>
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                    <% end %>
+                </div>
+
+                <div class="col">
+                    <!-- NOT AVAILABLE GUIDES -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-warning text-white">
+                            <strong>No disponibles</strong>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Guía</th>
+                                        <th>Estado</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <% date = @work_day.date %>
+
+                                    <% @work_day.guide_days
+                    .includes(:guide)
+                    .where(status: [:vacation, :day_off, :assigned_task, :penalized])
+                    .joins(:guide)
+                    .order("guides.priority ASC")
+                    .each do |gd| %>
+
+                                    <tr>
+                                        <td>
+                                            <strong><%= gd.guide.name %></strong>
+                                        </td>
+
+                                        <td>
+                                            <% if gd.vacation? %>
+                                            <span class="badge bg-danger">Vacaciones</span>
+
+                                            <% elsif gd.day_off? %>
+                                            <span class="badge bg-warning text-dark">Día libre</span>
+
+                                            <% elsif gd.assigned_task? %>
+                                            <span class="badge bg-info text-dark">Tarea asignada</span>
+
+                                            <small class="text-muted d-block">
+                                                <%= gd.status_note %>
+                                            </small>
+
+                                            <% elsif gd.penalized? %>
+                                            <span class="badge bg-dark">Penalizado</span>
+
+                                            <small class="text-muted d-block">
+                                                <%= gd.status_note %>
+                                            </small>
+                                            <% end %>
+                                        </td>
+
+                                        <td>
+                                            <% if @work_day.generated? && gd.assigned_task? %>
+                                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#moveAssignedTaskModal_<%= gd.id %>">
+                                                Mover
+                                            </button>
+                                            <% else %>
+                                            -
+                                            <% end %>
+                                        </td>
+                                    </tr>
+
+                                    <% if @work_day.generated? && gd.assigned_task? %>
+                                    <div class="modal fade" id="moveAssignedTaskModal_<%= gd.id %>" tabindex="-1" aria-hidden="true">
+
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+
+                                                <div class="modal-header bg-warning">
+                                                    <h5 class="modal-title">
+                                                        Mover de tarea asignada a la programación
+                                                    </h5>
+
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar">
+                                                    </button>
+                                                </div>
+
+                                                <div class="modal-body">
+                                                    <p>
+                                                        <strong>Guía:</strong>
+                                                        <%= gd.guide.name %>
+                                                    </p>
+
+                                                    <p>
+                                                        <strong>Estado actual:</strong>
+                                                        Tarea Asignada
+                                                    </p>
+
+                                                    <% if gd.status_note.present? %>
+                                                    <p>
+                                                        <strong>Nota:</strong>
+                                                        <%= gd.status_note %>
+                                                    </p>
+                                                    <% end %>
+
+                                                    <%= form_with url: move_assigned_task_to_roll_work_day_path(@work_day),
+                                            method: :post,
+                                            local: true do %>
+
+                                                    <%= hidden_field_tag :guide_day_id, gd.id %>
+
+                                                    <div class="mb-3">
+                                                        <%= label_tag :location, "Ubicación" %>
+
+                                                        <%= select_tag :location,
+                                                 options_for_select(
+                                                   ["Balsa", "Sara-3&4", "Privado", "PM"]
+                                                 ),
+                                                 class: "form-select" %>
+                                                    </div>
+
+                                                    <div class="text-end">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            Cancelar
+                                                        </button>
+
+                                                        <%= submit_tag "Mover a la programación",
+                                                 class: "btn btn-warning",
+                                                 data: {
+                                                   turbo: false,
+                                                   confirm: "Mover #{gd.guide.name} de tarea asignada a la programación?"
+                                                 } %>
+                                                    </div>
+                                                    <% end %>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <% end %>
+                                    <% end %>
+
+                                    <% ManualDayOff
+                    .includes(:guide)
+                    .where(date: date)
+                    .joins(:guide)
+                    .order("guides.priority ASC")
+                    .each do |manual_off| %>
+
+                                    <tr>
+                                        <td><%= manual_off.guide.name %></td>
+
+                                        <td>
+                                            <span class="badge bg-info text-dark">
+                                                Libre manual
+                                            </span>
+                                        </td>
+
+                                        <td>-</td>
+                                    </tr>
+                                    <% end %>
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <% if @work_day.draft? %>
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            Mayores saldos de días libres <small class="d-block">Solo guías activos · prioridad 2</small>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Guía</th>
+                                        <th>Saldo</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <% Guide.active
+                      .where(priority: 2)
+                      .order(day_off_balance: :desc)
+                      .limit(5)
+                      .each do |guide| %>
+
+                                    <% balance = guide.day_off_balance.to_i %>
+
+                                    <tr>
+                                        <td><%= guide.name %></td>
+
+                                        <td class="<%= 'text-danger fw-bold' if balance.negative? %>">
+                                            <%= balance %>
+                                        </td>
+                                    </tr>
+                                    <% end %>
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                    <% end %>
+                </div>
+            </div>
+        </div>
+
+</details></aside>
+</div></div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {

@@ -1,1 +1,42 @@
 .work-day-page{max-width:1480px;padding:24px!important;color:#203b36;background:#f5f8f7;border-radius:20px;margin:24px auto}.work-day-page>.container{padding:0!important}.work-day-hero{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:8px 0 20px}.work-day-hero h1{font-size:clamp(24px,3vw,36px);font-weight:750;margin:8px 0}.work-day-hero p,.work-day-hint{color:#657873;margin:0 0 16px}.work-day-eyebrow{font-size:11px;letter-spacing:.1em;font-weight:750;color:#56766b}.work-day-state{background:#e0eee8;color:#185942;border:1px solid #c2ddd0;border-radius:30px;padding:10px 20px;font-weight:700}.work-day-nav{display:flex;gap:8px;overflow:auto;margin-bottom:18px;padding-bottom:5px}.work-day-nav a{white-space:nowrap;text-decoration:none;border:1px solid #d9e4df;border-radius:9px;padding:9px 16px;color:#285649;background:white;font-weight:600}.work-day-nav a:hover{background:#e6f1eb}.work-day-actions{padding:16px!important;background:#fff;border:1px solid #dce6e1;border-radius:14px;margin-bottom:22px;gap:12px!important}.work-day-page .button_to{margin:0}.work-day-page .btn{border-radius:9px;font-weight:600;min-height:42px;padding:10px 16px;font-size:13px}.work-day-page .btn-success,.work-day-page .btn-primary,.work-day-page .btn-info{background:#196b53;border-color:#196b53;color:white}.work-day-page .btn-outline-primary{color:#196b53;border-color:#b6d2c6}.work-day-page .btn-outline-primary:hover{background:#e8f2ed}.work-day-page .card{border:1px solid #dbe5e0;border-radius:14px;box-shadow:0 3px 12px #173a2905;margin-top:0!important;min-width:0}.work-day-page .card-header{border-radius:14px 14px 0 0!important;padding:14px 18px;background:#edf3ef!important;color:#254d3e!important;border-bottom:1px solid #dbe5e0;font-weight:700}.work-day-page .card-header small{font-size:11px;font-weight:400;margin-top:4px}.work-day-page .card-body{padding:18px}.work-day-page #day-overview>.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0}.work-day-page #day-overview>.row>.col{padding:0;min-width:0}.work-day-total{font-size:44px;display:block;line-height:1.4}.work-day-summary p{margin:0 0 10px;font-weight:600}.work-day-summary small{color:#6d7f77}.work-day-page h2{font-size:22px;font-weight:750;margin:28px 0 12px}.work-day-page .table{font-size:13px;margin-bottom:0;vertical-align:middle;border-color:#e2e9e5}.work-day-page .table th{background:#edf3ef;color:#49665a;font-size:12px;padding:12px;white-space:nowrap}.work-day-page .table td{padding:11px 12px}.work-day-page .table tbody tr:hover>td{background:#f0f7f3}.work-day-table-scroll{overflow:auto;max-width:100%;border:1px solid #e2e9e5;border-radius:10px;background:white;margin-bottom:14px}.work-day-page select,.work-day-page input:not([type=hidden]):not([type=submit]):not([type=checkbox]){border:1px solid #c9d8d0;border-radius:8px;padding:9px;min-height:40px;font-size:13px;max-width:100%}.work-day-page #day-availability+ p+form select{min-width:170px}.work-day-page .badge{white-space:normal;line-height:1.4}.work-day-page details>summary{cursor:pointer}.work-day-page details>summary small{display:block;font-weight:400}.work-day-page [id^=day-]{scroll-margin-top:20px}.work-day-page :focus-visible{outline:3px solid #68aa90;outline-offset:3px}.work-day-danger{margin-top:32px;border-top:1px solid #e1d5d5;padding:18px;color:#974b4b}.work-day-danger summary{font-size:13px;font-weight:600}.work-day-danger p{font-size:13px;margin-top:16px}.work-day-page>hr,.work-day-page>br{display:none}@media(max-width:1000px){.work-day-page #day-overview>.row{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.work-day-page{padding:14px!important;margin:12px auto}.work-day-hero{align-items:flex-start;flex-direction:column;gap:0}.work-day-page #day-overview>.row{grid-template-columns:minmax(0,1fr)}.work-day-actions{align-items:stretch!important}.work-day-actions>a,.work-day-actions>form{flex:1 1 100%}.work-day-actions form .btn{width:100%}.work-day-page .container{padding-left:0;padding-right:0}.work-day-page .table{min-width:420px}.work-day-page .card-body{padding:12px}}
+
+/* Three-column operation workspace */
+.work-day-page.work-day-three-column{max-width:none;width:calc(100% - 12px);background:#f3f6f5;padding:24px 12px!important}
+.day-workspace{display:grid;grid-template-columns:235px minmax(0,1fr) 300px;gap:16px;align-items:start}
+.day-sidebar{position:sticky;top:16px;min-width:0;border:1px solid #dbe5df;border-radius:16px;background:#fff;box-shadow:0 3px 12px #173a2905}
+.day-sidebar-disclosure>summary{padding:17px 18px;border-bottom:1px solid #e2e9e5;font-weight:750;color:#214e3f;font-size:14px}
+.day-sidebar-disclosure[open]>summary{list-style:none}
+.day-sidebar-left .day-sidebar-disclosure[open]{display:flex;flex-direction:column;min-height:min(760px,calc(100vh - 34px))}
+.day-menu-content{padding:18px 14px;flex:1}
+.day-sidebar-left .work-day-nav{display:flex;flex-direction:column;gap:5px;margin:10px 0 23px;overflow:visible}
+.day-sidebar-left .work-day-nav a{border:0;background:transparent;border-radius:8px;padding:10px 12px;font-size:13px}
+.day-sidebar-left .work-day-nav a:hover,.day-sidebar-left .work-day-nav a:focus{background:#e5f1ea;color:#115e43}
+.day-sidebar-left .work-day-actions{display:flex!important;flex-direction:column;align-items:stretch!important;background:none;border:0;padding:0!important;gap:9px!important;margin:12px 0}
+.day-sidebar-left .work-day-actions form,.day-sidebar-left .work-day-actions .btn{width:100%;text-align:left;font-size:12px;white-space:normal}
+.day-sidebar-left .work-day-danger{margin:20px 0 0;padding:14px 0 0;font-size:12px}
+.day-sidebar-left .work-day-danger .btn{font-size:12px;width:100%}
+.day-user-footer{padding:18px;border-top:1px solid #e2e9e5;background:#f7faf8;border-radius:0 0 16px 16px;display:grid;gap:8px}
+.day-user-footer strong{font-size:15px;overflow-wrap:anywhere}
+.day-user-footer .day-logout{width:100%;text-align:left;border:1px solid #d6e1da;background:white;color:#405d50}
+.day-main{min-width:0;background:white;border:1px solid #dbe5df;border-radius:16px;padding:24px}
+.day-main>h2:first-child{margin-top:0}
+.day-main .container{max-width:100%;padding-left:0;padding-right:0}
+.day-main>hr,.day-main>br{display:none}
+.day-main #day-fairness{margin-top:24px}
+.day-sidebar-right #day-overview{padding:14px;margin:0!important}
+.day-sidebar-right #day-overview>.row{display:flex;flex-direction:column;gap:14px}
+.day-sidebar-right #day-overview>.row>.col{width:100%;flex:none}
+.day-sidebar-right .card{box-shadow:none;border:0;background:#f8faf9}
+.day-sidebar-right .card-header{font-size:13px;padding:12px;border:0}
+.day-sidebar-right .card-body{padding:10px 12px}
+.day-sidebar-right .table{font-size:12px;min-width:0}
+.day-sidebar-right .table th,.day-sidebar-right .table td{padding:8px 6px;white-space:normal}
+.day-sidebar-right .work-day-table-scroll{border:0;margin:0}
+.day-sidebar-right .work-day-total{font-size:36px}
+.day-sidebar-right .work-day-summary p{font-size:12px;margin-bottom:4px}
+.day-sidebar-right .work-day-summary small{font-size:11px}
+.day-main .col-lg-3{flex:0 0 50%;max-width:50%}
+@media(min-width:1101px){.day-sidebar-disclosure>summary{pointer-events:none}.day-sidebar{max-height:calc(100vh - 32px);overflow-y:auto}}
+@media(max-width:1300px) and (min-width:1101px){.day-workspace{grid-template-columns:205px minmax(0,1fr) 255px;gap:14px}.day-main{padding:16px}.work-day-page.work-day-three-column{padding:16px 10px!important}}
+@media(max-width:1100px){.day-workspace{grid-template-columns:minmax(0,1fr)}.day-sidebar{position:static}.day-sidebar-left{grid-row:1}.day-sidebar-right{grid-row:2}.day-main{grid-row:3}.day-sidebar-left .day-sidebar-disclosure[open]{min-height:0}.day-sidebar-disclosure[open]>summary{list-style:disclosure-open}.day-sidebar-right #day-overview>.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.work-day-page.work-day-three-column{width:calc(100% - 8px);padding:12px 8px!important}.day-main{padding:14px}.day-sidebar-right #day-overview>.row{grid-template-columns:minmax(0,1fr)}.day-main .col-lg-3{flex:0 0 100%;max-width:100%}}
