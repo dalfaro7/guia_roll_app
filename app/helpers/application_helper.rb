@@ -1,6 +1,9 @@
 module ApplicationHelper
   def roll_skill_label(value)
-    { "ClassIII" => "Clase III", "ClassIV" => "Clase IV", "Computer" => "Computadora" }.fetch(value.to_s, roll_role_label(value))
+    { "ClassIII" => "Clase III", "ClassIV" => "Clase IV", "Computer" => "Computadora",
+      "address_La_Fortuna" => "Residencia en La Fortuna", "address_Sarapiqui" => "Residencia en Sarapiquí",
+      "Busguide" => "Guía de bus", "Certified" => "Certificado", "Highwater" => "Aguas altas",
+      "Kayaker" => "Kayakista", "Weekend" => "Fin de semana", "HG" => "Guía líder" }.fetch(value.to_s, roll_role_label(value))
   end
 
   def roll_status_label(value)
