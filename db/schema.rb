@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -231,7 +231,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000002) do
     t.date "fairness_started_on"
     t.date "last_priority_change_date"
     t.string "name"
-    t.string "pay_category"
+    t.string "pay_category", default: "freelance_regular"
     t.boolean "pay_level_two", default: false, null: false
     t.integer "priority"
     t.date "start_date"
