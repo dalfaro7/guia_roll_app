@@ -88,9 +88,41 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "an open or future week cannot be queried" do
+  test "the current week shows only elapsed days and excludes future assignments from its total" do
+    travel_to @zone.local(2026, 11, 13, 12) do
+      CompensationRate.create!(code: "guide_regular", amount_cents: 5_000,
+        effective_at: Time.utc(2020, 1, 1))
+      today = WorkDay.create!(date: Date.new(2026, 11, 13), guides_requested: 0)
+      future = WorkDay.create!(date: Date.new(2026, 11, 15), guides_requested: 0)
+      [[today, "completed", "performed"], [future, "scheduled", "planned"]].each do |work_day, departure_status, assignment_status|
+        departure = work_day.departures.create!(label: "Balsa", location: "Balsa",
+          starts_at: @zone.local(work_day.date.year, work_day.date.month, work_day.date.day, 6),
+          status: departure_status)
+        departure.compensation_assignments.create!(guide: @guide,
+          role_code: "river_guide", status: assignment_status)
+        Compensation::RepriceDay.call(work_day)
+      end
+      Compensation::SettlementService.refresh_for(today)
+      assert_equal 10_000, CompensationSettlement.find_by!(guide: @guide,
+        week_start: Date.new(2026, 11, 11)).amount_cents
+
+      get guide_assignments_path, params: { guide_id: @guide.id, week: "2026-11-13" }
+      assert_response :success
+      assert_select "table tbody tr", count: 3
+      assert_select "#weekly-day-20261115", count: 0
+      assert_select "p", text: /11\/11\/2026.*13\/11\/2026/
+      assert_select "tfoot", text: /Total hasta hoy.*50[,.]00/
+      assert_select "input#week[max='2026-11-13']", count: 1
+      assert_select "span", text: /Quincena.*13\/11\/2026/
+      assert_select "span", text: /Mes.*13\/11\/2026/
+    end
+  end
+
+  test "a future week cannot be queried" do
     travel_to @zone.local(2026, 11, 11, 12) do
-      get guide_assignments_path, params: { week: "2026-11-11" }
+      get guide_assignments_path, params: { week: "2026-11-17" }
+      assert_redirected_to guide_assignments_path
+      get guide_assignments_path, params: { week: "2026-11-18" }
       assert_redirected_to guide_assignments_path
     end
   end

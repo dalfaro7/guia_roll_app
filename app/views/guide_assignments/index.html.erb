@@ -1,6 +1,6 @@
 <div class="container py-4">
   <h1>Reportes semanales</h1>
-  <p class="text-muted">Actividad y valoración de cada guía, por semanas cerradas de miércoles a martes.</p>
+  <p class="text-muted">Actividad y valoración de cada guía, por semanas de miércoles a martes. La semana en curso muestra hasta hoy.</p>
 
   <% if @guide.nil? %>
     <div class="alert alert-info">Todavía no hay guías para consultar.</div>
@@ -12,7 +12,7 @@
       </div>
       <div class="col-md-4">
         <%= label_tag :week, "Una fecha de la semana", class: "form-label" %>
-        <%= date_field_tag :week, @week_start.iso8601, max: @latest_closed_week_start.next_day(6).iso8601, class: "form-control" %>
+        <%= date_field_tag :week, @week_start.iso8601, max: @today.iso8601, class: "form-control" %>
       </div>
       <div class="col-md-3"><%= submit_tag "Consultar semana", class: "btn btn-primary w-100" %></div>
     <% end %>
@@ -20,12 +20,12 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
       <div>
         <h2 class="h4 mb-1"><%= @guide.name %></h2>
-        <p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @week_end.strftime("%d/%m/%Y") %></p>
-        <small class="text-muted"><%= @settlement&.paid? ? "Pagado" : (@settlement&.closed_at ? "Cerrado, pendiente de pago" : "Sin cierre contable registrado") %></small>
+        <p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></p>
+        <small class="text-muted"><%= @week_open ? "Semana en curso · hasta hoy" : (@settlement&.paid? ? "Pagado" : (@settlement&.closed_at ? "Cerrado, pendiente de pago" : "Sin cierre contable registrado")) %></small>
       </div>
       <div class="d-flex gap-2">
         <%= link_to "Semana anterior", guide_assignments_path(guide_id: @guide.id, week: (@week_start - 7.days).iso8601), class: "btn btn-outline-secondary" %>
-        <% if @week_start < @latest_closed_week_start %>
+        <% if @week_start < @current_week_start %>
           <%= link_to "Semana siguiente", guide_assignments_path(guide_id: @guide.id, week: (@week_start + 7.days).iso8601), class: "btn btn-outline-secondary" %>
         <% end %>
       </div>
@@ -61,7 +61,7 @@
           <% if @adjustments.any? %>
             <tr><th colspan="3">Ajustes de períodos anteriores</th><th class="text-end"><%= usd(@adjustments.sum(&:amount_cents)) %></th></tr>
           <% end %>
-          <tr><th colspan="3">Total semanal</th><th class="text-end"><%= usd(@weekly_total_cents) %></th></tr>
+          <tr><th colspan="3"><%= @week_open ? "Total hasta hoy" : "Total semanal" %></th><th class="text-end"><%= usd(@weekly_total_cents) %></th></tr>
         </tfoot>
       </table>
     </div>
@@ -127,13 +127,13 @@
     <section class="card mt-4" aria-labelledby="weekly-earnings-title">
       <div class="card-body">
         <h2 class="h5" id="weekly-earnings-title">Ganancias por salidas realizadas</h2>
-        <p class="text-muted">Quincena y mes que contienen el martes de la semana seleccionada. Estos totales no incluyen ajustes de períodos anteriores.</p>
+        <p class="text-muted">Quincena y mes que contienen el último día mostrado. Estos totales no incluyen ajustes de períodos anteriores ni salidas posteriores a ese día.</p>
         <div class="mb-3">
-          <div class="d-flex justify-content-between"><span>Quincena · <%= @fortnight_range.first.strftime("%d/%m") %> al <%= @fortnight_range.last.strftime("%d/%m/%Y") %></span><strong><%= usd(@fortnight_total_cents) %></strong></div>
+          <div class="d-flex justify-content-between"><span>Quincena · <%= @fortnight_range.first.strftime("%d/%m") %> al <%= (@week_open ? @report_end : @fortnight_range.last).strftime("%d/%m/%Y") %></span><strong><%= usd(@fortnight_total_cents) %></strong></div>
           <div class="progress" role="img" aria-label="Ganancias de la quincena: <%= usd(@fortnight_total_cents) %>"><div class="progress-bar" style="width: <%= (@fortnight_total_cents * 100.0 / @chart_max_cents).round %>%"></div></div>
         </div>
         <div>
-          <div class="d-flex justify-content-between"><span>Mes · <%= @month_range.first.strftime("%d/%m") %> al <%= @month_range.last.strftime("%d/%m/%Y") %></span><strong><%= usd(@month_total_cents) %></strong></div>
+          <div class="d-flex justify-content-between"><span>Mes · <%= @month_range.first.strftime("%d/%m") %> al <%= (@week_open ? @report_end : @month_range.last).strftime("%d/%m/%Y") %></span><strong><%= usd(@month_total_cents) %></strong></div>
           <div class="progress" role="img" aria-label="Ganancias del mes: <%= usd(@month_total_cents) %>"><div class="progress-bar bg-success" style="width: <%= (@month_total_cents * 100.0 / @chart_max_cents).round %>%"></div></div>
         </div>
       </div>
