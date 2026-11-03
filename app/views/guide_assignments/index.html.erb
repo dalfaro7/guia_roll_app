@@ -32,7 +32,7 @@
     </div>
 
     <div class="table-responsive">
-      <table class="table table-striped table-hover align-middle">
+      <table id="guide-weekly-table" class="table table-striped table-hover align-middle">
         <thead><tr><th>Día</th><th>Estado</th><th>Actividad</th><th class="text-end">Pago del día</th></tr></thead>
         <tbody>
           <% @days.each do |day| %>
@@ -139,4 +139,33 @@
       </div>
     </section>
   <% end %>
+
+  <section class="card mt-4" aria-labelledby="operation-expenses-title">
+    <div class="card-body">
+      <h2 class="h4 mb-1" id="operation-expenses-title">Gastos de personal de toda la operación</h2>
+      <p class="text-muted mb-3">Guías y choferes del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %>. Solo se cuentan las salidas realizadas; los períodos cerrados conservan los importes del cierre.</p>
+      <div class="table-responsive">
+        <table id="operation-expenses-table" class="table table-striped align-middle mb-0">
+          <thead><tr><th>Día</th><th class="text-end">Guías</th><th class="text-end">Choferes</th><th class="text-end">Total diario</th></tr></thead>
+          <tbody>
+            <% @operation_days.each do |day| %>
+              <tr>
+                <th scope="row"><%= l(day[:date], format: "%A %d/%m") %></th>
+                <td class="text-end"><%= usd(day[:guide_cents]) %></td>
+                <td class="text-end"><%= usd(day[:driver_cents]) %></td>
+                <td class="text-end fw-semibold"><%= usd(day[:total_cents]) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot>
+            <% if @operation_adjustments_cents != 0 %>
+              <tr><th colspan="3">Ajustes de períodos anteriores</th><td class="text-end"><%= usd(@operation_adjustments_cents) %></td></tr>
+            <% end %>
+            <tr><th colspan="3"><%= @week_open ? "Total hasta hoy" : "Total semanal" %></th><td class="text-end fw-bold"><%= usd(@operation_weekly_total_cents) %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="text-muted small mb-0 mt-3">Esta tabla refleja los pagos de personal registrados en la aplicación; no incluye otros gastos como combustible o alquiler de buses.</p>
+    </div>
+  </section>
 </div>

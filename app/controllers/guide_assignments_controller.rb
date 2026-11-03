@@ -21,9 +21,10 @@ class GuideAssignmentsController < ApplicationController
     @week_end = @week_start + 6.days
     @week_open = @week_start > @latest_closed_week_start
     @report_end = [@week_end, @today].min
+    range = @week_start..@report_end
+    load_operation_expenses(range)
     return unless @guide
 
-    range = @week_start..@report_end
     guide_days = GuideDay.joins(:work_day)
       .where(guide: @guide, work_days: { date: range })
       .includes(:work_day).index_by { |guide_day| guide_day.work_day.date }
@@ -66,6 +67,46 @@ class GuideAssignmentsController < ApplicationController
   end
 
   private
+
+  def load_operation_expenses(range)
+    totals = range.index_with { { guide_cents: 0, driver_cents: 0 } }
+    settlements = CompensationSettlement.where(week_start: @week_start)
+      .includes(:compensation_settlement_items, :compensation_adjustments).to_a
+    snapshot_assignment_ids = []
+
+    unless @week_open
+      settlements.select { |settlement| settlement.closed_at.present? }.each do |settlement|
+        key = settlement.guide_id.present? ? :guide_cents : :driver_cents
+        settlement.compensation_settlement_items.each do |item|
+          date = Date.iso8601(item.details.fetch("date"))
+          next unless totals.key?(date)
+
+          totals[date][key] += item.amount_cents
+          snapshot_assignment_ids << item.compensation_assignment_id
+        end
+      end
+    end
+
+    CompensationAssignment.joins(departure: :work_day)
+      .where(status: "performed", work_days: { date: range })
+      .where.not(departures: { status: "canceled" })
+      .includes(:compensation_lines, departure: :work_day).each do |assignment|
+        next if snapshot_assignment_ids.include?(assignment.id)
+
+        date = assignment.departure.work_day.date
+        key = assignment.guide_id.present? ? :guide_cents : :driver_cents
+        totals[date][key] += assignment.compensation_lines.sum(&:amount_cents)
+      end
+
+    @operation_days = totals.map do |date, amounts|
+      amounts.merge(date: date, total_cents: amounts[:guide_cents] + amounts[:driver_cents])
+    end
+    @operation_adjustments_cents = settlements.sum do |settlement|
+      settlement.compensation_adjustments.sum(&:amount_cents)
+    end
+    @operation_weekly_total_cents = @operation_days.sum { |day| day[:total_cents] } +
+      @operation_adjustments_cents
+  end
 
   def load_earnings_chart
     @month_range = @report_end.beginning_of_month..@report_end.end_of_month
