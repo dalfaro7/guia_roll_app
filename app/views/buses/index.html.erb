@@ -1,34 +1,95 @@
-<div class="container">
-    <h2>Buses</h2>
+<main class="container py-4">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small fw-semibold mb-1">Transporte</p>
+      <h1 class="mb-1">Buses</h1>
+      <p class="text-muted mb-0">Consulta la capacidad, los datos del vehículo y su contacto.</p>
+    </div>
+    <%= link_to "Agregar bus", new_bus_path, class: "btn btn-primary" %>
+  </div>
 
-    <%= link_to "Nuevo bus", new_bus_path %>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <%= form_with url: buses_path, method: :get, local: true, class: "row g-2 align-items-end" do %>
+        <div class="col-12 col-md">
+          <%= label_tag :q, "Buscar bus", class: "form-label fw-semibold" %>
+          <%= search_field_tag :q, @query, class: "form-control", placeholder: "Alias, empresa, placa o teléfono" %>
+        </div>
+        <div class="col-12 col-sm-auto"><%= submit_tag "Buscar", class: "btn btn-outline-primary w-100" %></div>
+        <% if @query.present? %>
+          <div class="col-12 col-sm-auto"><%= link_to "Limpiar", buses_path, class: "btn btn-outline-secondary w-100" %></div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
 
-    <table border="1">
-        <thead>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h5 mb-0">Vehículos</h2>
+    <span class="badge rounded-pill text-bg-light border"><%= @query.present? ? "#{@buses.count} de #{@total_buses}" : @total_buses %> buses</span>
+  </div>
+
+  <% if @buses.any? %>
+    <div class="card shadow-sm border-0 d-none d-md-block">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <caption class="visually-hidden">Buses registrados</caption>
+          <thead class="table-light">
             <tr>
-                <th>Alias</th>
-                <th>Empresa</th>
-                <th>Placa</th>
-                <th>Capacidad</th>
-                <th>Teléfono</th>
-                <th></th>
+              <th scope="col" class="ps-3">Bus</th>
+              <th scope="col">Empresa</th>
+              <th scope="col">Placa</th>
+              <th scope="col">Capacidad</th>
+              <th scope="col">Teléfono</th>
+              <th scope="col" class="text-end pe-3">Acciones</th>
             </tr>
-        </thead>
-
-        <tbody>
+          </thead>
+          <tbody>
             <% @buses.each do |bus| %>
-            <tr>
-                <td><%= bus.alias %></td>
-                <td><%= bus.company %></td>
-                <td><%= bus.plate %></td>
-                <td><%= bus.capacity %></td>
-                <td><%= bus.phone %></td>
-                <td>
-                    <%= link_to "Editar", edit_bus_path(bus) %>
-                    <%= link_to "Eliminar", bus_path(bus), method: :delete, data: { confirm: "¿Eliminar este bus?" } %>
+              <tr>
+                <td class="ps-3 fw-semibold"><%= link_to bus.alias, bus_path(bus), class: "text-decoration-none" %></td>
+                <td><%= bus.company.presence || "Sin empresa" %></td>
+                <td><span class="badge text-bg-light border"><%= bus.plate %></span></td>
+                <td><%= pluralize(bus.capacity, "pasajero") %></td>
+                <td><% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></td>
+                <td class="text-end pe-3 text-nowrap">
+                  <%= link_to "Ver", bus_path(bus), class: "btn btn-sm btn-outline-secondary" %>
+                  <%= link_to "Editar", edit_bus_path(bus), class: "btn btn-sm btn-outline-primary" %>
                 </td>
-            </tr>
+              </tr>
             <% end %>
-        </tbody>
-    </table>
-</div>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-md-none d-grid gap-3">
+      <% @buses.each do |bus| %>
+        <article class="card shadow-sm border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <h3 class="h5 mb-1"><%= link_to bus.alias, bus_path(bus), class: "text-decoration-none" %></h3>
+                <p class="text-muted mb-0"><%= bus.company.presence || "Sin empresa" %></p>
+              </div>
+              <span class="badge text-bg-light border"><%= bus.plate %></span>
+            </div>
+            <p class="mb-1"><strong>Capacidad:</strong> <%= pluralize(bus.capacity, "pasajero") %></p>
+            <p class="mb-3"><strong>Teléfono:</strong> <% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></p>
+            <div class="d-flex gap-2">
+              <%= link_to "Ver detalles", bus_path(bus), class: "btn btn-outline-secondary flex-fill" %>
+              <%= link_to "Editar", edit_bus_path(bus), class: "btn btn-outline-primary flex-fill" %>
+            </div>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-center py-5">
+        <h3 class="h5"><%= @query.present? ? "No se encontraron buses" : "Todavía no hay buses registrados" %></h3>
+        <p class="text-muted"><%= @query.present? ? "Prueba con otro alias, empresa, placa o teléfono." : "Agrega el primer vehículo para tener sus datos a mano." %></p>
+        <%= link_to @query.present? ? "Ver todos los buses" : "Agregar bus", @query.present? ? buses_path : new_bus_path, class: "btn btn-primary" %>
+      </div>
+    </div>
+  <% end %>
+</main>

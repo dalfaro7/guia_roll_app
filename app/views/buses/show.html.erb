@@ -1,6 +1,25 @@
-<div class="container p-3">
-  <h1>Bus <%= @bus.alias %></h1>
-  <dl><dt>Empresa</dt><dd><%= @bus.company %></dd><dt>Placa</dt><dd><%= @bus.plate %></dd><dt>Capacidad</dt><dd><%= @bus.capacity %></dd><dt>Teléfono</dt><dd><%= @bus.phone %></dd></dl>
-  <%= link_to "Editar", edit_bus_path(@bus), class: "btn btn-primary" %>
-  <%= link_to "Volver a buses", buses_path, class: "btn btn-secondary" %>
-</div>
+<main class="container py-4">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+    <div>
+      <%= link_to "← Volver a buses", buses_path, class: "text-decoration-none" %>
+      <p class="text-uppercase text-muted small fw-semibold mt-3 mb-1">Transporte</p>
+      <h1 class="mb-1"><%= @bus.alias %></h1>
+      <p class="text-muted mb-0"><%= @bus.company.presence || "Sin empresa registrada" %></p>
+    </div>
+    <%= link_to "Editar bus", edit_bus_path(@bus), class: "btn btn-primary" %>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      <h2 class="h5 mb-4">Datos del vehículo</h2>
+      <dl class="row mb-0 g-3">
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Placa</dt><dd class="fs-5 mb-0"><%= @bus.plate %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Capacidad</dt><dd class="fs-5 mb-0"><%= pluralize(@bus.capacity, "pasajero") %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Empresa o propietario</dt><dd class="mb-0"><%= @bus.company.presence || "Sin empresa registrada" %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Teléfono de contacto</dt><dd class="mb-0"><% if @bus.phone.present? %><%= link_to @bus.phone, "tel:#{@bus.phone.gsub(/[^\d+]/, "")}" %><% else %>Sin teléfono registrado<% end %></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <%= button_to "Eliminar bus", bus_path(@bus), method: :delete, class: "btn btn-outline-danger", form: { data: { turbo_confirm: "¿Eliminar #{@bus.alias}? También se quitarán sus asignaciones de bus registradas." } } %>
+</main>

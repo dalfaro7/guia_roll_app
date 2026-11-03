@@ -1,32 +1,37 @@
-<%= form_with model: @bus do |f| %>
+<%= form_with model: @bus, local: true do |f| %>
+  <% if @bus.errors.any? %>
+    <div class="alert alert-danger" role="alert">
+      <p class="fw-semibold mb-2">Revisa los datos del bus:</p>
+      <ul class="mb-0"><% @bus.errors.full_messages.each do |message| %><li><%= message %></li><% end %></ul>
+    </div>
+  <% end %>
 
-<div>
-    <%= f.label :alias %><br>
-    <%= f.text_field :alias %>
-</div>
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <%= f.label :alias, "Nombre o alias", class: "form-label fw-semibold" %>
+      <%= f.text_field :alias, class: "form-control", required: true, autofocus: true, placeholder: "Ej. Bus principal" %>
+      <div class="form-text">Así aparecerá en la programación.</div>
+    </div>
+    <div class="col-12 col-md-6">
+      <%= f.label :plate, "Placa", class: "form-label fw-semibold" %>
+      <%= f.text_field :plate, class: "form-control", required: true, placeholder: "Ej. ABC-123" %>
+    </div>
+    <div class="col-12 col-md-6">
+      <%= f.label :company, "Empresa o propietario", class: "form-label fw-semibold" %>
+      <%= f.text_field :company, class: "form-control", placeholder: "Ej. Arenal Rafting" %>
+    </div>
+    <div class="col-12 col-md-6">
+      <%= f.label :capacity, "Capacidad de pasajeros", class: "form-label fw-semibold" %>
+      <%= f.number_field :capacity, class: "form-control", required: true, min: 1, step: 1, inputmode: "numeric" %>
+    </div>
+    <div class="col-12">
+      <%= f.label :phone, "Teléfono de contacto", class: "form-label fw-semibold" %>
+      <%= f.telephone_field :phone, class: "form-control", autocomplete: "tel", placeholder: "Ej. +506 8888 8888" %>
+    </div>
+  </div>
 
-<div>
-    <%= f.label :company %><br>
-    <%= f.text_field :company %>
-</div>
-
-<div>
-    <%= f.label :plate %><br>
-    <%= f.text_field :plate %>
-</div>
-
-<div>
-    <%= f.label :capacity %><br>
-    <%= f.number_field :capacity %>
-</div>
-
-<div>
-    <%= f.label :phone %><br>
-    <%= f.text_field :phone %>
-</div>
-
-<br>
-
-<%= f.submit %>
-
+  <div class="d-flex flex-wrap gap-2 mt-4">
+    <%= f.submit @bus.persisted? ? "Guardar cambios" : "Crear bus", class: "btn btn-primary" %>
+    <%= link_to "Cancelar", @bus.persisted? ? bus_path(@bus) : buses_path, class: "btn btn-outline-secondary" %>
+  </div>
 <% end %>

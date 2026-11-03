@@ -25,6 +25,20 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "search finds a bus by plate and shows a clear empty state" do
+    Bus.create!(company: "Other company", capacity: 13,
+      plate: "OTHER-002", alias: "Other bus")
+
+    get buses_url, params: { q: "test-001" }
+    assert_response :success
+    assert_select "table tbody tr", count: 1
+    assert_select "table tbody tr", text: /Test Bus/
+
+    get buses_url, params: { q: "unlisted" }
+    assert_response :success
+    assert_select "h3", "No se encontraron buses"
+  end
+
   test "should get show" do
     get bus_url(@bus)
     assert_response :success
@@ -38,5 +52,13 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
   test "should get edit" do
     get edit_bus_url(@bus)
     assert_response :success
+  end
+
+  test "invalid edits show the error and keep the entered details" do
+    patch bus_url(@bus), params: { bus: { alias: "Bus principal", capacity: 0 } }
+
+    assert_response :success
+    assert_select ".alert-danger", text: /Capacidad/
+    assert_select "input[name='bus[alias]'][value='Bus principal']"
   end
 end
