@@ -61,7 +61,12 @@
             <% end %>
           </div>
           <div class="roll-header__daily" role="group" aria-label="Operación diaria">
-            <% [["Programación de guías", work_days_path], ["Asignaciones", guide_assignments_path], ["Días libres", day_off_report_path], ["Buses", buses_path], ["Panel de equidad", dashboard_path]].each do |label, path| %>
+            <% daily_links = [["Programación de guías", work_days_path]] %>
+            <% if current_user&.admin? || current_user&.operador? || current_user&.contabilidad? %>
+              <% daily_links << ["Reportes semanales", guide_assignments_path] %>
+            <% end %>
+            <% daily_links.concat([["Días libres", day_off_report_path], ["Buses", buses_path], ["Panel de equidad", dashboard_path]]) %>
+            <% daily_links.each do |label, path| %>
               <%= link_to label, path, class: "roll-header__link", aria: { current: current_page?(path) ? "page" : nil } %>
             <% end %>
           </div>
