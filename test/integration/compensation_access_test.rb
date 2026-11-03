@@ -143,6 +143,40 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "valuation shows the four operating outings without creating a fifth" do
+    sign_in user(:operador)
+
+    assert_no_difference "Departure.count" do
+      get work_day_compensation_path(@day)
+    end
+    assert_response :success
+    assert_select "tr[data-operating-section]", 4
+    assert_select "tr[data-operating-section='Balsa'] a[href='#departure-#{@day.departures.first.id}']", text: "Editar"
+    assert_no_match(/Crear otra salida/, response.body)
+
+    assert_difference "Departure.count", 1 do
+      post work_day_departures_path(@day), params: {
+        departure: { location: "PM", starts_at_time: "14:00" }
+      }
+    end
+    pm = @day.departures.find_by!(location: "PM")
+    assert_equal "PM", pm.label
+
+    assert_no_difference "Departure.count" do
+      post work_day_departures_path(@day), params: {
+        departure: { location: "PM", starts_at_time: "15:00" }
+      }
+    end
+    assert_equal "14:00", pm.reload.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M")
+
+    assert_no_difference "Departure.count" do
+      post work_day_departures_path(@day), params: {
+        departure: { location: "Otra", starts_at_time: "16:00" }
+      }
+    end
+    assert_redirected_to work_day_compensation_path(@day)
+  end
+
   test "operator can designate a different principal photographer" do
     first_guide = Guide.create!(name: "Photo principal", priority: 3,
       active: true, pay_category: "freelance_regular")

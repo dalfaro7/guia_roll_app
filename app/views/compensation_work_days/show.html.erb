@@ -3,13 +3,51 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
     <div>
       <h1>Valoración del <%= l(@work_day.date, format: :long) %></h1>
-      <p class="text-muted mb-0">Importes por salida. La programación logística permanece en su vista habitual.</p>
+      <p class="text-muted mb-0">Importes de las cuatro salidas de la operación. La programación logística permanece en su vista habitual.</p>
     </div>
     <%= link_to "Volver a la programación", work_day_path(@work_day), class: "btn btn-outline-secondary" %>
   </div>
 
+  <section class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5">Salidas de la operación</h2>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>Salida</th><th>Actividad</th><th class="text-end">Total</th><th>Detalle</th></tr></thead>
+          <tbody>
+            <% @operating_sections.each do |location, section_departures| %>
+              <% section_assignments = section_departures.flat_map(&:compensation_assignments) %>
+              <tr data-operating-section="<%= location %>">
+                <th scope="row"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
+                <td><%= section_departures.any? ? "#{section_assignments.size} asignaciones" : "Sin actividad registrada" %></td>
+                <td class="text-end"><%= usd(section_assignments.sum(&:total_cents)) %></td>
+                <td>
+                  <% if section_departures.any? %>
+                    <% section_departures.each do |departure| %>
+                      <%= link_to(section_departures.one? ? (@can_edit ? "Editar" : "Ver detalle") : "#{@can_edit ? "Editar" : "Ver"} #{departure.label}", "#departure-#{departure.id}", class: "btn btn-sm btn-outline-primary me-1") %>
+                    <% end %>
+                  <% elsif @can_edit && @can_configure %>
+                    <details>
+                      <summary>Configurar horario</summary>
+                      <%= form_with url: work_day_departures_path(@work_day), method: :post, local: true, class: "d-flex align-items-end gap-2 mt-2" do %>
+                        <%= hidden_field_tag "departure[location]", location %>
+                        <div><%= label_tag "start_#{location}", "Hora de inicio" %><%= time_field_tag "departure[starts_at_time]", nil, id: "start_#{location}", class: "form-control", required: true %></div>
+                        <% if compensation_correction_required?(@work_day) %><div><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
+                        <%= submit_tag "Guardar", class: "btn btn-outline-primary" %>
+                      <% end %>
+                    </details>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <% if @departures.empty? %>
-    <p class="alert alert-info">Todavía no hay salidas económicas para este día. Al generar asignaciones de guías se crearán las salidas iniciales.</p>
+    <p class="alert alert-info">Aún no hay asignaciones económicas registradas para este día.</p>
   <% else %>
     <% daily_assignments = @departures.flat_map(&:compensation_assignments) %>
     <% daily_totals = daily_assignments.group_by { |assignment| [assignment.guide_id, assignment.driver_id] } %>
@@ -40,7 +78,7 @@
 
   <% @departures.each do |departure| %>
     <% assignments = departure.compensation_assignments.sort_by { |a| [a.person&.name.to_s, a.id] } %>
-    <section class="card mb-4">
+    <section class="card mb-4" id="departure-<%= departure.id %>">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div><strong><%= departure.label %></strong> · <%= departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %> · <%= departure.status %></div>
         <strong>Total <%= usd(assignments.sum(&:total_cents)) %></strong>
@@ -114,16 +152,4 @@
     </section>
   <% end %>
 
-  <% if @can_edit %>
-    <section class="card mb-4"><div class="card-body">
-      <h2 class="h5">Crear otra salida</h2>
-      <%= form_with url: work_day_departures_path(@work_day), method: :post, local: true, class: "row g-2" do %>
-        <div class="col-md-4"><%= label_tag :departure_label, "Nombre de la salida" %><%= text_field_tag "departure[label]", nil, id: :departure_label, class: "form-control", required: true, placeholder: "Sara clase 4" %></div>
-        <div class="col-md-3"><%= label_tag :departure_location, "Lugar" %><%= select_tag "departure[location]", options_for_select(["Sara-3", "Sara-4", "Sara-3&4", "Balsa", "Privado", "PM"]), id: :departure_location, class: "form-select" %></div>
-        <div class="col-md-2"><%= label_tag :departure_starts_at_time, "Hora" %><%= time_field_tag "departure[starts_at_time]", nil, id: :departure_starts_at_time, class: "form-control", required: true %></div>
-        <% if compensation_correction_required?(@work_day) %><div class="col-md-3"><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
-        <div class="col-12"><%= submit_tag "Crear salida", class: "btn btn-outline-primary" %></div>
-      <% end %>
-    </div></section>
-  <% end %>
 </div>

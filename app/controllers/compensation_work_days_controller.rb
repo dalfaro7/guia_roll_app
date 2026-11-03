@@ -5,6 +5,10 @@ class CompensationWorkDaysController < ApplicationController
     @work_day = WorkDay.find(params[:work_day_id])
     @departures = @work_day.departures.chronological
       .includes(compensation_assignments: [:guide, :driver, :compensation_lines])
+    @operating_sections = Departure::OPERATING_SECTIONS.map do |location, locations|
+      [location, @departures.select { |departure| locations.include?(departure.location) }]
+    end
+    @can_configure = Compensation::EditWindow.applicable?(@work_day)
     @guides = Guide.active.order(:name)
     @drivers = Driver.active.order(:name)
     @can_edit = Compensation::EditWindow.allowed?(

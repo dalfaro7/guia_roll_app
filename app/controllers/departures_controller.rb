@@ -4,13 +4,26 @@ class DeparturesController < ApplicationController
   before_action :require_open_window
 
   def create
-    departure = @work_day.departures.new(departure_params.except(:starts_at_time))
-    departure.starts_at = scheduled_start
-    departure.save!
-    audit!(action: "create_departure", auditable: departure, work_day: @work_day)
-    redirect_to work_day_compensation_path(@work_day), notice: "Salida creada."
+    location = departure_params[:location]
+    unless Departure::OPERATING_SECTIONS.key?(location)
+      raise ArgumentError, "Seleccione una de las cuatro salidas de la operación."
+    end
+
+    @work_day.with_lock do
+      if @work_day.departures.where(location: Departure::OPERATING_SECTIONS.fetch(location)).exists?
+        raise ArgumentError, "Esta salida ya está configurada. Edite sus datos actuales."
+      end
+
+      departure = @work_day.departures.create!(
+        label: location, location: location, starts_at: scheduled_start
+      )
+      audit!(action: "create_departure", auditable: departure, work_day: @work_day)
+    end
+    redirect_to work_day_compensation_path(@work_day), notice: "Horario de la salida guardado."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to work_day_compensation_path(@work_day), alert: e.record.errors.full_messages.to_sentence
+  rescue ArgumentError => e
+    redirect_to work_day_compensation_path(@work_day), alert: e.message
   end
 
   def update

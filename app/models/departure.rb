@@ -1,4 +1,11 @@
 class Departure < ApplicationRecord
+  OPERATING_SECTIONS = {
+    "Balsa" => ["Balsa"],
+    "Sara-3&4" => ["Sara-3&4", "Sara-3", "Sara-4"],
+    "PM" => ["PM"],
+    "Privado" => ["Privado"]
+  }.freeze
+
   belongs_to :work_day
   has_many :compensation_assignments, dependent: :restrict_with_error
 
