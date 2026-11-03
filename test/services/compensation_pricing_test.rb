@@ -3,14 +3,24 @@ require_relative "../../db/migrate/20261103000000_create_compensation_system"
 
 class CompensationPricingTest < ActiveSupport::TestCase
   setup do
-    if CompensationRate.none?
+    missing_rates = CreateCompensationSystem::INITIAL_RATES.reject do |code, _|
+      CompensationRate.exists?(code: code.to_s)
+    end
+    if missing_rates.any?
       CompensationRate.insert_all!(
-        CreateCompensationSystem::INITIAL_RATES.map do |code, cents|
+        missing_rates.map do |code, cents|
           { code: code.to_s, amount_cents: cents,
             effective_at: Time.utc(2020, 1, 1),
             created_at: Time.current, updated_at: Time.current }
         end
       )
+    end
+    { "second_sara" => 20, "second_other" => 30 }.each do |code, percent|
+      next if CompensationDiscountRule.exists?(code: code)
+
+      CompensationDiscountRule.insert!({ code: code, percent: percent,
+        effective_at: Time.utc(2020, 1, 1), created_at: Time.current,
+        updated_at: Time.current })
     end
     @date = Date.current + 2.days
     @work_day = WorkDay.create!(date: @date, guides_requested: 0)
@@ -21,8 +31,8 @@ class CompensationPricingTest < ActiveSupport::TestCase
     )
   end
 
-  def guide(name, category: "freelance_regular", level_two: false)
-    Guide.create!(name: name, priority: 3, active: true,
+  def guide(name, category: "freelance_regular", level_two: false, priority: 3)
+    Guide.create!(name: name, priority: priority, active: true,
       pay_category: category, pay_level_two: level_two)
   end
 
@@ -52,8 +62,8 @@ class CompensationPricingTest < ActiveSupport::TestCase
     )
     record = assignment(second, person, "river_guide", also_drives: true)
 
-    assert_equal 4_900, record.total_cents
-    assert_equal 30, record.compensation_lines.find_by!(code: "guide_regular").discount_percent
+    assert_equal 5_400, record.total_cents
+    assert_equal 20, record.compensation_lines.find_by!(code: "guide_regular").discount_percent
     assert_equal 1_400, record.compensation_lines.find_by!(code: "bonus_guide_drives").amount_cents
 
     third = @work_day.departures.create!(
@@ -80,6 +90,67 @@ class CompensationPricingTest < ActiveSupport::TestCase
     end
   end
 
+  test "priority zero photographer receives thirty dollar extra without bus bonus" do
+    photographer = guide("Photo priority zero", category: "salaried",
+      level_two: true, priority: 0)
+    record = assignment(@first, photographer, "photographer",
+      principal_photographer: true, bus_guide: true)
+
+    assert_equal 3_000, record.total_cents
+    assert_equal ["bonus_photographer_priority_zero"],
+      record.compensation_lines.pluck(:code)
+
+    travel_to @first.starts_at + 1.minute do
+      photographer.update!(priority: 1)
+      Compensation::RepriceDay.call(@work_day)
+      assert_equal 3_000, record.reload.total_cents
+      assert_equal 0, record.guide_priority_snapshot
+    end
+  end
+
+  test "priority one guide receives no bus bonus alongside photos" do
+    person = guide("Priority one", category: "salaried", level_two: true,
+      priority: 1)
+    record = assignment(@first, person, "river_guide", bus_guide: true,
+      photo_task: "take_and_send")
+
+    assert_equal 2_000, record.total_cents
+    assert_equal ["bonus_photo_take_and_send"],
+      record.compensation_lines.pluck(:code)
+  end
+
+  test "priority two salaried guide receives bus and photo bonuses together" do
+    person = guide("Priority two", category: "salaried", level_two: true,
+      priority: 2)
+    record = assignment(@first, person, "river_guide", bus_guide: true,
+      photo_task: "take_and_send")
+
+    assert_equal 2_600, record.total_cents
+    assert_equal %w[bonus_bus_guide bonus_photo_take_and_send],
+      record.compensation_lines.pluck(:code).sort
+  end
+
+  test "a later Sarapiqui discount applies to future second outings" do
+    person = guide("New discount")
+    assignment(@first, person, "river_guide")
+    second = @work_day.departures.create!(
+      label: "Sara clase 4", location: "Sara-4",
+      starts_at: @zone.local(@date.year, @date.month, @date.day, 10)
+    )
+    record = assignment(second, person, "river_guide")
+    assert_equal 4_000, record.total_cents
+
+    CompensationDiscountRule.create!(code: "second_sara", percent: 25,
+      effective_at: Time.current + 1.day)
+    assert_equal 3_750, record.reload.total_cents
+    assert_equal 25, record.compensation_lines.find_by!(code: "guide_regular").discount_percent
+
+    travel_to second.starts_at + 1.minute do
+      Compensation::RepriceDay.call(@work_day)
+      assert_equal 3_750, record.reload.total_cents
+    end
+  end
+
   test "one departure cannot pay two separate photo senders" do
     assignment(@first, guide("First sender"), "river_guide",
       photo_task: "take_and_send")
@@ -91,12 +162,13 @@ class CompensationPricingTest < ActiveSupport::TestCase
       "Ya existe un responsable de fotos"
   end
 
-  test "salaried bus guide with photos receives only the photo bonus" do
+  test "priority three salaried bus guide receives both bonuses with photos" do
     record = assignment(@first, guide("Salary", category: "salaried", level_two: true),
       "river_guide", bus_guide: true, photo_task: "take_and_send")
 
-    assert_equal 2_000, record.total_cents
-    assert_equal ["bonus_photo_take_and_send"], record.compensation_lines.pluck(:code)
+    assert_equal 2_600, record.total_cents
+    assert_equal %w[bonus_bus_guide bonus_photo_take_and_send],
+      record.compensation_lines.pluck(:code).sort
   end
 
   test "freelance head guide replaces base and salaried head guide has no additional fee" do
@@ -118,13 +190,16 @@ class CompensationPricingTest < ActiveSupport::TestCase
       starts_at: @zone.local(@date.year, @date.month, @date.day, 10)
     )
 
-    assert_equal 2_800,
+    assert_equal 3_200,
       assignment(second, driver, "driver_la_fortuna").total_cents
   end
 
-  test "Host is an assigned task and does not discount a later guided outing" do
+  test "Host remains textual and does not discount a later guided outing" do
     person = guide("Host then guide")
-    assert_equal 2_000, assignment(@first, person, "host").total_cents
+    guide_day = @work_day.guide_days.create!(guide: person, status: "assigned_task",
+      status_note: "Host")
+    assert_equal "Host", guide_day.status_note
+    assert_nil CompensationAssignment.find_by(guide_day: guide_day)
     second = @work_day.departures.create!(
       label: "Sara clase 3", location: "Sara-3",
       starts_at: @zone.local(@date.year, @date.month, @date.day, 10)
@@ -132,6 +207,9 @@ class CompensationPricingTest < ActiveSupport::TestCase
     guided = assignment(second, person, "river_guide")
     assert_equal 5_000, guided.total_cents
     assert_equal 0, guided.compensation_lines.find_by!(code: "guide_regular").discount_percent
+    assert_raises(ActiveRecord::RecordInvalid) do
+      assignment(@first, guide("No billable Host"), "host")
+    end
   end
 
   test "future rates reprice before departure and the amount freezes at start" do
@@ -236,7 +314,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
     assert_equal 0, record.total_cents
   end
 
-  test "two guide outings consume two fairness opportunities while host consumes none" do
+  test "two guide outings consume two fairness opportunities while Host consumes none" do
     person = guide("Fairness outings")
     assignment(@first, person, "river_guide")
     second = @work_day.departures.create!(
@@ -250,7 +328,8 @@ class CompensationPricingTest < ActiveSupport::TestCase
     )
 
     host = guide("Host fairness")
-    assignment(@first, host, "host")
+    @work_day.guide_days.create!(guide: host, status: "assigned_task",
+      status_note: "Host")
     assert_equal 0, RollFairnessPolicy.roll_worked_days_for_guide(
       host, before_date: @date + 1.day
     )

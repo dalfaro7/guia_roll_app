@@ -3,14 +3,24 @@ require_relative "../../db/migrate/20261103000000_create_compensation_system"
 
 class CompensationAccessTest < ActionDispatch::IntegrationTest
   setup do
-    if CompensationRate.none?
+    missing_rates = CreateCompensationSystem::INITIAL_RATES.reject do |code, _|
+      CompensationRate.exists?(code: code.to_s)
+    end
+    if missing_rates.any?
       CompensationRate.insert_all!(
-        CreateCompensationSystem::INITIAL_RATES.map do |code, cents|
+        missing_rates.map do |code, cents|
           { code: code.to_s, amount_cents: cents,
             effective_at: Time.utc(2020, 1, 1),
             created_at: Time.current, updated_at: Time.current }
         end
       )
+    end
+    { "second_sara" => 20, "second_other" => 30 }.each do |code, percent|
+      next if CompensationDiscountRule.exists?(code: code)
+
+      CompensationDiscountRule.insert!({ code: code, percent: percent,
+        effective_at: Time.utc(2020, 1, 1), created_at: Time.current,
+        updated_at: Time.current })
     end
     @day = WorkDay.create!(date: Date.current + 2.days, guides_requested: 0)
     @day.departures.create!(label: "Balsa", location: "Balsa",
@@ -51,7 +61,13 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     get work_day_compensation_path(@day)
     assert_response :success
     assert_select "h2", "Total diario por persona"
-    assert_match(/85[,.]00/, response.body)
+    priced_assignments = @day.departures.reload.flat_map { |departure|
+      departure.compensation_assignments.to_a
+    }
+    assert_equal 9_000, priced_assignments.sum(&:total_cents),
+      priced_assignments.map { |assignment|
+        [assignment.id, assignment.pricing_error, assignment.compensation_lines.pluck(:code, :amount_cents)]
+      }.inspect
     settlement = CompensationSettlement.find_by!(guide: guide)
     get compensation_settlement_path(settlement)
     assert_response :success
@@ -75,6 +91,26 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
     get compensation_settlements_path
     assert_redirected_to root_path
+  end
+
+  test "only admin can schedule a future second outing discount" do
+    effective_at = (Time.current + 1.day).in_time_zone("America/Costa_Rica")
+      .strftime("%Y-%m-%dT%H:%M")
+    params = { compensation_discount_rule: {
+      code: "second_sara", percent: "25", effective_at: effective_at
+    } }
+
+    sign_in user(:contabilidad)
+    post compensation_discount_rules_path, params: params
+    assert_not CompensationDiscountRule.exists?(code: "second_sara", percent: 25)
+
+    sign_out :user
+    sign_in user(:admin)
+    post compensation_discount_rules_path, params: params
+    assert_redirected_to compensation_rates_path
+    rule = CompensationDiscountRule.find_by!(code: "second_sara", percent: 25)
+    assert AuditLog.exists?(action: "create_compensation_discount_rule",
+      auditable_id: rule.id)
   end
 
   test "operator can designate a different principal photographer" do

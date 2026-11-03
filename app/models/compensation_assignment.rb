@@ -1,5 +1,5 @@
 class CompensationAssignment < ApplicationRecord
-  GUIDE_ROLES = %w[river_guide tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer host].freeze
+  GUIDE_ROLES = %w[river_guide tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer].freeze
   DRIVER_ROLES = %w[driver_la_fortuna driver_bodega driver_hg].freeze
   PHOTO_TASKS = %w[none take_and_send send_only].freeze
   STATUSES = %w[planned performed canceled no_show].freeze

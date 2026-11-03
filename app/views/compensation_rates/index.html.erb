@@ -14,6 +14,26 @@
     <div class="col-md-3"><%= label_tag :rate_effective, "Inicio de vigencia" %><%= datetime_local_field_tag "compensation_rate[effective_at]", nil, id: :rate_effective, class: "form-control", required: true %></div>
     <div class="col-md-2 d-flex align-items-end"><%= submit_tag "Guardar tarifa", class: "btn btn-primary" %></div>
   <% end %>
+  <h2 class="h4 mt-5">Descuentos de segunda salida</h2>
+  <p>Se aplican solo a la función principal de la segunda salida. Los bonos mantienen su valor completo.</p>
+  <div class="table-responsive"><table class="table table-striped">
+    <thead><tr><th>Destino</th><th>Descuento vigente</th><th>Vigente desde</th></tr></thead>
+    <tbody><% @current_discount_rules.each do |code, rule| %>
+      <tr><td><%= compensation_discount_label(code) %></td><td><%= rule ? "#{rule.percent}%" : "Sin regla" %></td><td><%= rule&.effective_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") %></td></tr>
+    <% end %></tbody>
+  </table></div>
+  <h3 class="h5 mt-4">Programar nuevo descuento</h3>
+  <%= form_with url: compensation_discount_rules_path, method: :post, local: true, class: "row g-2" do %>
+    <div class="col-md-4"><%= label_tag :discount_code, "Destino" %><%= select_tag "compensation_discount_rule[code]", options_for_select(CompensationDiscountRule::CODES.map { |code| [compensation_discount_label(code), code] }), id: :discount_code, class: "form-select" %></div>
+    <div class="col-md-3"><%= label_tag :discount_percent, "Porcentaje" %><%= number_field_tag "compensation_discount_rule[percent]", nil, min: 0, max: 100, step: 1, id: :discount_percent, class: "form-control", required: true %></div>
+    <div class="col-md-3"><%= label_tag :discount_effective, "Inicio de vigencia" %><%= datetime_local_field_tag "compensation_discount_rule[effective_at]", nil, id: :discount_effective, class: "form-control", required: true %></div>
+    <div class="col-md-2 d-flex align-items-end"><%= submit_tag "Guardar descuento", class: "btn btn-primary" %></div>
+  <% end %>
+  <h3 class="h5 mt-4">Historial de descuentos</h3>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>Destino</th><th>Porcentaje</th><th>Inicio de vigencia</th></tr></thead>
+    <tbody><% @discount_rules.each do |rule| %><tr><td><%= compensation_discount_label(rule.code) %></td><td><%= rule.percent %>%</td><td><%= rule.effective_at.in_time_zone("America/Costa_Rica").strftime("%d/%m/%Y %H:%M") %></td></tr><% end %></tbody>
+  </table></div>
   <h2 class="h4 mt-4">Historial</h2>
   <div class="table-responsive"><table class="table table-sm">
     <thead><tr><th>Concepto</th><th>Importe</th><th>Inicio de vigencia</th></tr></thead>

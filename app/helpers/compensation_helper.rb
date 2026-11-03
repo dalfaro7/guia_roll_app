@@ -1,4 +1,12 @@
 module CompensationHelper
+  DISCOUNT_LABELS = {
+    "second_sara" => "Segunda salida en Sarapiquí",
+    "second_other" => "Segunda salida en otros destinos"
+  }.freeze
+
+  def compensation_discount_label(code)
+    DISCOUNT_LABELS.fetch(code, code)
+  end
   LABELS = {
     "river_guide" => "Guía de río",
     "tl_balsa" => "TL Balsa",
@@ -7,7 +15,6 @@ module CompensationHelper
     "hg_sara" => "HG Sarapiquí",
     "safety_kayak" => "Kayak de seguridad",
     "photographer" => "Fotógrafo",
-    "host" => "Host",
     "driver_la_fortuna" => "Chofer Round Trip La Fortuna",
     "driver_bodega" => "Chofer Round Trip Bodega",
     "driver_hg" => "Chofer HG",
@@ -18,6 +25,7 @@ module CompensationHelper
     "bonus_photo_take_and_send" => "Toma y envía fotos",
     "bonus_photo_send_only" => "Solo envía fotos",
     "bonus_photographer" => "Fotógrafo toma fotos",
+    "bonus_photographer_priority_zero" => "Fotógrafo prioridad 0: toma y envía fotos",
     "bonus_bus_guide" => "Guía de bus"
   }.freeze
 

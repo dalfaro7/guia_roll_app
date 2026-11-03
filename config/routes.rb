@@ -119,6 +119,7 @@ Rails.application.routes.draw do
   end
 
   resources :compensation_rates, only: [:index, :create]
+  resources :compensation_discount_rules, only: [:create]
   resources :compensation_profiles, only: [:index, :update]
   resources :drivers, only: [:index, :create, :update]
   resources :compensation_settlements, only: [:index, :show] do

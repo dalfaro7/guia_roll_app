@@ -24,7 +24,8 @@ module Compensation
           pricing_error: nil,
           priced_at: Time.current,
           pay_category_snapshot: category,
-          pay_level_two_snapshot: level_two?
+          pay_level_two_snapshot: level_two?,
+          guide_priority_snapshot: guide_priority
         )
       end
 
@@ -66,13 +67,25 @@ module Compensation
       category == "salaried"
     end
 
+    def guide_priority
+      return nil unless @assignment.guide?
+
+      if @departure.started? && !@assignment.guide_priority_snapshot.nil?
+        @assignment.guide_priority_snapshot
+      else
+        @assignment.guide.priority
+      end
+    end
+
     def calculated_lines(existing)
       result = []
       base = main_code
       result << line_for(base, existing, main: true) if base
 
       if @assignment.role_code == "photographer"
-        result << line_for("bonus_photographer", existing)
+        photo_code = guide_priority == 0 ?
+          "bonus_photographer_priority_zero" : "bonus_photographer"
+        result << line_for(photo_code, existing)
       elsif !head_role?
         result << line_for("bonus_guide_drives", existing) if @assignment.also_drives?
         case @assignment.photo_task
@@ -82,7 +95,7 @@ module Compensation
           result << line_for("bonus_photo_send_only", existing)
         end
         if @assignment.bus_guide? && salaried? && level_two? &&
-            @assignment.photo_task == "none"
+            (@assignment.photo_task == "none" || guide_priority.to_i >= 2)
           result << line_for("bonus_bus_guide", existing)
         end
       end
@@ -107,7 +120,7 @@ module Compensation
           "freelance_regular" => "guide_regular",
           "freelance_invoice" => "guide_invoice"
         }.fetch(category)
-      when "photographer", "safety_kayak", "host"
+      when "photographer", "safety_kayak"
         salaried? ? nil : @assignment.role_code
       when "tl_balsa", "tl_sara", "hg_balsa", "hg_sara"
         salaried? ? nil : @assignment.role_code
@@ -138,7 +151,11 @@ module Compensation
       else
         rate.amount_cents
       end
-      discount = main && second_departure? ? 30 : 0
+      discount = if main && second_departure?
+        @departure.started? && previous ? previous.discount_percent : second_departure_discount
+      else
+        0
+      end
       amount = (applied_rate * (100 - discount) + 50) / 100
 
       {
@@ -152,10 +169,20 @@ module Compensation
           role_code: @assignment.role_code,
           pay_category: category,
           pay_level_two: level_two?,
+          guide_priority: guide_priority,
           departure_label: @departure.label,
           location: @departure.location
         }
       }
+    end
+
+    def second_departure_discount
+      code = @departure.location.to_s.start_with?("Sara") ?
+        "second_sara" : "second_other"
+      rule = CompensationDiscountRule.for(code, at: @departure.starts_at)
+      raise MissingRate, "No hay descuento vigente para #{code}" unless rule
+
+      rule.percent
     end
   end
 end

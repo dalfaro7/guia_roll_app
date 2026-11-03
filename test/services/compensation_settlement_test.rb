@@ -3,14 +3,24 @@ require_relative "../../db/migrate/20261103000000_create_compensation_system"
 
 class CompensationSettlementTest < ActiveSupport::TestCase
   setup do
-    if CompensationRate.none?
+    missing_rates = CreateCompensationSystem::INITIAL_RATES.reject do |code, _|
+      CompensationRate.exists?(code: code.to_s)
+    end
+    if missing_rates.any?
       CompensationRate.insert_all!(
-        CreateCompensationSystem::INITIAL_RATES.map do |code, cents|
+        missing_rates.map do |code, cents|
           { code: code.to_s, amount_cents: cents,
             effective_at: Time.utc(2020, 1, 1),
             created_at: Time.current, updated_at: Time.current }
         end
       )
+    end
+    { "second_sara" => 20, "second_other" => 30 }.each do |code, percent|
+      next if CompensationDiscountRule.exists?(code: code)
+
+      CompensationDiscountRule.insert!({ code: code, percent: percent,
+        effective_at: Time.utc(2020, 1, 1), created_at: Time.current,
+        updated_at: Time.current })
     end
     @zone = Time.find_zone!("America/Costa_Rica")
     @date = Date.current + ((2 - Date.current.wday) % 7) + 7.days

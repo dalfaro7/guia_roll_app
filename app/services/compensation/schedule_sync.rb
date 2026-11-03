@@ -13,15 +13,10 @@ module Compensation
         .select(:guide_day_id)
       GuideDay.joins(:work_day)
         .where(work_days: { date: earliest_date.. })
-        .where(status: [:worked, :assigned_task])
+        .where(status: :worked)
         .where.not(id: linked_ids)
         .includes(:guide, :work_day)
-        .find_each do |guide_day|
-          next if guide_day.assigned_task? &&
-            !guide_day.status_note.to_s.strip.casecmp?("Host")
-
-          call(guide_day)
-        end
+        .find_each { |guide_day| call(guide_day) }
     end
 
     def self.call(guide_day)
@@ -43,7 +38,6 @@ module Compensation
       assignment = CompensationAssignment.find_by(guide_day: @guide_day)
       if assignment&.source == "manual"
         if !@guide_day.worked? &&
-            !(@guide_day.assigned_task? && @guide_day.status_note.to_s.strip.casecmp?("Host")) &&
             !%w[canceled no_show].include?(assignment.status)
           assignment.update!(status: "canceled")
           Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
@@ -101,8 +95,6 @@ module Compensation
             "river_guide"
           end
         end
-      elsif @guide_day.assigned_task? && @guide_day.status_note.to_s.strip.casecmp?("Host")
-        "host"
       end
     end
 

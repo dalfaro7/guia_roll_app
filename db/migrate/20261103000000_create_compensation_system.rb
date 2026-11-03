@@ -9,7 +9,6 @@ class CreateCompensationSystem < ActiveRecord::Migration[8.1]
     hg_sara: 6_000,
     safety_kayak: 5_000,
     photographer: 5_000,
-    host: 2_000,
     driver_la_fortuna: 4_000,
     driver_bodega: 2_000,
     driver_hg: 4_500,
@@ -17,6 +16,7 @@ class CreateCompensationSystem < ActiveRecord::Migration[8.1]
     bonus_photo_take_and_send: 2_000,
     bonus_photo_send_only: 1_500,
     bonus_photographer: 2_000,
+    bonus_photographer_priority_zero: 3_000,
     bonus_bus_guide: 600
   }.freeze
 

@@ -4,6 +4,8 @@ class CompensationLine < ApplicationRecord
 
   validates :code, presence: true, uniqueness: { scope: :compensation_assignment_id }
   validates :rate_cents, :amount_cents, numericality: { only_integer: true }
-  validates :discount_percent, inclusion: { in: [0, 30] }
+  validates :discount_percent, numericality: {
+    only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100
+  }
   validates :applied_at, presence: true
 end

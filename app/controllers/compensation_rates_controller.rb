@@ -6,6 +6,10 @@ class CompensationRatesController < ApplicationController
     @current_rates = CompensationRate::CODES.index_with do |code|
       CompensationRate.for(code, at: Time.current)
     end
+    @discount_rules = CompensationDiscountRule.order(:code, effective_at: :desc)
+    @current_discount_rules = CompensationDiscountRule::CODES.index_with do |code|
+      CompensationDiscountRule.for(code, at: Time.current)
+    end
   end
 
   def create

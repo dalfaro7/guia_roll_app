@@ -50,7 +50,8 @@ class Guide < ApplicationRecord
   private
 
   def saved_change_to_pay_category_or_level?
-    saved_change_to_pay_category? || saved_change_to_pay_level_two?
+    saved_change_to_pay_category? || saved_change_to_pay_level_two? ||
+      saved_change_to_priority?
   end
 
   def reprice_future_compensation

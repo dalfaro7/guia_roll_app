@@ -3,10 +3,10 @@ class CompensationRate < ApplicationRecord
 
   CODES = %w[
     guide_apprentice guide_regular guide_invoice
-    tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer host
+    tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer
     driver_la_fortuna driver_bodega driver_hg
     bonus_guide_drives bonus_photo_take_and_send bonus_photo_send_only
-    bonus_photographer bonus_bus_guide
+    bonus_photographer bonus_photographer_priority_zero bonus_bus_guide
   ].freeze
 
   validates :code, inclusion: { in: CODES }

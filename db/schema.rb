@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -70,6 +70,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000001) do
     t.bigint "driver_id"
     t.bigint "guide_day_id"
     t.bigint "guide_id"
+    t.integer "guide_priority_snapshot"
     t.string "pay_category_snapshot"
     t.boolean "pay_level_two_snapshot"
     t.string "photo_task", default: "none", null: false
@@ -91,6 +92,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000001) do
     t.index ["guide_id"], name: "index_compensation_assignments_on_guide_id"
     t.index ["updated_by_id"], name: "index_compensation_assignments_on_updated_by_id"
     t.check_constraint "(guide_id IS NOT NULL) <> (driver_id IS NOT NULL)", name: "one_compensation_person"
+  end
+
+  create_table "compensation_discount_rules", force: :cascade do |t|
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.datetime "effective_at", null: false
+    t.integer "percent", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code", "effective_at"], name: "index_compensation_discount_rules_on_code_and_effective_at", unique: true
+    t.index ["created_by_id"], name: "index_compensation_discount_rules_on_created_by_id"
+    t.check_constraint "percent >= 0 AND percent <= 100", name: "compensation_discount_percent_range"
   end
 
   create_table "compensation_lines", force: :cascade do |t|
@@ -725,6 +738,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000001) do
   add_foreign_key "compensation_assignments", "guide_days"
   add_foreign_key "compensation_assignments", "guides"
   add_foreign_key "compensation_assignments", "users", column: "updated_by_id"
+  add_foreign_key "compensation_discount_rules", "users", column: "created_by_id"
   add_foreign_key "compensation_lines", "compensation_assignments"
   add_foreign_key "compensation_lines", "compensation_rates"
   add_foreign_key "compensation_rates", "users", column: "created_by_id"
