@@ -1,0 +1,31 @@
+<% content_for :title, "Confirmar cancelación de #{@departure.label}" %>
+<main class="container py-4" style="max-width: 720px">
+  <div class="card border-danger shadow-sm">
+    <div class="card-body p-4">
+      <h1 class="h3 mb-3">¿Está seguro de esta acción?</h1>
+      <p>Se cancelará la salida <strong><%= @departure.label %></strong> del
+        <strong><%= l(@work_day.date, format: :long) %></strong>, programada a las
+        <strong><%= @departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %></strong>.</p>
+      <p>Se cancelarán <strong><%= @pending_assignments.count == 1 ? "1 asignación pendiente" : "#{@pending_assignments.count} asignaciones pendientes" %></strong>
+        y se recalculará su valoración. La programación logística de guías no cambia.</p>
+
+      <%= form_with url: work_day_departure_path(@work_day, @departure), method: :patch,
+        local: true, class: "d-grid gap-3" do %>
+        <%= hidden_field_tag "departure[status]", "canceled" %>
+        <%= hidden_field_tag :confirmation_token,
+          session.dig(:departure_cancel_confirmation, "token") %>
+        <% if compensation_correction_required?(@work_day) %>
+          <div>
+            <%= label_tag :correction_reason, "Motivo de la corrección", class: "form-label" %>
+            <%= text_field_tag :correction_reason, nil, class: "form-control", required: true %>
+          </div>
+        <% end %>
+        <div class="d-flex flex-wrap gap-2">
+          <%= submit_tag "Sí, cancelar #{@departure.label}", class: "btn btn-danger" %>
+          <%= link_to "No, volver sin cambios", work_day_compensation_path(@work_day),
+            class: "btn btn-outline-secondary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</main>

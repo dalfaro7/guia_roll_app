@@ -33,6 +33,13 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       password: "password123", role: role)
   end
 
+  def confirmation_token_for(departure)
+    get confirm_cancel_work_day_departure_path(@day, departure)
+    assert_response :success
+    assert_select "h1", /¿Está seguro de esta acción?/
+    css_select("input[name='confirmation_token']").first["value"]
+  end
+
   test "admin can open daily valuation and tariff pages" do
     sign_in user(:admin)
     get work_day_compensation_path(@day)
@@ -88,7 +95,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     sign_in user(:contabilidad)
     get work_day_compensation_path(@day)
     assert_response :success
-    assert_select "input[type='submit'][value='Cancelar salida']", 0
+    assert_select "a", text: "Cancelar salida", count: 0
     patch work_day_departure_path(@day, @day.departures.first), params: {
       departure: { status: "canceled" }
     }
@@ -159,8 +166,8 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_select "tr[data-operating-section]", 4
     assert_select "tr[data-operating-section='Balsa'] a[href='#departure-#{@day.departures.first.id}']", text: "Editar"
     assert_select "input[type='time']", 0
-    assert_select "form[action='#{work_day_departure_path(@day, @day.departures.first)}'][data-turbo-confirm]", 1
-    assert_select "input[type='submit'][value='Cancelar salida']", 1
+    assert_select "a[href='#{confirm_cancel_work_day_departure_path(@day, @day.departures.first)}']", text: "Cancelar salida"
+    assert_select "form[action='#{work_day_departure_path(@day, @day.departures.first)}']", 0
     assert_no_match(/Crear otra salida|Configurar horario/, response.body)
   end
 
@@ -194,8 +201,10 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     original_start = departure.starts_at
     sign_in user(:operador)
 
+    token = confirmation_token_for(departure)
     patch work_day_departure_path(@day, departure), params: {
-      departure: { status: "canceled", starts_at_time: "07:00" }
+      departure: { status: "canceled", starts_at_time: "07:00" },
+      confirmation_token: token
     }
 
     assert_redirected_to work_day_compensation_path(@day)
@@ -208,10 +217,8 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     departure.update!(status: "completed")
     sign_in user(:operador)
 
-    patch work_day_departure_path(@day, departure), params: {
-      departure: { status: "canceled" }
-    }
-
+    get confirm_cancel_work_day_departure_path(@day, departure)
+    assert_redirected_to work_day_compensation_path(@day)
     assert_equal "completed", departure.reload.status
   end
 
@@ -229,6 +236,14 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
         departure: { status: "canceled" }
+      }
+      assert_equal "scheduled", departure.reload.status
+
+      token = confirmation_token_for(departure)
+      assert_select "a", text: "No, volver sin cambios"
+      assert_select "strong", text: /1 asignación pendiente/
+      patch work_day_departure_path(@day, departure), params: {
+        departure: { status: "canceled" }, confirmation_token: token
       }
       assert_equal "canceled", departure.reload.status
       assert_equal original_start, departure.starts_at
@@ -253,8 +268,10 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       }
       assert_equal "scheduled", departure.reload.status
 
+      token = confirmation_token_for(departure)
       patch work_day_departure_path(@day, departure), params: {
         departure: { status: "canceled" },
+        confirmation_token: token,
         correction_reason: "Salida cancelada por operación"
       }
       assert_equal "canceled", departure.reload.status

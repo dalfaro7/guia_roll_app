@@ -3,12 +3,38 @@ class DeparturesController < ApplicationController
   before_action :set_work_day
   before_action :require_open_window
 
+  def confirm_cancel
+    @departure = @work_day.departures.find(params[:id])
+    unless @departure.status == "scheduled"
+      redirect_to work_day_compensation_path(@work_day),
+        alert: "Solo se puede cancelar una salida programada."
+      return
+    end
+
+    token = SecureRandom.hex(16)
+    session[:departure_cancel_confirmation] = {
+      "work_day_id" => @work_day.id,
+      "departure_id" => @departure.id,
+      "token" => token
+    }
+    @pending_assignments = @departure.compensation_assignments.where(status: "planned")
+  end
+
   def update
     departure = @work_day.departures.find(params[:id])
     requested = params.require(:departure)
     unless requested.keys == ["status"] && requested[:status] == "canceled"
       raise ArgumentError, "Solo se permite cancelar la salida; su horario no se puede modificar."
     end
+    confirmation = session[:departure_cancel_confirmation]
+    unless confirmation.is_a?(Hash) &&
+        confirmation["work_day_id"] == @work_day.id &&
+        confirmation["departure_id"] == departure.id &&
+        ActiveSupport::SecurityUtils.secure_compare(
+          confirmation["token"].to_s, params[:confirmation_token].to_s)
+      raise ArgumentError, "Abra la confirmación de cancelación antes de continuar."
+    end
+
     Compensation::Current.set(actor: current_user, reason: params[:correction_reason]) do
       Departure.transaction do
         departure.lock!
@@ -26,6 +52,7 @@ class DeparturesController < ApplicationController
             after: departure.attributes.slice(*before.keys), reason: params[:correction_reason] })
       end
     end
+    session.delete(:departure_cancel_confirmation)
     redirect_to work_day_compensation_path(@work_day), notice: "Salida cancelada."
   rescue ActiveRecord::RecordInvalid, ArgumentError => e
     redirect_to work_day_compensation_path(@work_day), alert: e.message
@@ -44,7 +71,7 @@ class DeparturesController < ApplicationController
       return
     end
     return if Compensation::EditWindow.allowed?(user: current_user, work_day: @work_day) &&
-      (!requires_reason? || params[:correction_reason].present?)
+      (action_name == "confirm_cancel" || !requires_reason? || params[:correction_reason].present?)
 
     redirect_to work_day_compensation_path(@work_day),
       alert: requires_reason? ? "Indique el motivo de la corrección." :

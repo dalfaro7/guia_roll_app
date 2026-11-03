@@ -93,7 +93,9 @@ Rails.application.routes.draw do
 
   resources :work_days do
     resource :compensation, only: [:show], controller: :compensation_work_days
-    resources :departures, only: [:update]
+    resources :departures, only: [:update] do
+      member { get :confirm_cancel }
+    end
     resources :compensation_assignments, only: [:create, :update, :destroy]
     member do
       patch :generate_roles

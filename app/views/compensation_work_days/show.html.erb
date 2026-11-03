@@ -75,14 +75,8 @@
       </div>
       <div class="card-body">
         <% if @can_edit && Compensation::EditWindow.applicable?(@work_day) && departure.status == "scheduled" %>
-          <%= form_with url: work_day_departure_path(@work_day, departure), method: :patch, local: true,
-            class: "mb-3", data: { turbo_confirm: "¿Está seguro de esta acción? Se cancelará la salida #{departure.label} y sus asignaciones pendientes." } do %>
-            <%= hidden_field_tag "departure[status]", "canceled" %>
-            <% if compensation_correction_required?(@work_day) %>
-              <%= text_field_tag :correction_reason, nil, class: "form-control mb-2", placeholder: "Motivo de corrección", required: true %>
-            <% end %>
-            <%= submit_tag "Cancelar salida", class: "btn btn-outline-danger" %>
-          <% end %>
+          <%= link_to "Cancelar salida", confirm_cancel_work_day_departure_path(@work_day, departure),
+            class: "btn btn-outline-danger mb-3" %>
         <% end %>
 
         <div class="table-responsive">
