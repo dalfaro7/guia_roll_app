@@ -43,6 +43,8 @@ class WorkDaysController < ApplicationController
   end
 
   def show
+    @available_buses = Bus.available_on(@work_day).includes(:transport_company).order(:alias).to_a
+    @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
 
     @location_counts =
@@ -359,42 +361,43 @@ class WorkDaysController < ApplicationController
 
   def create_slots
     @work_day = WorkDay.find(params[:id])
-
-    @work_day.location_slots.destroy_all
-
-    total_slots = 0
-
-    params[:locations].each do |location, data|
-      guides = data[:guides].to_i
-      passengers = data[:passengers].to_i
-
-      guides.times do
-        slot =
-          @work_day.location_slots.create!(
-            location: location,
-            passengers: passengers
-          )
-
-        default_skill = Skill.find_by(name: "ClassIII")
-
-        if default_skill
-          slot.slot_skills.create!(
-            skill: default_skill
-          )
-        end
-
-        total_slots += 1
+    submitted = params.require(:locations)
+    requested = Departure::OPERATING_SECTIONS.keys.index_with do |location|
+      values = submitted.require(location)
+      counts = %i[guides drivers passengers].index_with do |field|
+        value = Integer(values.require(field).to_s, 10)
+        raise ArgumentError, "Las cantidades no pueden ser negativas." if value.negative?
+        value
       end
+      counts
     end
 
-    @work_day.update!(
-      guides_requested: total_slots
-    )
+    WorkDay.transaction do
+      @work_day.location_slots.destroy_all
+      total_slots = 0
+      default_skill = Skill.find_by(name: "ClassIII")
 
-    redirect_to(
-      @work_day,
-      notice: "Puestos creados correctamente."
-    )
+      requested.each do |location, counts|
+        counts[:guides].times do
+          slot = @work_day.location_slots.create!(
+            location: location,
+            passengers: counts[:passengers]
+          )
+          slot.slot_skills.create!(skill: default_skill) if default_skill
+          total_slots += 1
+        end
+      end
+
+      @work_day.update!(
+        guides_requested: total_slots,
+        drivers_requested_by_location: requested.transform_values { |counts| counts[:drivers] }
+      )
+    end
+
+    redirect_to @work_day, notice: "Puestos creados correctamente."
+  rescue ActionController::ParameterMissing, ArgumentError => e
+    redirect_to locations_work_day_path(@work_day),
+      alert: "Revise las cantidades de guías, choferes y pasajeros: #{e.message}"
   end
 
   def edit_slots

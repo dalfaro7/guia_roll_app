@@ -52,6 +52,10 @@ class WorkDay < ApplicationRecord
       .to_i
   end
 
+  def drivers_requested_for(location)
+    drivers_requested_by_location.fetch(location.to_s, 0).to_i
+  end
+
   def bus_capacity_for(location)
     buses_for(location)
       .joins(:bus)

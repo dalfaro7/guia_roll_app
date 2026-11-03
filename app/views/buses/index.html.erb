@@ -5,7 +5,7 @@
       <h1 class="mb-1">Buses</h1>
       <p class="text-muted mb-0">Consulta la capacidad, los datos del vehículo y su contacto.</p>
     </div>
-    <%= link_to "Agregar bus", new_bus_path, class: "btn btn-primary" %>
+    <div class="d-flex gap-2"><% if current_user.admin? %><%= link_to "Empresas", transport_companies_path, class: "btn btn-outline-primary" %><%= link_to "Choferes", drivers_path, class: "btn btn-outline-primary" %><% end %><%= link_to "Agregar bus", new_bus_path, class: "btn btn-primary" %></div>
   </div>
 
   <div class="card shadow-sm border-0 mb-4">
@@ -38,7 +38,7 @@
               <th scope="col" class="ps-3">Bus</th>
               <th scope="col">Empresa</th>
               <th scope="col">Placa</th>
-              <th scope="col">Capacidad</th>
+              <th scope="col">Capacidad y categoría</th>
               <th scope="col">Teléfono</th>
               <th scope="col" class="text-end pe-3">Acciones</th>
             </tr>
@@ -47,9 +47,9 @@
             <% @buses.each do |bus| %>
               <tr>
                 <td class="ps-3 fw-semibold"><%= link_to bus.alias, bus_path(bus), class: "text-decoration-none" %></td>
-                <td><%= bus.company.presence || "Sin empresa" %></td>
+                <td><%= bus.transport_company.name %></td>
                 <td><span class="badge text-bg-light border"><%= bus.plate %></span></td>
-                <td><%= bus_capacity_label(bus) %></td>
+                <td><%= bus_capacity_label(bus) %><br><span class="text-muted small"><%= bus.size_category_label %></span></td>
                 <td><% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></td>
                 <td class="text-end pe-3 text-nowrap">
                   <%= link_to "Ver", bus_path(bus), class: "btn btn-sm btn-outline-secondary" %>
@@ -69,11 +69,11 @@
             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
               <div>
                 <h3 class="h5 mb-1"><%= link_to bus.alias, bus_path(bus), class: "text-decoration-none" %></h3>
-                <p class="text-muted mb-0"><%= bus.company.presence || "Sin empresa" %></p>
+                <p class="text-muted mb-0"><%= bus.transport_company.name %></p>
               </div>
               <span class="badge text-bg-light border"><%= bus.plate %></span>
             </div>
-            <p class="mb-1"><strong>Capacidad:</strong> <%= bus_capacity_label(bus) %></p>
+            <p class="mb-1"><strong>Capacidad:</strong> <%= bus_capacity_label(bus) %> · <%= bus.size_category_label %></p>
             <p class="mb-3"><strong>Teléfono:</strong> <% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></p>
             <div class="d-flex gap-2">
               <%= link_to "Ver detalles", bus_path(bus), class: "btn btn-outline-secondary flex-fill" %>

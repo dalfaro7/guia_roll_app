@@ -66,7 +66,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       pay_category: "freelance_regular")
     departure.compensation_assignments.create!(guide: other_guide,
       role_code: "river_guide", status: "performed")
-    driver = Driver.create!(name: "A Driver", active: true)
+    driver = Driver.create!(name: "A Driver", active: true, phone: "555-1003", transport_company: TransportCompany.create!(name: "Test Transport C"))
     departure.compensation_assignments.create!(driver: driver,
       role_code: "driver_la_fortuna", status: "performed")
     second_departure = paid_day.departures.create!(label: "Sara tarde", location: "Sara-3",

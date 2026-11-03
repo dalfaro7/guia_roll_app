@@ -15,6 +15,30 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='work_day[date]']", count: 1
   end
 
+  test "driver demand is saved by departure even with no guide slots" do
+    user = User.create!(name: "Driver demand admin", email: "driver-demand-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    work_day = WorkDay.create!(date: Date.current + 3.days)
+
+    locations = Departure::OPERATING_SECTIONS.keys.index_with do |_location|
+      { guides: "0", drivers: "0", passengers: "0" }
+    end
+    locations["Balsa"][:drivers] = "2"
+    locations["Balsa"][:passengers] = "14"
+
+    post create_slots_work_day_url(work_day), params: { locations: locations }
+
+    assert_redirected_to work_day_url(work_day)
+    assert_equal 0, work_day.location_slots.count
+    assert_equal 2, work_day.reload.drivers_requested_for("Balsa")
+    assert_equal 0, work_day.drivers_requested_for("PM")
+
+    get locations_work_day_url(work_day)
+    assert_response :success
+    assert_select "input[name='locations[Balsa][drivers]'][value='2']"
+  end
+
   test "publishing sends TourFotos and WhatsApp notifications" do
     user = User.create!(
       name: "Roll Admin",

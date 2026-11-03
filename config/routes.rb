@@ -125,6 +125,8 @@ Rails.application.routes.draw do
   resources :compensation_rates, only: [:index, :create]
   resources :compensation_discount_rules, only: [:create]
   resources :compensation_profiles, only: [:index, :update]
+  resources :transport_companies, only: [:index, :create, :update]
+  resources :transport_companies, only: [:index, :create, :update]
   resources :drivers, only: [:index, :create, :update]
   resources :compensation_settlements, only: [:index, :show] do
     post :mark_paid, on: :member

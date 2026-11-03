@@ -4,7 +4,7 @@
       <%= link_to "← Volver a buses", buses_path, class: "text-decoration-none" %>
       <p class="text-uppercase text-muted small fw-semibold mt-3 mb-1">Transporte</p>
       <h1 class="mb-1"><%= @bus.alias %></h1>
-      <p class="text-muted mb-0"><%= @bus.company.presence || "Sin empresa registrada" %></p>
+      <p class="text-muted mb-0"><%= @bus.transport_company.name %></p>
     </div>
     <%= link_to "Editar bus", edit_bus_path(@bus), class: "btn btn-primary" %>
   </div>
@@ -14,8 +14,8 @@
       <h2 class="h5 mb-4">Datos del vehículo</h2>
       <dl class="row mb-0 g-3">
         <div class="col-12 col-sm-6"><dt class="text-muted small">Placa</dt><dd class="fs-5 mb-0"><%= @bus.plate %></dd></div>
-        <div class="col-12 col-sm-6"><dt class="text-muted small">Capacidad</dt><dd class="fs-5 mb-0"><%= bus_capacity_label(@bus) %></dd></div>
-        <div class="col-12 col-sm-6"><dt class="text-muted small">Empresa o propietario</dt><dd class="mb-0"><%= @bus.company.presence || "Sin empresa registrada" %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Capacidad</dt><dd class="fs-5 mb-0"><%= bus_capacity_label(@bus) %> · <%= @bus.size_category_label %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Empresa o propietario</dt><dd class="mb-0"><%= @bus.transport_company.name %></dd></div>
         <div class="col-12 col-sm-6"><dt class="text-muted small">Teléfono de contacto</dt><dd class="mb-0"><% if @bus.phone.present? %><%= link_to @bus.phone, "tel:#{@bus.phone.gsub(/[^\d+]/, "")}" %><% else %>Sin teléfono registrado<% end %></dd></div>
       </dl>
     </div>

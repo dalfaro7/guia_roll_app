@@ -11,8 +11,9 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
 
     sign_in @user
 
+    @company = TransportCompany.create!(name: "Test Company")
     @bus = Bus.create!(
-      company: "Test Company",
+      transport_company: @company,
       capacity: 20,
       plate: "TEST-001",
       alias: "Bus Test",
@@ -37,7 +38,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
 
   test "should create bus assignment" do
     second_bus = Bus.create!(
-      company: "Second Company",
+      transport_company: TransportCompany.create!(name: "Second Company"),
       capacity: 25,
       plate: "TEST-002",
       alias: "Bus Test 2",
@@ -57,6 +58,22 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :redirect
+  end
+
+  test "rejects a driver from another company" do
+    other_company = TransportCompany.create!(name: "Different Company")
+    driver = Driver.create!(name: "Other driver", phone: "555-9999",
+      transport_company: other_company)
+    second_bus = Bus.create!(alias: "Second bus", plate: "SECOND-33", capacity: 20,
+      transport_company: @company)
+
+    assert_no_difference("BusAssignment.count") do
+      post bus_assignments_path, params: { bus_assignment: {
+        bus_id: second_bus.id, driver_id: driver.id, work_day_id: @work_day.id,
+        location: "Balsa", seats_assigned: 10
+      } }
+    end
+    assert_redirected_to work_day_path(@work_day)
   end
 
   test "should destroy bus assignment" do

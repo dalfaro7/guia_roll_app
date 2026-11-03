@@ -17,15 +17,17 @@
       <%= f.text_field :plate, class: "form-control", required: true, placeholder: "Ej. ABC-123" %>
     </div>
     <div class="col-12 col-md-6">
-      <%= f.label :company, "Empresa o propietario", class: "form-label fw-semibold" %>
-      <%= f.text_field :company, class: "form-control", placeholder: "Ej. Arenal Rafting" %>
+      <%= f.label :transport_company_id, "Empresa", class: "form-label fw-semibold" %>
+      <%= f.collection_select :transport_company_id, @companies, :id, :name, { prompt: "Seleccionar empresa" }, class: "form-select", required: true %>
+      <div class="form-text"><% if current_user.admin? %><%= link_to "Administrar empresas", transport_companies_path %><% end %></div>
     </div>
     <div class="col-12 col-md-6">
       <%= f.label :capacity, "Capacidad de pasajeros", class: "form-label fw-semibold" %>
       <%= f.number_field :capacity, class: "form-control", required: true, min: 1, step: 1, inputmode: "numeric" %>
+      <div class="form-text">Pequeño: hasta 15 pasajeros. Grande: desde 20. Se asigna automáticamente.</div>
     </div>
     <div class="col-12">
-      <%= f.label :phone, "Teléfono de contacto", class: "form-label fw-semibold" %>
+      <%= f.label :phone, "Teléfono histórico del bus (opcional)", class: "form-label fw-semibold" %>
       <%= f.telephone_field :phone, class: "form-control", autocomplete: "tel", placeholder: "Ej. +506 8888 8888" %>
     </div>
   </div>

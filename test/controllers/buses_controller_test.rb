@@ -11,8 +11,9 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
 
     sign_in @user
 
+    @company = TransportCompany.create!(name: "Test Company")
     @bus = Bus.create!(
-      company: "Test Company",
+      transport_company: @company,
       capacity: 20,
       plate: "TEST-001",
       alias: "Test Bus",
@@ -27,7 +28,7 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "search finds a bus by plate and shows a clear empty state" do
-    Bus.create!(company: "Other company", capacity: 13,
+    Bus.create!(transport_company: TransportCompany.create!(name: "Other company"), capacity: 13,
       plate: "OTHER-002", alias: "Other bus")
 
     get buses_url, params: { q: "test-001" }

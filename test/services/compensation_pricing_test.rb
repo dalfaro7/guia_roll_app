@@ -78,7 +78,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
   test "a second departure outside Sarapiqui has no discount" do
     person = guide("Other destination")
     assignment(@first, person, "river_guide")
-    driver = Driver.create!(name: "Other destination driver")
+    driver = Driver.create!(name: "Other destination driver", phone: "555-1001", transport_company: TransportCompany.create!(name: "Test Transport A"))
     assignment(@first, driver, "driver_la_fortuna")
     second = @work_day.departures.create!(
       label: "PM", location: "PM",
@@ -210,7 +210,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
   end
 
   test "second driver departure discounts only its main rate" do
-    driver = Driver.create!(name: "Driver A")
+    driver = Driver.create!(name: "Driver A", phone: "555-1002", transport_company: TransportCompany.create!(name: "Test Transport B"))
     assignment(@first, driver, "driver_la_fortuna")
     second = @work_day.departures.create!(
       label: "Sara clase 4", location: "Sara-4",

@@ -2,7 +2,8 @@ class DriversController < ApplicationController
   before_action :require_admin!
 
   def index
-    @drivers = Driver.order(:name)
+    @drivers = Driver.includes(:transport_company).order(:name)
+    @companies = TransportCompany.order(:name)
   end
 
   def create
@@ -15,11 +16,10 @@ class DriversController < ApplicationController
 
   def update
     driver = Driver.find(params[:id])
-    before = driver.attributes.slice("name", "active")
+    before = driver.attributes.slice("name", "active", "phone", "transport_company_id")
     driver.update!(driver_params)
     audit!(action: "update_driver", auditable: driver,
-      metadata: { before: before,
-        after: driver.attributes.slice(*before.keys) })
+      metadata: { before: before, after: driver.attributes.slice(*before.keys) })
     redirect_to drivers_path, notice: "Chofer actualizado."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to drivers_path, alert: e.record.errors.full_messages.to_sentence
@@ -28,6 +28,6 @@ class DriversController < ApplicationController
   private
 
   def driver_params
-    params.require(:driver).permit(:name, :active)
+    params.require(:driver).permit(:name, :active, :phone, :transport_company_id)
   end
 end

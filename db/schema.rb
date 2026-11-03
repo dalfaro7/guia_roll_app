@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000006) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,11 +30,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
   create_table "bus_assignments", force: :cascade do |t|
     t.bigint "bus_id", null: false
     t.datetime "created_at", null: false
+    t.bigint "driver_id"
     t.string "location", null: false
     t.integer "seats_assigned"
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
+    t.index ["bus_id", "work_day_id"], name: "one_bus_assignment_per_day", unique: true
     t.index ["bus_id"], name: "index_bus_assignments_on_bus_id"
+    t.index ["driver_id"], name: "index_bus_assignments_on_driver_id"
     t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
   end
 
@@ -45,7 +48,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
     t.datetime "created_at", null: false
     t.string "phone"
     t.string "plate"
+    t.string "size_category", null: false
+    t.bigint "transport_company_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["transport_company_id"], name: "index_buses_on_transport_company_id"
+    t.check_constraint "size_category::text = 'small'::text AND capacity >= 1 AND capacity <= 15 OR size_category::text = 'large'::text AND capacity >= 20", name: "bus_size_matches_capacity"
   end
 
   create_table "compensation_adjustments", force: :cascade do |t|
@@ -84,8 +91,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
     t.index ["departure_id", "driver_id"], name: "unique_departure_driver", unique: true, where: "(driver_id IS NOT NULL)"
     t.index ["departure_id", "guide_id"], name: "unique_departure_guide", unique: true, where: "(guide_id IS NOT NULL)"
     t.index ["departure_id"], name: "index_compensation_assignments_on_departure_id"
-    t.index ["departure_id"], name: "one_photo_task_per_departure", unique: true, where: "(((photo_task)::text = ANY (ARRAY[('take_and_send'::character varying)::text, ('send_only'::character varying)::text])) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
-    t.index ["departure_id"], name: "one_principal_photographer", unique: true, where: "((principal_photographer = true) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
+    t.index ["departure_id"], name: "one_photo_task_per_departure", unique: true, where: "(((photo_task)::text = ANY ((ARRAY['take_and_send'::character varying, 'send_only'::character varying])::text[])) AND ((status)::text <> ALL ((ARRAY['canceled'::character varying, 'no_show'::character varying])::text[])))"
+    t.index ["departure_id"], name: "one_principal_photographer", unique: true, where: "((principal_photographer = true) AND ((status)::text <> ALL ((ARRAY['canceled'::character varying, 'no_show'::character varying])::text[])))"
     t.index ["driver_id"], name: "index_compensation_assignments_on_driver_id"
     t.index ["guide_day_id"], name: "index_compensation_assignments_on_guide_day_id"
     t.index ["guide_id"], name: "index_compensation_assignments_on_guide_id"
@@ -182,7 +189,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
+    t.string "phone"
+    t.bigint "transport_company_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["transport_company_id"], name: "index_drivers_on_transport_company_id"
   end
 
   create_table "guide_activity_changes", force: :cascade do |t|
@@ -647,6 +657,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "transport_companies", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((name)::text)", name: "unique_transport_company_name", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
@@ -717,6 +734,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
   create_table "work_days", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "date"
+    t.jsonb "drivers_requested_by_location", default: {}, null: false
     t.integer "guides_requested"
     t.datetime "published_at"
     t.integer "status", default: 0
@@ -727,7 +745,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
   add_foreign_key "audit_logs", "users"
   add_foreign_key "audit_logs", "work_days"
   add_foreign_key "bus_assignments", "buses"
+  add_foreign_key "bus_assignments", "drivers"
   add_foreign_key "bus_assignments", "work_days"
+  add_foreign_key "buses", "transport_companies"
   add_foreign_key "compensation_adjustments", "compensation_assignments", column: "source_assignment_id"
   add_foreign_key "compensation_adjustments", "compensation_settlements"
   add_foreign_key "compensation_adjustments", "users", column: "created_by_id"
@@ -746,6 +766,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
   add_foreign_key "compensation_settlements", "guides"
   add_foreign_key "compensation_settlements", "users", column: "paid_by_id"
   add_foreign_key "departures", "work_days"
+  add_foreign_key "drivers", "transport_companies"
   add_foreign_key "guide_activity_changes", "guides"
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"

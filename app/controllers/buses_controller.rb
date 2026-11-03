@@ -1,9 +1,11 @@
 class BusesController < ApplicationController
   before_action :set_bus, only: [:show, :edit, :update, :destroy]
+  before_action :load_companies, only: [:new, :edit, :create, :update]
+  before_action :load_companies, only: [:new, :edit, :create, :update]
 
   def index
     @query = params[:q].to_s.strip
-    @buses = Bus.order(:alias)
+    @buses = Bus.includes(:transport_company).order(:alias)
     @total_buses = @buses.count
     if @query.present?
       term = "%#{Bus.sanitize_sql_like(@query.downcase)}%"
@@ -54,9 +56,13 @@ class BusesController < ApplicationController
     @bus = Bus.find(params[:id])
   end
 
+  def load_companies
+    @companies = TransportCompany.order(:name)
+  end
+
   def bus_params
     params.require(:bus).permit(
-      :company,
+      :transport_company_id,
       :capacity,
       :plate,
       :alias,
