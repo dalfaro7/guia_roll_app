@@ -66,6 +66,11 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     get work_day_compensation_path(@day)
     assert_response :success
     assert_select "h2", "Total diario por persona"
+    assert_select "tr[data-operating-section='Sara-3&4']", text: /1 asignación/
+    balsa_id = @day.departures.find_by!(location: "Balsa").id
+    sara_id = @day.departures.find_by!(location: "Sara-3").id
+    assert_operator response.body.index("id=\"departure-#{balsa_id}\""), :<,
+      response.body.index("id=\"departure-#{sara_id}\"")
     priced_assignments = @day.departures.reload.flat_map { |departure|
       departure.compensation_assignments.to_a
     }

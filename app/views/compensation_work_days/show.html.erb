@@ -19,7 +19,7 @@
               <% section_assignments = section_departures.flat_map(&:compensation_assignments) %>
               <tr data-operating-section="<%= location %>">
                 <th scope="row"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
-                <td><%= section_departures.any? ? "#{section_assignments.size} asignaciones" : "Sin actividad registrada" %></td>
+                <td><%= section_departures.any? ? (section_assignments.one? ? "1 asignación" : "#{section_assignments.size} asignaciones") : "Sin actividad registrada" %></td>
                 <td class="text-end"><%= usd(section_assignments.sum(&:total_cents)) %></td>
                 <td>
                   <% if section_departures.any? %>
