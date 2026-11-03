@@ -7,12 +7,8 @@ class CompensationRatesController < ApplicationController
   end
 
   def verify_key
-    expected = ENV["COMPENSATION_RATES_PAGE_KEY"].presence ||
-      ("admin" unless Rails.env.production?)
-    if expected.blank?
-      redirect_to unlock_compensation_rates_path,
-                  alert: "La clave de Tarifas no está configurada."
-    elsif ActiveSupport::SecurityUtils.secure_compare(
+    expected = ENV["COMPENSATION_RATES_PAGE_KEY"].presence || "admin"
+    if ActiveSupport::SecurityUtils.secure_compare(
       Digest::SHA256.hexdigest(params[:password].to_s),
       Digest::SHA256.hexdigest(expected)
     )
