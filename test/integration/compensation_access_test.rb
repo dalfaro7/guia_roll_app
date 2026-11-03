@@ -43,7 +43,15 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       active: true, pay_category: "freelance_regular")
     @day.departures.first.compensation_assignments.create!(
       guide: guide, role_code: "river_guide")
+    @day.departures.create!(label: "Sara clase 3", location: "Sara-3",
+      starts_at: Time.find_zone!("America/Costa_Rica").local(
+        @day.date.year, @day.date.month, @day.date.day, 10))
+      .compensation_assignments.create!(guide: guide, role_code: "river_guide")
     Compensation::RepriceDay.call(@day)
+    get work_day_compensation_path(@day)
+    assert_response :success
+    assert_select "h2", "Total diario por persona"
+    assert_match(/85[,.]00/, response.body)
     settlement = CompensationSettlement.find_by!(guide: guide)
     get compensation_settlement_path(settlement)
     assert_response :success

@@ -10,6 +10,32 @@
 
   <% if @departures.empty? %>
     <p class="alert alert-info">Todavía no hay salidas económicas para este día. Al generar asignaciones de guías se crearán las salidas iniciales.</p>
+  <% else %>
+    <% daily_assignments = @departures.flat_map(&:compensation_assignments) %>
+    <% daily_totals = daily_assignments.group_by { |assignment| [assignment.guide_id, assignment.driver_id] } %>
+    <section class="card mb-4">
+      <div class="card-body">
+        <h2 class="h5">Total diario por persona</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Persona</th><th>Salidas activas</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              <% daily_totals.values.sort_by { |assignments| assignments.first.person.name }.each do |assignments| %>
+                <tr>
+                  <td><%= assignments.first.person.name %></td>
+                  <td><%= assignments.count { |assignment| !%w[canceled no_show].include?(assignment.status) } %></td>
+                  <td class="text-end fw-bold"><%= usd(assignments.sum(&:total_cents)) %>
+                    <% if assignments.any? { |assignment| assignment.pricing_error.present? } %>
+                      <span class="text-danger d-block">Pendiente de valorar</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   <% end %>
 
   <% @departures.each do |departure| %>
