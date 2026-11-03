@@ -5,6 +5,18 @@ class BusAssignment < ApplicationRecord
 
   validates :location, presence: true
   validates :seats_assigned, numericality: { greater_than_or_equal_to: 0 }
+  validates :cost_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+
+  def cost_usd
+    dollars, cents = cost_cents.to_i.divmod(100)
+    format("%d.%02d", dollars, cents)
+  end
+
+  def cost_usd=(value)
+    text = value.to_s.strip
+    self.cost_cents = text.match?(/\A\d+(?:\.\d{1,2})?\z/) ?
+      (BigDecimal(text) * 100).to_i : nil
+  end
 
   validate :cannot_exceed_bus_capacity
   validate :bus_cannot_be_used_twice_in_same_day

@@ -6,7 +6,8 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
       name: "Test User",
       email: "busassignments@test.com",
       password: "password123",
-      password_confirmation: "password123"
+      password_confirmation: "password123",
+      role: :operador
     )
 
     sign_in @user
@@ -58,6 +59,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :redirect
+    assert_equal 12_000, BusAssignment.order(:id).last.cost_cents
   end
 
   test "rejects a driver from another company" do
@@ -94,6 +96,34 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
       location: "PM", seats_assigned: 2)
     get available_buses_work_day_path(@work_day)
     assert_empty response.parsed_body.fetch("buses")
+  end
+
+  test "operator can manually edit a bus cost without changing other assignments" do
+    @work_day.update_columns(date: Date.current + 2.days)
+    assert_equal 12_000, @assignment.cost_cents
+    patch bus_assignment_path(@assignment), params: {
+      bus_assignment: { cost_usd: "145.75" }
+    }
+    assert_redirected_to work_day_path(@work_day)
+    assert_equal 14_575, @assignment.reload.cost_cents
+  end
+
+  test "cost details stay behind a disclosure on the operation screen" do
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "details summary", text: "Ver costo de este bus"
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']"
+  end
+
+  test "accounting can see but not edit bus cost" do
+    @user.update!(role: :contabilidad)
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "details summary", text: "Ver costo de este bus"
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']", count: 0
+    patch bus_assignment_path(@assignment), params: { bus_assignment: { cost_usd: "155.00" } }
+    assert_redirected_to root_path
+    assert_equal 12_000, @assignment.reload.cost_cents
   end
 
   test "should destroy bus assignment" do

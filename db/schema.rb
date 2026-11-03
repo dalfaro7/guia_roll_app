@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000006) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000007) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -29,6 +29,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000006) do
 
   create_table "bus_assignments", force: :cascade do |t|
     t.bigint "bus_id", null: false
+    t.integer "cost_cents", default: 12000, null: false
     t.datetime "created_at", null: false
     t.bigint "driver_id"
     t.string "location", null: false
@@ -39,6 +40,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000006) do
     t.index ["bus_id"], name: "index_bus_assignments_on_bus_id"
     t.index ["driver_id"], name: "index_bus_assignments_on_driver_id"
     t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
+    t.check_constraint "cost_cents >= 0", name: "bus_assignment_cost_nonnegative"
   end
 
   create_table "buses", force: :cascade do |t|

@@ -4,12 +4,36 @@
     <p class="mb-3">Pasajeros: <strong><%= work_day.passengers_for(location) %></strong> · Capacidad: <strong><%= work_day.bus_capacity_for(location) %></strong> · Asientos disponibles: <strong><%= work_day.seats_remaining_for(location) %></strong>
       <% if work_day.seats_remaining_for(location) < 0 %><span class="badge bg-danger">Se necesitan más buses</span><% end %>
     </p>
-    <% work_day.buses_for(location).each do |assignment| %>
-      <div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center gap-2">
-        <div><strong><%= assignment.bus.alias %></strong> · <%= assignment.bus.transport_company.name %><br>
-          <span class="small text-muted"><%= assignment.seats_assigned %> pasajeros · Chofer: <%= assignment.driver&.name || "Sin asignar" %></span>
+    <% bus_assignments = work_day.buses_for(location).includes(:bus, :driver).to_a %>
+    <% if bus_assignments.any? && (current_user.admin? || current_user.operador? || current_user.contabilidad?) %>
+      <details class="mb-2 small">
+        <summary>Ver total de transporte</summary>
+        <p class="mb-0 mt-1">Total: <strong><%= usd(bus_assignments.sum(&:cost_cents)) %></strong>. Cada bus comienza en $120; revise los importes.</p>
+      </details>
+    <% end %>
+    <% bus_assignments.each do |assignment| %>
+      <div class="border rounded p-2 mb-2">
+        <div class="d-flex justify-content-between align-items-center gap-2">
+          <div><strong><%= assignment.bus.alias %></strong> · <%= assignment.bus.transport_company.name %><br>
+            <span class="small text-muted"><%= assignment.seats_assigned %> pasajeros · Chofer: <%= assignment.driver&.name || "Sin asignar" %></span>
+          </div>
+          <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este bus de la salida?" } } %>
         </div>
-        <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este bus de la salida?" } } %>
+        <% if current_user.admin? || current_user.operador? || current_user.contabilidad? %>
+          <details class="mt-2 small">
+            <summary>Ver costo de este bus</summary>
+            <p class="mt-2 mb-1">Costo: <strong><%= usd(assignment.cost_cents) %></strong></p>
+            <% if Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
+              <%= form_with model: assignment, class: "row g-2 align-items-end" do |f| %>
+                <div class="col-12"><%= f.label :cost_usd, "Costo USD", class: "form-label small" %><%= f.number_field :cost_usd, min: 0, step: 0.01, class: "form-control form-control-sm", required: true %></div>
+                <% if current_user.admin? && Compensation::EditWindow.closed?(work_day) %>
+                  <div class="col-12"><%= label_tag "correction_reason_#{assignment.id}", "Motivo de corrección", class: "form-label small" %><%= text_field_tag :correction_reason, nil, id: "correction_reason_#{assignment.id}", class: "form-control form-control-sm", required: true %></div>
+                <% end %>
+                <div class="col-12"><%= f.submit "Guardar costo", class: "btn btn-sm btn-outline-primary" %></div>
+              <% end %>
+            <% end %>
+          </details>
+        <% end %>
       </div>
     <% end %>
     <% if @available_buses.any? %>
@@ -27,7 +51,7 @@
             {}, class: "form-select", data: { bus_driver_target: "driver" } %>
         </div>
         <div class="col-md-2"><%= f.label :seats_assigned, "Pasajeros", class: "form-label" %><%= f.number_field :seats_assigned, min: 0, class: "form-control", required: true %></div>
-        <div class="col-md-2"><%= f.submit "Agregar", class: "btn btn-primary w-100" %></div>
+        <div class="col-12"><%= f.submit "Agregar bus", class: "btn btn-primary" %></div>
       <% end %>
     <% else %>
       <p class="text-muted mb-0">No quedan buses disponibles para esta fecha.</p>

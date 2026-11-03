@@ -161,7 +161,7 @@ Rails.application.routes.draw do
   resources :buses
 
   resources :bus_assignments,
-            only: [:create, :destroy]
+            only: [:create, :update, :destroy]
 
   resources :audit_logs,
             only: [:index]

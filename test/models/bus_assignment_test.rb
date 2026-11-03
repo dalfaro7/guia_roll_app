@@ -29,6 +29,16 @@ class BusAssignmentTest < ActiveSupport::TestCase
     assert assignment.valid?
   end
 
+  test "bus cost starts at 120 dollars and accepts exact USD edits" do
+    assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
+      location: "Balsa", seats_assigned: 10)
+    assert_equal 12_000, assignment.cost_cents
+    assignment.update!(cost_usd: "135.50")
+    assert_equal 13_550, assignment.reload.cost_cents
+    assignment.cost_usd = "10.999"
+    assert_not assignment.valid?
+  end
+
   test "capacity determines the allowed category" do
     @bus.capacity = 16
     assert_not @bus.valid?
