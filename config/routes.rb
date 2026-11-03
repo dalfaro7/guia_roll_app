@@ -159,6 +159,7 @@ Rails.application.routes.draw do
        to: "day_off_report#remove_day_off"
 
   resources :buses
+  resources :transport_rates, only: [:index, :update]
 
   resources :bus_assignments,
             only: [:create, :update, :destroy]

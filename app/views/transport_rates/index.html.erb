@@ -1,0 +1,42 @@
+<main class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small fw-semibold mb-1">Transporte</p>
+      <h1 class="mb-1">Tarifario de transporte</h1>
+      <p class="text-muted mb-0">Costo por bus según su categoría y la salida. Los importes se expresan en USD.</p>
+    </div>
+    <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
+  </div>
+
+  <div class="alert alert-info" role="note">
+    Cada tarifa comienza en $120. La tarifa vigente se copia cuando se asigna un bus; cambiarla no modifica asignaciones anteriores. Los importes de una asignación también se pueden ajustar en su operación.
+  </div>
+
+  <div class="table-responsive card shadow-sm border-0">
+    <table class="table table-striped align-middle mb-0">
+      <thead class="table-light"><tr><th scope="col" class="ps-3">Salida</th><th scope="col">Categoría</th><th scope="col">Tarifa USD</th><th scope="col">Última actualización</th><th scope="col" class="pe-3">Acción</th></tr></thead>
+      <tbody>
+        <% TransportRate::LOCATIONS.each do |location| %>
+          <% TransportRate::CATEGORIES.each do |category| %>
+            <% rate = @rates[[location, category]] %>
+            <tr>
+              <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
+              <td><%= rate&.category_label || category %></td>
+              <td><strong><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></strong></td>
+              <td class="small text-muted"><%= rate&.updated_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
+              <td class="pe-3">
+                <% if rate && (current_user.admin? || current_user.operador?) %>
+                  <%= form_with model: rate, url: transport_rate_path(rate), method: :patch, class: "d-flex gap-2 align-items-center" do |f| %>
+                    <%= f.label :amount_usd, "USD", class: "visually-hidden" %>
+                    <%= f.number_field :amount_usd, min: 0, step: 0.01, required: true, class: "form-control form-control-sm", style: "max-width: 8rem" %>
+                    <%= f.submit "Guardar", class: "btn btn-sm btn-outline-primary" %>
+                  <% end %>
+                <% else %><span class="text-muted">—</span><% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</main>

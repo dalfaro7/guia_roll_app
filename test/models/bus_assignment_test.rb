@@ -39,6 +39,38 @@ class BusAssignmentTest < ActiveSupport::TestCase
     assert_not assignment.valid?
   end
 
+  test "new assignment copies the matching tariff and keeps its snapshot" do
+    rate = TransportRate.find_or_create_by!(location: "Balsa", size_category: "small") do |record|
+      record.amount_cents = 12_000
+    end
+    rate.update!(amount_cents: 15_000)
+    assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
+      location: "Balsa", seats_assigned: 10)
+    assert_equal 15_000, assignment.cost_cents
+    rate.update!(amount_cents: 17_000)
+    assert_equal 15_000, assignment.reload.cost_cents
+  end
+
+  test "tariff lookup distinguishes bus category and departure" do
+    small_balsa = TransportRate.find_or_create_by!(location: "Balsa", size_category: "small") { |r| r.amount_cents = 12_000 }
+    large_balsa = TransportRate.find_or_create_by!(location: "Balsa", size_category: "large") { |r| r.amount_cents = 12_000 }
+    small_sara = TransportRate.find_or_create_by!(location: "Sara-3&4", size_category: "small") { |r| r.amount_cents = 12_000 }
+    small_balsa.update!(amount_cents: 13_000)
+    large_balsa.update!(amount_cents: 15_000)
+    small_sara.update!(amount_cents: 17_000)
+    large_bus = Bus.create!(alias: "Bus grande", plate: "ABC-200", capacity: 20,
+      transport_company: @company)
+    another_day = WorkDay.create!(date: @work_day.date + 1.day, status: :draft,
+      guides_requested: 0)
+
+    assert_equal 13_000, BusAssignment.create!(bus: @bus, work_day: @work_day,
+      location: "Balsa", seats_assigned: 10).cost_cents
+    assert_equal 15_000, BusAssignment.create!(bus: large_bus, work_day: @work_day,
+      location: "Balsa", seats_assigned: 10).cost_cents
+    assert_equal 17_000, BusAssignment.create!(bus: @bus, work_day: another_day,
+      location: "Sara-3&4", seats_assigned: 10).cost_cents
+  end
+
   test "capacity determines the allowed category" do
     @bus.capacity = 16
     assert_not @bus.valid?

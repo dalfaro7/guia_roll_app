@@ -21,8 +21,16 @@ class BusAssignment < ApplicationRecord
   validate :cannot_exceed_bus_capacity
   validate :bus_cannot_be_used_twice_in_same_day
   validate :driver_belongs_to_bus_company
+  before_validation :apply_transport_rate, on: :create
 
   private
+
+  def apply_transport_rate
+    return unless bus && location.present?
+
+    rate = TransportRate.find_by(location: location, size_category: bus.size_category)
+    self.cost_cents = rate.amount_cents if rate
+  end
 
   def cannot_exceed_bus_capacity
     if seats_assigned.present? && bus && seats_assigned > bus.capacity

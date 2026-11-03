@@ -8,7 +8,7 @@
     <% if bus_assignments.any? && (current_user.admin? || current_user.operador? || current_user.contabilidad?) %>
       <details class="mb-2 small">
         <summary>Ver total de transporte</summary>
-        <p class="mb-0 mt-1">Total: <strong><%= usd(bus_assignments.sum(&:cost_cents)) %></strong>. Cada bus comienza en $120; revise los importes.</p>
+        <p class="mb-0 mt-1">Total: <strong><%= usd(bus_assignments.sum(&:cost_cents)) %></strong>. Tarifa copiada al asignar cada bus; puede ajustar el importe.</p>
       </details>
     <% end %>
     <% bus_assignments.each do |assignment| %>

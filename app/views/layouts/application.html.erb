@@ -58,6 +58,7 @@
             <% end %>
             <% if current_user&.admin? || current_user&.operador? || current_user&.contabilidad? %>
               <%= link_to "Consolidados", compensation_settlements_path, class: "roll-header__link" %>
+              <%= link_to "Tarifario de transporte", transport_rates_path, class: "roll-header__link" %>
             <% end %>
           </div>
           <div class="roll-header__daily" role="group" aria-label="Operación diaria">

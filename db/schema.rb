@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000007) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000008) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -664,6 +664,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000007) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index "lower((name)::text)", name: "unique_transport_company_name", unique: true
+  end
+
+  create_table "transport_rates", force: :cascade do |t|
+    t.integer "amount_cents", default: 12000, null: false
+    t.datetime "created_at", null: false
+    t.string "location", null: false
+    t.string "size_category", null: false
+    t.datetime "updated_at", null: false
+    t.index ["location", "size_category"], name: "index_transport_rates_on_location_and_size_category", unique: true
+    t.check_constraint "amount_cents >= 0", name: "transport_rate_amount_nonnegative"
   end
 
   create_table "users", force: :cascade do |t|
