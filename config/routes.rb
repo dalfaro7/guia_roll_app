@@ -110,6 +110,7 @@ Rails.application.routes.draw do
       delete :delete_with_reset
 
       get :locations
+      get :available_buses
       post :create_slots
       get :edit_slots
 

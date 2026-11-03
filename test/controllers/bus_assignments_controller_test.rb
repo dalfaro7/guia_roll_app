@@ -76,6 +76,26 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to work_day_path(@work_day)
   end
 
+  test "assigned bus is absent from every departure selector and availability response" do
+    second_bus = Bus.create!(transport_company: @company, capacity: 13,
+      plate: "TEST-AVAILABLE", alias: "Available bus")
+
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "select[name='bus_assignment[bus_id]']", count: 4
+    assert_select "select[name='bus_assignment[bus_id]'] option[value='#{@bus.id}']", count: 0
+    assert_select "select[name='bus_assignment[bus_id]'] option[value='#{second_bus.id}']", count: 4
+
+    get available_buses_work_day_path(@work_day)
+    assert_response :success
+    assert_equal [second_bus.id], response.parsed_body.fetch("buses").map { |bus| bus.fetch("id") }
+
+    BusAssignment.create!(bus: second_bus, work_day: @work_day,
+      location: "PM", seats_assigned: 2)
+    get available_buses_work_day_path(@work_day)
+    assert_empty response.parsed_body.fetch("buses")
+  end
+
   test "should destroy bus assignment" do
     assert_difference("BusAssignment.count", -1) do
       delete bus_assignment_path(@assignment)

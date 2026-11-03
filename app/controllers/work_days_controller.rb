@@ -1,6 +1,7 @@
 class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
+    :available_buses,
     :update,
     :force_assign,
     :update_availability,
@@ -58,6 +59,18 @@ class WorkDaysController < ApplicationController
         .location_slots
         .group(:location)
         .maximum(:passengers)
+  end
+
+  def available_buses
+    response.headers["Cache-Control"] = "no-store"
+    buses = Bus.available_on(@work_day).includes(:transport_company).order(:alias).map do |bus|
+      {
+        id: bus.id,
+        label: "#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} pax)",
+        company_id: bus.transport_company_id
+      }
+    end
+    render json: { buses: buses }
   end
 
   def new

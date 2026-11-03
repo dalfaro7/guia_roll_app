@@ -13,7 +13,7 @@
       </div>
     <% end %>
     <% if @available_buses.any? %>
-      <%= form_with model: BusAssignment.new, class: "row g-2 align-items-end", data: { controller: "bus-driver" } do |f| %>
+      <%= form_with model: BusAssignment.new, class: "row g-2 align-items-end", data: { controller: "bus-driver", available_buses_url: available_buses_work_day_path(work_day) } do |f| %>
         <%= f.hidden_field :work_day_id, value: work_day.id %>
         <%= f.hidden_field :location, value: location %>
         <div class="col-md-5"><%= f.label :bus_id, "Bus disponible", class: "form-label" %>
