@@ -20,7 +20,7 @@ class Guide < ApplicationRecord
 
   after_commit :reprice_future_compensation,
                on: :update,
-               if: :saved_change_to_pay_category_or_level?
+               if: :saved_change_to_pay_category_or_priority?
 
   scope :active, -> { where(active: true) }
 
@@ -49,8 +49,8 @@ class Guide < ApplicationRecord
 
   private
 
-  def saved_change_to_pay_category_or_level?
-    saved_change_to_pay_category? || saved_change_to_pay_level_two? ||
+  def saved_change_to_pay_category_or_priority?
+    saved_change_to_pay_category? ||
       saved_change_to_priority?
   end
 

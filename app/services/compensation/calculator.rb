@@ -24,7 +24,6 @@ module Compensation
           pricing_error: nil,
           priced_at: Time.current,
           pay_category_snapshot: category,
-          pay_level_two_snapshot: level_two?,
           guide_priority_snapshot: guide_priority
         )
       end
@@ -50,16 +49,6 @@ module Compensation
         @assignment.pay_category_snapshot
       else
         @assignment.guide.pay_category
-      end
-    end
-
-    def level_two?
-      return false unless @assignment.guide?
-
-      if @departure.started? && !@assignment.pay_level_two_snapshot.nil?
-        @assignment.pay_level_two_snapshot
-      else
-        @assignment.guide.pay_level_two?
       end
     end
 
@@ -94,7 +83,7 @@ module Compensation
         when "send_only"
           result << line_for("bonus_photo_send_only", existing)
         end
-        if @assignment.bus_guide? && salaried? && level_two? &&
+        if @assignment.bus_guide? && salaried? &&
             (@assignment.photo_task == "none" || guide_priority.to_i >= 2)
           result << line_for("bonus_bus_guide", existing)
         end
@@ -168,7 +157,6 @@ module Compensation
         details: {
           role_code: @assignment.role_code,
           pay_category: category,
-          pay_level_two: level_two?,
           guide_priority: guide_priority,
           departure_label: @departure.label,
           location: @departure.location

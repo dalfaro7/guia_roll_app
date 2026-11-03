@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -72,7 +72,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000003) do
     t.bigint "guide_id"
     t.integer "guide_priority_snapshot"
     t.string "pay_category_snapshot"
-    t.boolean "pay_level_two_snapshot"
     t.string "photo_task", default: "none", null: false
     t.datetime "priced_at"
     t.text "pricing_error"
@@ -232,7 +231,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000003) do
     t.date "last_priority_change_date"
     t.string "name"
     t.string "pay_category", default: "freelance_regular"
-    t.boolean "pay_level_two", default: false, null: false
     t.integer "priority"
     t.date "start_date"
     t.integer "total_worked_days"

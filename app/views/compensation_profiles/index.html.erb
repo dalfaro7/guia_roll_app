@@ -2,12 +2,11 @@
   <h1>Perfil económico de guías</h1>
   <p>La categoría de pago es independiente de la prioridad de asignación. Configure cada guía antes de valorar sus salidas.</p>
   <div class="table-responsive"><table class="table table-striped align-middle">
-    <thead><tr><th>Guía</th><th>Categoría</th><th>Guía de bus nivel dos</th><th></th></tr></thead>
+    <thead><tr><th>Guía</th><th>Categoría</th><th></th></tr></thead>
     <tbody><% @guides.each do |guide| %>
-      <tr><td><%= guide.name %></td><td colspan="3">
+      <tr><td><%= guide.name %></td><td colspan="2">
         <%= form_with url: compensation_profile_path(guide), method: :patch, local: true, class: "d-flex align-items-center gap-3 flex-wrap" do %>
           <%= select_tag "guide[pay_category]", options_for_select([["Sin definir", ""], ["Asalariado", "salaried"], ["Freelance aprendiz", "freelance_apprentice"], ["Freelance regular", "freelance_regular"], ["Freelance con factura", "freelance_invoice"]], guide.pay_category), class: "form-select form-select-sm", style: "max-width: 230px" %>
-          <label><%= hidden_field_tag "guide[pay_level_two]", "0" %><%= check_box_tag "guide[pay_level_two]", "1", guide.pay_level_two? %> Guía de bus nivel dos</label>
           <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
         <% end %>
       </td></tr>

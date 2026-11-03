@@ -31,9 +31,9 @@ class CompensationPricingTest < ActiveSupport::TestCase
     )
   end
 
-  def guide(name, category: "freelance_regular", level_two: false, priority: 3)
+  def guide(name, category: "freelance_regular", priority: 3)
     Guide.create!(name: name, priority: priority, active: true,
-      pay_category: category, pay_level_two: level_two)
+      pay_category: category)
   end
 
   def assignment(departure, person, role, **extra)
@@ -92,7 +92,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
 
   test "priority zero photographer receives thirty dollar extra without bus bonus" do
     photographer = guide("Photo priority zero", category: "salaried",
-      level_two: true, priority: 0)
+      priority: 0)
     record = assignment(@first, photographer, "photographer",
       principal_photographer: true, bus_guide: true)
 
@@ -109,8 +109,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
   end
 
   test "priority one guide receives no bus bonus alongside photos" do
-    person = guide("Priority one", category: "salaried", level_two: true,
-      priority: 1)
+    person = guide("Priority one", category: "salaried", priority: 1)
     record = assignment(@first, person, "river_guide", bus_guide: true,
       photo_task: "take_and_send")
 
@@ -119,9 +118,19 @@ class CompensationPricingTest < ActiveSupport::TestCase
       record.compensation_lines.pluck(:code)
   end
 
+  test "salaried guides at priorities zero and one receive bus bonus without photos" do
+    [0, 1].each do |priority|
+      person = guide("Bus priority #{priority}", category: "salaried",
+        priority: priority)
+      record = assignment(@first, person, "river_guide", bus_guide: true)
+
+      assert_equal 600, record.total_cents
+      assert_equal ["bonus_bus_guide"], record.compensation_lines.pluck(:code)
+    end
+  end
+
   test "priority two salaried guide receives bus and photo bonuses together" do
-    person = guide("Priority two", category: "salaried", level_two: true,
-      priority: 2)
+    person = guide("Priority two", category: "salaried", priority: 2)
     record = assignment(@first, person, "river_guide", bus_guide: true,
       photo_task: "take_and_send")
 
@@ -163,7 +172,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
   end
 
   test "priority three salaried bus guide receives both bonuses with photos" do
-    record = assignment(@first, guide("Salary", category: "salaried", level_two: true),
+    record = assignment(@first, guide("Salary", category: "salaried"),
       "river_guide", bus_guide: true, photo_task: "take_and_send")
 
     assert_equal 2_600, record.total_cents

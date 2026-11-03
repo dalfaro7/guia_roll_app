@@ -7,7 +7,7 @@ class CompensationProfilesController < ApplicationController
 
   def update
     guide = Guide.find(params[:id])
-    before = guide.attributes.slice("pay_category", "pay_level_two")
+    before = guide.attributes.slice("pay_category")
     guide.update!(profile_params.merge(pay_category: profile_params[:pay_category].presence))
     audit!(action: "update_compensation_profile", auditable: guide,
       metadata: { before: before,
@@ -21,6 +21,6 @@ class CompensationProfilesController < ApplicationController
   private
 
   def profile_params
-    params.require(:guide).permit(:pay_category, :pay_level_two)
+    params.require(:guide).permit(:pay_category)
   end
 end
