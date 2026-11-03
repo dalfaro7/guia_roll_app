@@ -16,7 +16,7 @@ module Compensation
     end
 
     def self.applicable?(work_day)
-      return false unless work_day && CompensationRate.table_exists?
+      return false unless work_day&.date && CompensationRate.table_exists?
 
       first_rate = CompensationRate.minimum(:effective_at)
       first_rate && work_day.date >= first_rate.in_time_zone("America/Costa_Rica").to_date
