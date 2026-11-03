@@ -39,7 +39,12 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", /Valoración/
     get compensation_rates_path
+    assert_redirected_to unlock_compensation_rates_path
+    post verify_compensation_rates_key_path, params: { password: "admin" }
+    assert_redirected_to compensation_rates_path
+    get compensation_rates_path
     assert_response :success
+    assert_no_match(/Segunda salida en otros destinos/, response.body)
     get compensation_profiles_path
     assert_response :success
     get drivers_path
@@ -106,11 +111,36 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     sign_out :user
     sign_in user(:admin)
+    post verify_compensation_rates_key_path, params: { password: "admin" }
     post compensation_discount_rules_path, params: params
     assert_redirected_to compensation_rates_path
     rule = CompensationDiscountRule.find_by!(code: "second_sara", percent: 25)
     assert AuditLog.exists?(action: "create_compensation_discount_rule",
       auditable_id: rule.id)
+  end
+
+  test "tariff key protects viewing and saving even for an admin" do
+    sign_in user(:admin)
+    get compensation_rates_path
+    assert_redirected_to unlock_compensation_rates_path
+
+    post compensation_discount_rules_path, params: {
+      compensation_discount_rule: {
+        code: "second_sara", percent: 25,
+        effective_at: (Time.current + 1.day).strftime("%Y-%m-%dT%H:%M")
+      }
+    }
+    assert_redirected_to unlock_compensation_rates_path
+
+    post verify_compensation_rates_key_path, params: { password: "incorrecta" }
+    assert_redirected_to unlock_compensation_rates_path
+    get compensation_rates_path
+    assert_redirected_to unlock_compensation_rates_path
+
+    post verify_compensation_rates_key_path, params: { password: "admin" }
+    assert_redirected_to compensation_rates_path
+    get compensation_rates_path
+    assert_response :success
   end
 
   test "operator can designate a different principal photographer" do

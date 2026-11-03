@@ -27,6 +27,13 @@ class ApplicationController < ActionController::Base
                 alert: "Solo los administradores pueden realizar esta acción."
   end
 
+  def require_rates_page_key!
+    return if current_user && session[:compensation_rates_unlocked_user_id] == current_user.id
+
+    redirect_to unlock_compensation_rates_path,
+                alert: "Ingrese la clave para abrir Tarifas."
+  end
+
   def require_compensation_view!
     return if current_user&.admin? || current_user&.operador? ||
               current_user&.contabilidad?

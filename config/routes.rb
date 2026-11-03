@@ -118,6 +118,8 @@ Rails.application.routes.draw do
     end
   end
 
+  get "compensation_rates/unlock", to: "compensation_rates#unlock", as: :unlock_compensation_rates
+  post "compensation_rates/unlock", to: "compensation_rates#verify_key", as: :verify_compensation_rates_key
   resources :compensation_rates, only: [:index, :create]
   resources :compensation_discount_rules, only: [:create]
   resources :compensation_profiles, only: [:index, :update]

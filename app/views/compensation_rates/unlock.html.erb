@@ -1,0 +1,11 @@
+<div class="container py-4" style="max-width: 480px">
+  <h1>Tarifas</h1>
+  <p>Ingrese la clave para abrir las tarifas de valoración.</p>
+  <%= form_with url: verify_compensation_rates_key_path, method: :post, local: true do %>
+    <div class="mb-3">
+      <%= label_tag :password, "Clave", class: "form-label" %>
+      <%= password_field_tag :password, nil, class: "form-control", required: true, autocomplete: "off" %>
+    </div>
+    <%= submit_tag "Abrir tarifas", class: "btn btn-primary" %>
+  <% end %>
+</div>

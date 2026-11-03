@@ -1,7 +1,6 @@
 module CompensationHelper
   DISCOUNT_LABELS = {
-    "second_sara" => "Segunda salida en Sarapiquí",
-    "second_other" => "Segunda salida en otros destinos"
+    "second_sara" => "Segunda salida en Sarapiquí"
   }.freeze
 
   def compensation_discount_label(code)

@@ -1,12 +1,35 @@
 class CompensationRatesController < ApplicationController
   before_action :require_admin!
+  before_action :require_rates_page_key!, only: [:index, :create]
+
+  def unlock
+    redirect_to compensation_rates_path if session[:compensation_rates_unlocked_user_id] == current_user.id
+  end
+
+  def verify_key
+    expected = ENV["COMPENSATION_RATES_PAGE_KEY"].presence ||
+      ("admin" unless Rails.env.production?)
+    if expected.blank?
+      redirect_to unlock_compensation_rates_path,
+                  alert: "La clave de Tarifas no está configurada."
+    elsif ActiveSupport::SecurityUtils.secure_compare(
+      Digest::SHA256.hexdigest(params[:password].to_s),
+      Digest::SHA256.hexdigest(expected)
+    )
+      session[:compensation_rates_unlocked_user_id] = current_user.id
+      redirect_to compensation_rates_path
+    else
+      redirect_to unlock_compensation_rates_path, alert: "Clave incorrecta."
+    end
+  end
 
   def index
     @rates = CompensationRate.order(:code, effective_at: :desc)
     @current_rates = CompensationRate::CODES.index_with do |code|
       CompensationRate.for(code, at: Time.current)
     end
-    @discount_rules = CompensationDiscountRule.order(:code, effective_at: :desc)
+    @discount_rules = CompensationDiscountRule.where(code: CompensationDiscountRule::CODES)
+      .order(:code, effective_at: :desc)
     @current_discount_rules = CompensationDiscountRule::CODES.index_with do |code|
       CompensationDiscountRule.for(code, at: Time.current)
     end

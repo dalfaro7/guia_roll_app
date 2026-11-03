@@ -165,10 +165,10 @@ module Compensation
     end
 
     def second_departure_discount
-      code = @departure.location.to_s.start_with?("Sara") ?
-        "second_sara" : "second_other"
-      rule = CompensationDiscountRule.for(code, at: @departure.starts_at)
-      raise MissingRate, "No hay descuento vigente para #{code}" unless rule
+      return 0 unless @departure.location.to_s.start_with?("Sara")
+
+      rule = CompensationDiscountRule.for("second_sara", at: @departure.starts_at)
+      raise MissingRate, "No hay descuento vigente para second_sara" unless rule
 
       rule.percent
     end

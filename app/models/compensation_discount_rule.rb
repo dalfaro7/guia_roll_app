@@ -1,5 +1,5 @@
 class CompensationDiscountRule < ApplicationRecord
-  CODES = %w[second_sara second_other].freeze
+  CODES = %w[second_sara].freeze
 
   belongs_to :created_by, class_name: "User", optional: true
 

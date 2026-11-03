@@ -75,6 +75,24 @@ class CompensationPricingTest < ActiveSupport::TestCase
     end
   end
 
+  test "a second departure outside Sarapiqui has no discount" do
+    person = guide("Other destination")
+    assignment(@first, person, "river_guide")
+    driver = Driver.create!(name: "Other destination driver")
+    assignment(@first, driver, "driver_la_fortuna")
+    second = @work_day.departures.create!(
+      label: "PM", location: "PM",
+      starts_at: @zone.local(@date.year, @date.month, @date.day, 10)
+    )
+
+    guide_record = assignment(second, person, "river_guide")
+    driver_record = assignment(second, driver, "driver_la_fortuna")
+    assert_equal 5_000, guide_record.total_cents
+    assert_equal 0, guide_record.compensation_lines.find_by!(code: "guide_regular").discount_percent
+    assert_equal 4_000, driver_record.total_cents
+    assert_equal 0, driver_record.compensation_lines.find_by!(code: "driver_la_fortuna").discount_percent
+  end
+
   test "two photographers each receive the photo extra but only one is principal" do
     first = assignment(@first, guide("Photo one"), "photographer",
       principal_photographer: true)

@@ -1,5 +1,6 @@
 class CompensationDiscountRulesController < ApplicationController
   before_action :require_admin!
+  before_action :require_rates_page_key!
 
   def create
     effective_at = Time.find_zone!("America/Costa_Rica").parse(rule_params[:effective_at].to_s)
