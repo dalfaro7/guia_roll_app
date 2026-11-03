@@ -1,12 +1,29 @@
 class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
+    :update,
+    :force_assign,
+    :update_availability,
+    :delete_with_reset,
+    :create_slots,
     :update_roles,
     :generate_roles,
     :publish,
     :unpublish,
     :reset_roll,
     :move_assigned_task_to_roll
+  ]
+
+  before_action :require_compensation_operator!, only: [
+    :create, :update, :force_assign, :update_availability,
+    :update_roles, :generate_roles, :publish, :unpublish,
+    :delete_with_reset, :reset_roll, :create_slots,
+    :move_assigned_task_to_roll
+  ]
+  before_action :enforce_edit_window, only: [
+    :update, :force_assign, :update_availability, :update_roles,
+    :generate_roles, :publish, :unpublish, :delete_with_reset,
+    :reset_roll, :create_slots, :move_assigned_task_to_roll
   ]
 
   def index
@@ -213,33 +230,29 @@ class WorkDaysController < ApplicationController
 
     return redirect_to(@work_day) unless params[:roles]
 
-    @work_day
-      .guide_days
-      .where(id: params[:roles].keys)
-      .each do |guide_day|
+    ActiveRecord::Base.transaction do
+      @work_day.guide_days.where(id: params[:roles].keys).each do |guide_day|
+        role_data = params[:roles][guide_day.id.to_s]
+        updates = {}
+        %w[role_primary role_secondary location].each do |field|
+          updates[field] = role_data[field].presence if role_data.key?(field)
+        end
+        next if updates.empty?
 
-      role_data = params[:roles][guide_day.id.to_s]
-      updates = {}
-
-      if role_data["role_primary"].present?
-        updates[:role_primary] = role_data["role_primary"]
+        before = guide_day.attributes.slice(*updates.keys)
+        guide_day.update!(updates.merge(manually_modified: true, modified_by: current_user))
+        audit!(action: "update_roles", auditable: guide_day, work_day: @work_day,
+          metadata: { before: before, after: guide_day.attributes.slice(*updates.keys),
+            reason: params[:correction_reason] })
       end
-
-      if role_data["role_secondary"].present?
-        updates[:role_secondary] = role_data["role_secondary"]
-      end
-
-      if role_data["location"].present?
-        updates[:location] = role_data["location"]
-      end
-
-      guide_day.update(updates) if updates.any?
     end
 
     redirect_to(
       @work_day,
       notice: "Roles actualizados correctamente."
     )
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, RuntimeError => e
+    redirect_to @work_day, alert: e.message
   end
 
   def generate_roles
@@ -314,6 +327,9 @@ class WorkDaysController < ApplicationController
       work_days_path,
       notice: "Programación eliminada correctamente."
     )
+  rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::RecordNotDestroyed => e
+    redirect_to @work_day,
+      alert: "Esta programación tiene valoración económica y no se puede eliminar. #{e.message}"
   end
 
   def reset_roll
@@ -441,6 +457,22 @@ class WorkDaysController < ApplicationController
 end
 
   private
+
+  def enforce_edit_window
+    allowed = Compensation::EditWindow.allowed?(
+      user: current_user, work_day: @work_day
+    )
+    local_now = Time.current.in_time_zone("America/Costa_Rica")
+    closed = Compensation::EditWindow.applicable?(@work_day) &&
+      (@work_day.date < local_now.to_date ||
+      (@work_day.date == local_now.to_date && local_now.hour >= 18))
+    return if allowed && (!closed || !current_user.admin? ||
+      params[:correction_reason].present?)
+
+    redirect_to @work_day,
+      alert: allowed ? "Indique el motivo de la corrección." :
+        "Esta programación ya cerró. Solo un administrador puede corregirla."
+  end
 
   def set_work_day
     @work_day = WorkDay.find(params[:id])

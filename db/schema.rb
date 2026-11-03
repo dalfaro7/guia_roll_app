@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_02_010000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,6 +45,131 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_010000) do
     t.datetime "created_at", null: false
     t.string "phone"
     t.string "plate"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "compensation_adjustments", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.bigint "compensation_settlement_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id", null: false
+    t.text "reason", null: false
+    t.bigint "source_assignment_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["compensation_settlement_id", "source_assignment_id"], name: "one_compensation_adjustment_per_source_week", unique: true
+    t.index ["compensation_settlement_id"], name: "index_compensation_adjustments_on_settlement"
+    t.index ["created_by_id"], name: "index_compensation_adjustments_on_created_by_id"
+    t.index ["source_assignment_id"], name: "index_compensation_adjustments_on_source"
+  end
+
+  create_table "compensation_assignments", force: :cascade do |t|
+    t.boolean "also_drives", default: false, null: false
+    t.boolean "bus_guide", default: false, null: false
+    t.datetime "created_at", null: false
+    t.bigint "departure_id", null: false
+    t.bigint "driver_id"
+    t.bigint "guide_day_id"
+    t.bigint "guide_id"
+    t.string "pay_category_snapshot"
+    t.boolean "pay_level_two_snapshot"
+    t.string "photo_task", default: "none", null: false
+    t.datetime "priced_at"
+    t.text "pricing_error"
+    t.boolean "principal_photographer", default: false, null: false
+    t.string "role_code", null: false
+    t.string "source", default: "manual", null: false
+    t.string "status", default: "planned", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "updated_by_id"
+    t.index ["departure_id", "driver_id"], name: "unique_departure_driver", unique: true, where: "(driver_id IS NOT NULL)"
+    t.index ["departure_id", "guide_id"], name: "unique_departure_guide", unique: true, where: "(guide_id IS NOT NULL)"
+    t.index ["departure_id"], name: "index_compensation_assignments_on_departure_id"
+    t.index ["departure_id"], name: "one_photo_task_per_departure", unique: true, where: "(((photo_task)::text = ANY (ARRAY[('take_and_send'::character varying)::text, ('send_only'::character varying)::text])) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
+    t.index ["departure_id"], name: "one_principal_photographer", unique: true, where: "((principal_photographer = true) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
+    t.index ["driver_id"], name: "index_compensation_assignments_on_driver_id"
+    t.index ["guide_day_id"], name: "index_compensation_assignments_on_guide_day_id"
+    t.index ["guide_id"], name: "index_compensation_assignments_on_guide_id"
+    t.index ["updated_by_id"], name: "index_compensation_assignments_on_updated_by_id"
+    t.check_constraint "(guide_id IS NOT NULL) <> (driver_id IS NOT NULL)", name: "one_compensation_person"
+  end
+
+  create_table "compensation_lines", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.datetime "applied_at", null: false
+    t.string "code", null: false
+    t.bigint "compensation_assignment_id", null: false
+    t.bigint "compensation_rate_id"
+    t.datetime "created_at", null: false
+    t.jsonb "details", default: {}, null: false
+    t.integer "discount_percent", default: 0, null: false
+    t.integer "rate_cents", null: false
+    t.datetime "updated_at", null: false
+    t.index ["compensation_assignment_id", "code"], name: "one_line_per_compensation_code", unique: true
+    t.index ["compensation_assignment_id"], name: "index_compensation_lines_on_assignment"
+    t.index ["compensation_rate_id"], name: "index_compensation_lines_on_compensation_rate_id"
+  end
+
+  create_table "compensation_rates", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.datetime "effective_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code", "effective_at"], name: "index_compensation_rates_on_code_and_effective_at", unique: true
+    t.index ["created_by_id"], name: "index_compensation_rates_on_created_by_id"
+    t.check_constraint "amount_cents >= 0", name: "compensation_rate_nonnegative"
+  end
+
+  create_table "compensation_settlement_items", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.bigint "compensation_assignment_id", null: false
+    t.bigint "compensation_settlement_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "details", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["compensation_assignment_id"], name: "index_compensation_settlement_items_on_assignment"
+    t.index ["compensation_settlement_id", "compensation_assignment_id"], name: "one_assignment_per_settlement", unique: true
+    t.index ["compensation_settlement_id"], name: "index_compensation_settlement_items_on_settlement"
+  end
+
+  create_table "compensation_settlements", force: :cascade do |t|
+    t.integer "amount_cents", default: 0, null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.bigint "driver_id"
+    t.bigint "guide_id"
+    t.datetime "paid_at"
+    t.bigint "paid_by_id"
+    t.datetime "updated_at", null: false
+    t.date "week_end", null: false
+    t.date "week_start", null: false
+    t.index ["driver_id", "week_start"], name: "unique_driver_week", unique: true, where: "(driver_id IS NOT NULL)"
+    t.index ["driver_id"], name: "index_compensation_settlements_on_driver_id"
+    t.index ["guide_id", "week_start"], name: "unique_guide_week", unique: true, where: "(guide_id IS NOT NULL)"
+    t.index ["guide_id"], name: "index_compensation_settlements_on_guide_id"
+    t.index ["paid_by_id"], name: "index_compensation_settlements_on_paid_by_id"
+    t.check_constraint "(guide_id IS NOT NULL) <> (driver_id IS NOT NULL)", name: "one_settlement_person"
+  end
+
+  create_table "departures", force: :cascade do |t|
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.string "label", null: false
+    t.string "location", null: false
+    t.datetime "starts_at", null: false
+    t.string "status", default: "scheduled", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "work_day_id", null: false
+    t.index ["starts_at"], name: "index_departures_on_starts_at"
+    t.index ["work_day_id", "label"], name: "index_departures_on_work_day_id_and_label", unique: true
+    t.index ["work_day_id"], name: "index_departures_on_work_day_id"
+  end
+
+  create_table "drivers", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
     t.datetime "updated_at", null: false
   end
 
@@ -93,6 +218,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_010000) do
     t.date "fairness_started_on"
     t.date "last_priority_change_date"
     t.string "name"
+    t.string "pay_category"
+    t.boolean "pay_level_two", default: false, null: false
     t.integer "priority"
     t.date "start_date"
     t.integer "total_worked_days"
@@ -590,6 +717,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_010000) do
   add_foreign_key "audit_logs", "work_days"
   add_foreign_key "bus_assignments", "buses"
   add_foreign_key "bus_assignments", "work_days"
+  add_foreign_key "compensation_adjustments", "compensation_assignments", column: "source_assignment_id"
+  add_foreign_key "compensation_adjustments", "compensation_settlements"
+  add_foreign_key "compensation_adjustments", "users", column: "created_by_id"
+  add_foreign_key "compensation_assignments", "departures"
+  add_foreign_key "compensation_assignments", "drivers"
+  add_foreign_key "compensation_assignments", "guide_days"
+  add_foreign_key "compensation_assignments", "guides"
+  add_foreign_key "compensation_assignments", "users", column: "updated_by_id"
+  add_foreign_key "compensation_lines", "compensation_assignments"
+  add_foreign_key "compensation_lines", "compensation_rates"
+  add_foreign_key "compensation_rates", "users", column: "created_by_id"
+  add_foreign_key "compensation_settlement_items", "compensation_assignments"
+  add_foreign_key "compensation_settlement_items", "compensation_settlements"
+  add_foreign_key "compensation_settlements", "drivers"
+  add_foreign_key "compensation_settlements", "guides"
+  add_foreign_key "compensation_settlements", "users", column: "paid_by_id"
+  add_foreign_key "departures", "work_days"
   add_foreign_key "guide_activity_changes", "guides"
   add_foreign_key "guide_days", "guides"
   add_foreign_key "guide_days", "users", column: "modified_by_id"

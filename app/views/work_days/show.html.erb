@@ -42,6 +42,14 @@
                       } %>
             <% end %>
 
+            <% if Compensation::EditWindow.applicable?(@work_day) &&
+                  (@work_day.generated? || @work_day.published?) &&
+                  (current_user.admin? || current_user.operador? || current_user.contabilidad?) %>
+              <%= link_to "Ver valoración económica",
+                          work_day_compensation_path(@work_day),
+                          class: "btn btn-outline-primary" %>
+            <% end %>
+
             <% if @work_day.draft? %>
             <%= button_to "Generar roles",
                       generate_roles_work_day_path(@work_day),
@@ -68,6 +76,7 @@
             <%= link_to "Reportes del río Balsa",
                         weather_reports_path,
                         class: "btn btn-info" %>
+
 
             <%= button_to "Reabrir programación",
                       unpublish_work_day_path(@work_day),

@@ -1,0 +1,22 @@
+<div class="container py-4">
+  <h1>Tarifas de valoración</h1>
+  <p>Los cambios se registran con una nueva fecha de vigencia. Las tarifas anteriores permanecen como historial.</p>
+  <div class="table-responsive"><table class="table table-striped">
+    <thead><tr><th>Concepto</th><th>Tarifa vigente</th><th>Vigente desde</th></tr></thead>
+    <tbody><% @current_rates.each do |code, rate| %>
+      <tr><td><%= compensation_label(code) %></td><td><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></td><td><%= rate&.effective_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") %></td></tr>
+    <% end %></tbody>
+  </table></div>
+  <h2 class="h4 mt-4">Registrar nueva tarifa</h2>
+  <%= form_with url: compensation_rates_path, method: :post, local: true, class: "row g-2" do %>
+    <div class="col-md-4"><%= label_tag :rate_code, "Concepto" %><%= select_tag "compensation_rate[code]", options_for_select(CompensationRate::CODES.map { |code| [compensation_label(code), code] }), id: :rate_code, class: "form-select" %></div>
+    <div class="col-md-3"><%= label_tag :rate_amount, "Importe en USD" %><%= number_field_tag "compensation_rate[amount_usd]", nil, min: 0, step: 0.01, id: :rate_amount, class: "form-control", required: true %></div>
+    <div class="col-md-3"><%= label_tag :rate_effective, "Inicio de vigencia" %><%= datetime_local_field_tag "compensation_rate[effective_at]", nil, id: :rate_effective, class: "form-control", required: true %></div>
+    <div class="col-md-2 d-flex align-items-end"><%= submit_tag "Guardar tarifa", class: "btn btn-primary" %></div>
+  <% end %>
+  <h2 class="h4 mt-4">Historial</h2>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>Concepto</th><th>Importe</th><th>Inicio de vigencia</th></tr></thead>
+    <tbody><% @rates.each do |rate| %><tr><td><%= compensation_label(rate.code) %></td><td><%= usd(rate.amount_cents) %></td><td><%= rate.effective_at.in_time_zone("America/Costa_Rica").strftime("%d/%m/%Y %H:%M") %></td></tr><% end %></tbody>
+  </table></div>
+</div>

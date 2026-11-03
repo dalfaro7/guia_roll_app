@@ -7,11 +7,20 @@ class Guide < ApplicationRecord
   has_many :skills, through: :guide_skills
 
   has_many :guide_days, dependent: :destroy
+  has_many :compensation_assignments, dependent: :restrict_with_error
+  has_many :compensation_settlements, dependent: :restrict_with_error
   has_many :monthly_balances, dependent: :destroy
   has_many :manual_day_offs, dependent: :destroy
 
   validates :name, presence: true
   validates :priority, presence: true
+  validates :pay_category,
+            inclusion: { in: %w[salaried freelance_apprentice freelance_regular freelance_invoice] },
+            allow_nil: true
+
+  after_commit :reprice_future_compensation,
+               on: :update,
+               if: :saved_change_to_pay_category_or_level?
 
   scope :active, -> { where(active: true) }
 
@@ -39,6 +48,22 @@ class Guide < ApplicationRecord
   end
 
   private
+
+  def saved_change_to_pay_category_or_level?
+    saved_change_to_pay_category? || saved_change_to_pay_level_two?
+  end
+
+  def reprice_future_compensation
+    work_day_ids = compensation_assignments
+      .joins(:departure)
+      .where("departures.starts_at > ? OR compensation_assignments.pricing_error IS NOT NULL",
+        Time.current)
+      .distinct
+      .pluck("departures.work_day_id")
+    WorkDay.where(id: work_day_ids).find_each do |work_day|
+      Compensation::RepriceDay.call(work_day, guide: self)
+    end
+  end
 
   def record_activity_change
     guide_activity_changes.create!(active: active == true, recorded_at: Time.current)

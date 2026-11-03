@@ -10,6 +10,9 @@
 #     schedule: at 5am every day
 
 production:
+  close_compensation_days:
+    class: CompensationCloseDueDaysJob
+    schedule: every minute
   recover_kayaktalkie_report_notifications:
     class: KayaktalkieRecoverReportNotificationsJob
     schedule: every minute

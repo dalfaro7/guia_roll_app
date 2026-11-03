@@ -6,6 +6,7 @@ class WorkDay < ApplicationRecord
   has_many :bus_assignments, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
   has_many :roll_notes, dependent: :destroy
+  has_many :departures, dependent: :restrict_with_error
 
   accepts_nested_attributes_for :guide_days,
                                 update_only: true
@@ -220,6 +221,7 @@ class WorkDay < ApplicationRecord
 
   def date_cannot_be_in_the_past
     return if date.blank?
+    return unless new_record? || will_save_change_to_date?
 
     if date < Date.current
       errors.add(

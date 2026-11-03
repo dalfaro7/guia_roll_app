@@ -1,0 +1,103 @@
+<% content_for :title, "Valoración del #{@work_day.date}" %>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+      <h1>Valoración del <%= l(@work_day.date, format: :long) %></h1>
+      <p class="text-muted mb-0">Importes por salida. La programación logística permanece en su vista habitual.</p>
+    </div>
+    <%= link_to "Volver a la programación", work_day_path(@work_day), class: "btn btn-outline-secondary" %>
+  </div>
+
+  <% if @departures.empty? %>
+    <p class="alert alert-info">Todavía no hay salidas económicas para este día. Al generar asignaciones de guías se crearán las salidas iniciales.</p>
+  <% end %>
+
+  <% @departures.each do |departure| %>
+    <% assignments = departure.compensation_assignments.sort_by { |a| [a.person&.name.to_s, a.id] } %>
+    <section class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div><strong><%= departure.label %></strong> · <%= departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %> · <%= departure.status %></div>
+        <strong>Total <%= usd(assignments.sum(&:total_cents)) %></strong>
+      </div>
+      <div class="card-body">
+        <% if @can_edit %>
+          <details class="mb-3">
+            <summary>Editar horario o estado de la salida</summary>
+            <%= form_with url: work_day_departure_path(@work_day, departure), method: :patch, local: true, class: "row g-2 mt-2" do %>
+              <div class="col-md-3"><%= label_tag "departure_time_#{departure.id}", "Hora de inicio" %><%= time_field_tag "departure[starts_at_time]", departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M"), id: "departure_time_#{departure.id}", class: "form-control" %></div>
+              <div class="col-md-3"><%= label_tag "departure_status_#{departure.id}", "Estado" %><%= select_tag "departure[status]", options_for_select([["Programada", "scheduled"], ["Realizada", "completed"], ["Cancelada", "canceled"]], departure.status), id: "departure_status_#{departure.id}", class: "form-select" %></div>
+              <% if compensation_correction_required?(@work_day) %><div class="col-md-4"><%= label_tag "departure_reason_#{departure.id}", "Motivo de corrección" %><%= text_field_tag :correction_reason, nil, id: "departure_reason_#{departure.id}", class: "form-control", required: true %></div><% end %>
+              <div class="col-md-2 d-flex align-items-end"><%= submit_tag "Guardar salida", class: "btn btn-primary" %></div>
+            <% end %>
+          </details>
+        <% end %>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-striped align-middle">
+            <thead><tr><th>Persona</th><th>Función y tareas</th><th>Estado</th><th>Desglose</th><th class="text-end">Total</th><% if @can_edit %><th>Editar</th><% end %></tr></thead>
+            <tbody>
+              <% assignments.each do |assignment| %>
+                <tr>
+                  <td><%= assignment.person&.name %></td>
+                  <td><%= compensation_label(assignment.role_code) %><% if assignment.principal_photographer? %> · Fotógrafo principal<% end %></td>
+                  <td><%= assignment.status %></td>
+                  <td>
+                    <% if assignment.pricing_error.present? %><span class="text-danger"><%= assignment.pricing_error %></span><% end %>
+                    <% assignment.compensation_lines.each do |line| %>
+                      <div><%= compensation_label(line.code) %>: <%= usd(line.amount_cents) %><% if line.discount_percent.positive? %> (segunda salida, descuento <%= line.discount_percent %>%)<% end %></div>
+                    <% end %>
+                  </td>
+                  <td class="text-end fw-bold"><%= usd(assignment.total_cents) %></td>
+                  <% if @can_edit %>
+                    <td>
+                      <details><summary>Modificar</summary>
+                        <%= form_with url: work_day_compensation_assignment_path(@work_day, assignment), method: :patch, local: true, class: "d-grid gap-2 mt-2" do %>
+                          <%= select_tag "compensation_assignment[role_code]", options_for_select((CompensationAssignment::GUIDE_ROLES + CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }, assignment.role_code), class: "form-select form-select-sm" %>
+                          <%= select_tag "compensation_assignment[photo_task]", options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]], assignment.photo_task), class: "form-select form-select-sm" %>
+                          <%= select_tag "compensation_assignment[status]", options_for_select([["Programada", "planned"], ["Realizada", "performed"], ["Cancelada", "canceled"], ["No se presentó", "no_show"]], assignment.status), class: "form-select form-select-sm" %>
+                          <label><%= hidden_field_tag "compensation_assignment[also_drives]", "0" %><%= check_box_tag "compensation_assignment[also_drives]", "1", assignment.also_drives? %> También conduce</label>
+                          <label><%= hidden_field_tag "compensation_assignment[bus_guide]", "0" %><%= check_box_tag "compensation_assignment[bus_guide]", "1", assignment.bus_guide? %> Guía de bus</label>
+                          <label><%= hidden_field_tag "compensation_assignment[principal_photographer]", "0" %><%= check_box_tag "compensation_assignment[principal_photographer]", "1", assignment.principal_photographer? %> Fotógrafo principal</label>
+                          <% if compensation_correction_required?(@work_day) %><%= text_field_tag :correction_reason, nil, class: "form-control form-control-sm", placeholder: "Motivo de corrección", required: true %><% end %>
+                          <%= submit_tag "Guardar", class: "btn btn-primary btn-sm" %>
+                        <% end %>
+                      </details>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if @can_edit %>
+          <details class="mt-3"><summary>Agregar persona a esta salida</summary>
+            <%= form_with url: work_day_compensation_assignments_path(@work_day), method: :post, local: true, class: "row g-2 mt-2" do %>
+              <%= hidden_field_tag "compensation_assignment[departure_id]", departure.id %>
+              <div class="col-md-4"><%= label_tag "new_guide_#{departure.id}", "Guía" %><%= select_tag "compensation_assignment[guide_id]", options_from_collection_for_select(@guides, :id, :name), include_blank: "Seleccionar si es guía", id: "new_guide_#{departure.id}", class: "form-select" %></div>
+              <div class="col-md-4"><%= label_tag "new_driver_#{departure.id}", "Chofer" %><%= select_tag "compensation_assignment[driver_id]", options_from_collection_for_select(@drivers, :id, :name), include_blank: "Seleccionar si es chofer", id: "new_driver_#{departure.id}", class: "form-select" %></div>
+              <div class="col-md-4"><%= label_tag "new_role_#{departure.id}", "Función" %><%= select_tag "compensation_assignment[role_code]", options_for_select((CompensationAssignment::GUIDE_ROLES + CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }), id: "new_role_#{departure.id}", class: "form-select" %></div>
+              <div class="col-md-4"><%= label_tag "new_photo_#{departure.id}", "Fotos" %><%= select_tag "compensation_assignment[photo_task]", options_for_select([["Sin tarea", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]]), id: "new_photo_#{departure.id}", class: "form-select" %></div>
+              <div class="col-md-4"><label class="d-block"><%= check_box_tag "compensation_assignment[also_drives]", "1" %> También conduce</label><label><%= check_box_tag "compensation_assignment[bus_guide]", "1" %> Guía de bus</label></div>
+              <% if compensation_correction_required?(@work_day) %><div class="col-md-4"><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
+              <div class="col-12"><%= submit_tag "Agregar asignación", class: "btn btn-primary" %></div>
+            <% end %>
+          </details>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if @can_edit %>
+    <section class="card mb-4"><div class="card-body">
+      <h2 class="h5">Crear otra salida</h2>
+      <%= form_with url: work_day_departures_path(@work_day), method: :post, local: true, class: "row g-2" do %>
+        <div class="col-md-4"><%= label_tag :departure_label, "Nombre de la salida" %><%= text_field_tag "departure[label]", nil, id: :departure_label, class: "form-control", required: true, placeholder: "Sara clase 4" %></div>
+        <div class="col-md-3"><%= label_tag :departure_location, "Lugar" %><%= select_tag "departure[location]", options_for_select(["Sara-3", "Sara-4", "Sara-3&4", "Balsa", "Privado", "PM"]), id: :departure_location, class: "form-select" %></div>
+        <div class="col-md-2"><%= label_tag :departure_starts_at_time, "Hora" %><%= time_field_tag "departure[starts_at_time]", nil, id: :departure_starts_at_time, class: "form-control", required: true %></div>
+        <% if compensation_correction_required?(@work_day) %><div class="col-md-3"><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
+        <div class="col-12"><%= submit_tag "Crear salida", class: "btn btn-outline-primary" %></div>
+      <% end %>
+    </div></section>
+  <% end %>
+</div>

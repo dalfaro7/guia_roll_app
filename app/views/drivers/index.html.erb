@@ -1,0 +1,21 @@
+<div class="container py-4">
+  <h1>Choferes</h1>
+  <p>Los choferes son personal distinto de los guías y tienen tarifas propias por salida.</p>
+  <div class="table-responsive"><table class="table table-striped align-middle">
+    <thead><tr><th>Nombre</th><th>Activo</th><th></th></tr></thead>
+    <tbody><% @drivers.each do |driver| %>
+      <tr><td colspan="3">
+        <%= form_with url: driver_path(driver), method: :patch, local: true, class: "d-flex align-items-center gap-3" do %>
+          <%= text_field_tag "driver[name]", driver.name, class: "form-control form-control-sm", required: true, style: "max-width: 300px" %>
+          <label><%= hidden_field_tag "driver[active]", "0" %><%= check_box_tag "driver[active]", "1", driver.active? %> Activo</label>
+          <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
+        <% end %>
+      </td></tr>
+    <% end %></tbody>
+  </table></div>
+  <h2 class="h4">Nuevo chofer</h2>
+  <%= form_with url: drivers_path, method: :post, local: true, class: "d-flex gap-2" do %>
+    <%= text_field_tag "driver[name]", nil, class: "form-control", required: true, placeholder: "Nombre completo" %>
+    <%= submit_tag "Agregar chofer", class: "btn btn-primary" %>
+  <% end %>
+</div>

@@ -1,0 +1,15 @@
+<div class="container py-4">
+  <h1>Consulta por quincenas</h1>
+  <p>Estos cortes son informativos. El pago se consolida por semanas de miércoles a martes.</p>
+  <%= form_with url: compensation_reports_path, method: :get, local: true, class: "d-flex gap-2 mb-3" do %>
+    <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control", style: "max-width: 220px" %>
+    <%= submit_tag "Ver mes", class: "btn btn-outline-primary" %>
+  <% end %>
+  <% [@first_range, @second_range].each do |period| %>
+    <h2 class="h4"><%= period.begin.strftime("%d/%m") %> al <%= period.end.strftime("%d/%m/%Y") %></h2>
+    <% grouped = @assignments.select { |a| period.cover?(a.departure.work_day.date) }.group_by { |a| a.person.name } %>
+    <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>Persona</th><th class="text-end">Total</th></tr></thead><tbody>
+      <% grouped.sort.each do |name, assignments| %><tr><td><%= name %></td><td class="text-end"><%= usd(assignments.sum(&:total_cents)) %></td></tr><% end %>
+    </tbody></table></div>
+  <% end %>
+</div>

@@ -51,6 +51,14 @@
             <% if current_user&.admin? || current_user&.recursos_humanos? %>
               <%= link_to "Libres de oficina", office_employee_days_path, class: "roll-header__link", aria: { current: current_page?(office_employee_days_path) ? "page" : nil } %>
             <% end %>
+            <% if current_user&.admin? %>
+              <%= link_to "Tarifas", compensation_rates_path, class: "roll-header__link" %>
+              <%= link_to "Perfiles económicos", compensation_profiles_path, class: "roll-header__link" %>
+              <%= link_to "Choferes", drivers_path, class: "roll-header__link" %>
+            <% end %>
+            <% if current_user&.admin? || current_user&.operador? || current_user&.contabilidad? %>
+              <%= link_to "Consolidados", compensation_settlements_path, class: "roll-header__link" %>
+            <% end %>
           </div>
           <div class="roll-header__daily" role="group" aria-label="Operación diaria">
             <% [["Programación de guías", work_days_path], ["Asignaciones", guide_assignments_path], ["Días libres", day_off_report_path], ["Buses", buses_path], ["Panel de equidad", dashboard_path]].each do |label, path| %>
@@ -69,6 +77,41 @@
         </div>
       </nav>
     </header>
+
+    <% if controller_name == "work_days" && defined?(@work_day) && @work_day.is_a?(WorkDay) &&
+          compensation_correction_required?(@work_day) %>
+      <div class="container mt-3" role="group" aria-label="Corrección de una programación cerrada">
+        <label for="work-day-correction-reason" class="form-label fw-bold">Motivo de la corrección</label>
+        <input id="work-day-correction-reason" type="text" class="form-control"
+               placeholder="Explique por qué cambia esta programación cerrada">
+        <p class="form-text">Se registrará junto con los cambios de esta programación.</p>
+      </div>
+      <script>
+        document.addEventListener("submit", function(event) {
+          const form = event.target;
+          if (!form.action.includes("/work_days/<%= @work_day.id %>")) return;
+          if (form.querySelector('[name="correction_reason"]')) return;
+          const input = document.getElementById("work-day-correction-reason");
+          const reason = input.value.trim();
+          if (!reason) {
+            event.preventDefault();
+            input.focus();
+            input.setCustomValidity("Indique el motivo de la corrección.");
+            input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          const hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = "correction_reason";
+          hidden.value = reason;
+          form.appendChild(hidden);
+        }, true);
+        document.addEventListener("input", function(event) {
+          if (event.target.id === "work-day-correction-reason") event.target.setCustomValidity("");
+        });
+      </script>
+    <% end %>
 
     <%= yield %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -27,6 +27,9 @@ has_many :roll_notes,
   before_save :apply_day_off_balance,
               if: :will_save_change_to_status?
 
+  after_save :sync_compensation_assignment,
+             if: :compensation_source_changed?
+
   # Un GuideDay está disponible para entrar al roll solamente si:
   # - está en standby;
   # - el guía está activo;
@@ -131,6 +134,16 @@ has_many :roll_notes,
   end
 
   private
+
+  def compensation_source_changed?
+    saved_change_to_status? || saved_change_to_role_primary? ||
+      saved_change_to_role_secondary? || saved_change_to_location? ||
+      saved_change_to_status_note?
+  end
+
+  def sync_compensation_assignment
+    Compensation::ScheduleSync.call(self)
+  end
 
   def clear_status_note_unless_needed
     self.status_note = nil unless requires_status_note?

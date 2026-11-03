@@ -4,9 +4,9 @@ class User < ApplicationRecord
   validates :name, presence: true
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
-  
-  enum :role, { operador: 0, admin: 1, recursos_humanos: 2 }
-  
+
+  enum :role, { operador: 0, admin: 1, recursos_humanos: 2, contabilidad: 3 }
+
   has_many :roll_notes,
          foreign_key: :created_by_id,
          dependent: :restrict_with_error

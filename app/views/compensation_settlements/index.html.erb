@@ -1,0 +1,16 @@
+<div class="container py-4">
+  <h1>Consolidado semanal</h1>
+  <p>Semana de miércoles a martes. Los importes se expresan en USD y el pago se registra completo.</p>
+  <%= form_with url: compensation_settlements_path, method: :get, local: true, class: "d-flex gap-2 mb-3" do %>
+    <%= date_field_tag :week_start, @week_start, class: "form-control", style: "max-width: 220px" %>
+    <%= submit_tag "Ver semana", class: "btn btn-outline-primary" %>
+  <% end %>
+  <p><strong><%= @week_start.strftime("%d/%m/%Y") %> al <%= (@week_start + 6.days).strftime("%d/%m/%Y") %></strong></p>
+  <div class="table-responsive"><table class="table table-striped">
+    <thead><tr><th>Persona</th><th>Valoración</th><th>Estado</th><th></th></tr></thead>
+    <tbody><% @settlements.each do |settlement| %>
+      <tr><td><%= settlement.person.name %></td><td><%= usd(settlement.amount_cents) %></td><td><%= settlement.paid? ? "Pagado" : (settlement.closed_at ? "Pendiente de pago" : "Provisional") %></td><td><%= link_to "Ver detalle", compensation_settlement_path(settlement), class: "btn btn-sm btn-outline-primary" %></td></tr>
+    <% end %></tbody>
+  </table></div>
+  <%= link_to "Resumen por quincenas", compensation_reports_path, class: "btn btn-outline-secondary" %>
+</div>

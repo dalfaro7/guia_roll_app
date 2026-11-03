@@ -92,6 +92,9 @@ Rails.application.routes.draw do
   resources :roll_notes, only: [:index, :create, :destroy]
 
   resources :work_days do
+    resource :compensation, only: [:show], controller: :compensation_work_days
+    resources :departures, only: [:create, :update]
+    resources :compensation_assignments, only: [:create, :update, :destroy]
     member do
       patch :generate_roles
 
@@ -114,6 +117,14 @@ Rails.application.routes.draw do
       post :move_assigned_task_to_roll
     end
   end
+
+  resources :compensation_rates, only: [:index, :create]
+  resources :compensation_profiles, only: [:index, :update]
+  resources :drivers, only: [:index, :create, :update]
+  resources :compensation_settlements, only: [:index, :show] do
+    post :mark_paid, on: :member
+  end
+  resources :compensation_reports, only: [:index]
 
   resources :location_slots do
     member do

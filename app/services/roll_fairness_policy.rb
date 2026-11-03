@@ -152,11 +152,9 @@ class RollFairnessPolicy
       return 0 unless start_date.beginning_of_month == before_date.beginning_of_month
       return 0 if guide.fairness_entry_roll_days.to_i.positive?
 
-      has_roll_work = GuideDay
-        .joins(:work_day)
-        .where(guide: guide, status: fairness_statuses)
-        .where(work_days: { date: start_date...before_date })
-        .exists?
+      has_roll_work = roll_worked_days_for(
+        guide, fairness_start: start_date, before_date: before_date
+      ).positive?
 
       has_roll_work ? 0 : 1
     end
@@ -195,19 +193,9 @@ class RollFairnessPolicy
         before_date: before_date
       )
 
-      last_roll_work_date =
-        GuideDay
-          .joins(:work_day)
-          .where(
-            guide: guide,
-            status: fairness_statuses
-          )
-          .where(
-            work_days: {
-              date: fairness_start...before_date
-            }
-          )
-          .maximum("work_days.date")
+      last_roll_work_date = roll_work_dates_for(
+        guide, fairness_start: fairness_start, before_date: before_date
+      ).max
 
       last_roll_work_date || fairness_start
     end
@@ -232,20 +220,9 @@ class RollFairnessPolicy
         before_date: before_date
       )
 
-      roll_work_dates =
-        GuideDay
-          .joins(:work_day)
-          .where(
-            guide: guide,
-            status: fairness_statuses
-          )
-          .where(
-            work_days: {
-              date: fairness_start...before_date
-            }
-          )
-          .pluck("work_days.date")
-          .to_set
+      roll_work_dates = roll_work_dates_for(
+        guide, fairness_start: fairness_start, before_date: before_date
+      ).to_set
 
       streak = 0
       date = before_date - 1.day
@@ -283,7 +260,8 @@ end
     def roll_worked_days_for(guide, fairness_start:, before_date:)
       return 0 if fairness_start >= before_date
 
-      GuideDay
+      dates = fairness_start...before_date
+      legacy_days = GuideDay
         .joins(:work_day)
         .where(
           guide: guide,
@@ -291,10 +269,54 @@ end
         )
         .where(
           work_days: {
-            date: fairness_start...before_date
+            date: dates
           }
         )
+      return legacy_days.count unless CompensationAssignment.table_exists?
+
+      # Once departures exist, each actual guide outing consumes one
+      # opportunity. A historical GuideDay without an economic assignment
+      # still counts once, so the transition preserves the previous ledger.
+      represented_work_day_ids = CompensationAssignment
+        .joins(departure: :work_day)
+        .where(guide: guide)
+        .where.not(role_code: "host")
+        .where(work_days: { date: dates })
+        .select("departures.work_day_id")
+
+      outing_count = CompensationAssignment
+        .joins(departure: :work_day)
+        .where(guide: guide, status: %w[planned performed])
+        .where.not(role_code: "host")
+        .where.not(departures: { status: "canceled" })
+        .where(work_days: { date: dates })
         .count
+
+      legacy_days.where.not(work_day_id: represented_work_day_ids).count + outing_count
+    end
+
+    def roll_work_dates_for(guide, fairness_start:, before_date:)
+      return [] if fairness_start >= before_date
+
+      dates = fairness_start...before_date
+      legacy_days = GuideDay.joins(:work_day)
+        .where(guide: guide, status: fairness_statuses)
+        .where(work_days: { date: dates })
+      return legacy_days.pluck("work_days.date") unless CompensationAssignment.table_exists?
+
+      represented_work_day_ids = CompensationAssignment.joins(departure: :work_day)
+        .where(guide: guide, work_days: { date: dates })
+        .where.not(role_code: "host")
+        .select("departures.work_day_id")
+      outing_dates = CompensationAssignment.joins(departure: :work_day)
+        .where(guide: guide, status: %w[planned performed])
+        .where.not(role_code: "host")
+        .where.not(departures: { status: "canceled" })
+        .where(work_days: { date: dates })
+        .pluck("work_days.date")
+
+      legacy_days.where.not(work_day_id: represented_work_day_ids)
+        .pluck("work_days.date") + outing_dates
     end
 
     # Cuenta todos los días en los que el guía prestó servicio

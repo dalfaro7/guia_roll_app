@@ -1,21 +1,42 @@
 class GuideDaysController < ApplicationController
   before_action :set_guide_day, only: [:update]
+  before_action :require_compensation_operator!, only: [:update]
+  before_action :enforce_edit_window, only: [:update]
 
   def update
-    if @guide_day.update(guide_day_params)
-      redirect_back(
-        fallback_location: work_day_path(@guide_day.work_day),
-        notice: "Guide role updated."
-      )
-    else
-      redirect_back(
-        fallback_location: work_day_path(@guide_day.work_day),
-        alert: @guide_day.errors.full_messages.join(", ")
-      )
+    before = @guide_day.attributes.slice("status", "role_primary", "role_secondary")
+    GuideDay.transaction do
+      @guide_day.update!(guide_day_params)
+      audit!(action: "update_guide_day", auditable: @guide_day,
+        work_day: @guide_day.work_day,
+        metadata: { before: before,
+          after: @guide_day.attributes.slice(*before.keys),
+          reason: params[:correction_reason] })
     end
+    redirect_back(fallback_location: work_day_path(@guide_day.work_day),
+      notice: "Rol del guía actualizado.")
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, RuntimeError => e
+    redirect_back(fallback_location: work_day_path(@guide_day.work_day),
+      alert: e.message)
   end
 
   private
+
+  def enforce_edit_window
+    allowed = Compensation::EditWindow.allowed?(
+      user: current_user, work_day: @guide_day.work_day
+    )
+    local_now = Time.current.in_time_zone("America/Costa_Rica")
+    closed = Compensation::EditWindow.applicable?(@guide_day.work_day) &&
+      (@guide_day.work_day.date < local_now.to_date ||
+      (@guide_day.work_day.date == local_now.to_date && local_now.hour >= 18))
+    return if allowed && (!closed || !current_user.admin? ||
+      params[:correction_reason].present?)
+
+    redirect_to work_day_path(@guide_day.work_day),
+      alert: allowed ? "Indique el motivo de la corrección." :
+        "Esta programación ya cerró. Solo un administrador puede corregirla."
+  end
 
   def set_guide_day
     @guide_day = GuideDay.find(params[:id])
