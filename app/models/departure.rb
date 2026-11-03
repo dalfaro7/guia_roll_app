@@ -5,6 +5,20 @@ class Departure < ApplicationRecord
     "PM" => ["PM"],
     "Privado" => ["Privado"]
   }.freeze
+  FIXED_START_TIMES = {
+    "Balsa" => [9, 20],
+    "Sara-3&4" => [8, 20],
+    "Sara-3" => [8, 20],
+    "Sara-4" => [8, 20],
+    "PM" => [11, 20],
+    "Privado" => [8, 20]
+  }.freeze
+
+  def self.fixed_start_for(date, location)
+    hour, minute = FIXED_START_TIMES.fetch(location)
+    Time.find_zone!("America/Costa_Rica").local(date.year, date.month, date.day,
+      hour, minute)
+  end
 
   belongs_to :work_day
   has_many :compensation_assignments, dependent: :restrict_with_error

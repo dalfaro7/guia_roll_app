@@ -302,6 +302,21 @@ class CompensationPricingTest < ActiveSupport::TestCase
     assert_equal 4_000, record.total_cents
   end
 
+  test "automatic outings use the fixed local time for each section" do
+    { "Balsa" => "09:20", "Sara-3&4" => "08:20",
+      "Sara-3" => "08:20", "Sara-4" => "08:20",
+      "PM" => "11:20", "Privado" => "08:20" }.each_with_index do |(location, expected), index|
+      day = WorkDay.create!(date: @date + index + 1, guides_requested: 0)
+      person = guide("Fixed time #{location}")
+      day.guide_days.create!(guide: person, status: "worked",
+        role_primary: "River Guide", location: location)
+
+      departure = day.departures.find_by!(location: location)
+      assert_equal expected,
+        departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M")
+    end
+  end
+
   test "future published guide days are backfilled after activation" do
     person = guide("Already scheduled")
     guide_day = @work_day.guide_days.create!(guide: person, status: "standby")

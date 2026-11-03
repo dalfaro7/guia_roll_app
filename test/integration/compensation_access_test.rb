@@ -88,8 +88,9 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     sign_in user(:contabilidad)
     get work_day_compensation_path(@day)
     assert_response :success
+    assert_select "input[type='submit'][value='Cancelar salida']", 0
     patch work_day_departure_path(@day, @day.departures.first), params: {
-      departure: { status: "canceled", starts_at_time: "06:00" }
+      departure: { status: "canceled" }
     }
     assert_redirected_to root_path
     assert_equal "scheduled", @day.departures.first.reload.status
@@ -148,7 +149,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  test "valuation shows the four operating outings without creating a fifth" do
+  test "valuation shows four outings without editable schedules" do
     sign_in user(:operador)
 
     assert_no_difference "Departure.count" do
@@ -157,29 +158,10 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "tr[data-operating-section]", 4
     assert_select "tr[data-operating-section='Balsa'] a[href='#departure-#{@day.departures.first.id}']", text: "Editar"
-    assert_no_match(/Crear otra salida/, response.body)
-
-    assert_difference "Departure.count", 1 do
-      post work_day_departures_path(@day), params: {
-        departure: { location: "PM", starts_at_time: "14:00" }
-      }
-    end
-    pm = @day.departures.find_by!(location: "PM")
-    assert_equal "PM", pm.label
-
-    assert_no_difference "Departure.count" do
-      post work_day_departures_path(@day), params: {
-        departure: { location: "PM", starts_at_time: "15:00" }
-      }
-    end
-    assert_equal "14:00", pm.reload.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M")
-
-    assert_no_difference "Departure.count" do
-      post work_day_departures_path(@day), params: {
-        departure: { location: "Otra", starts_at_time: "16:00" }
-      }
-    end
-    assert_redirected_to work_day_compensation_path(@day)
+    assert_select "input[type='time']", 0
+    assert_select "form[action='#{work_day_departure_path(@day, @day.departures.first)}'][data-turbo-confirm]", 1
+    assert_select "input[type='submit'][value='Cancelar salida']", 1
+    assert_no_match(/Crear otra salida|Configurar horario/, response.body)
   end
 
   test "operator can designate a different principal photographer" do
@@ -207,14 +189,51 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: first.id)
   end
 
-  test "operator can update today's programming before 20:00" do
+  test "operator cannot change a departure time even through a direct request" do
     departure = @day.departures.first
+    original_start = departure.starts_at
+    sign_in user(:operador)
+
+    patch work_day_departure_path(@day, departure), params: {
+      departure: { status: "canceled", starts_at_time: "07:00" }
+    }
+
+    assert_redirected_to work_day_compensation_path(@day)
+    assert_equal "scheduled", departure.reload.status
+    assert_equal original_start, departure.starts_at
+  end
+
+  test "only scheduled departures can be canceled" do
+    departure = @day.departures.first
+    departure.update!(status: "completed")
+    sign_in user(:operador)
+
+    patch work_day_departure_path(@day, departure), params: {
+      departure: { status: "canceled" }
+    }
+
+    assert_equal "completed", departure.reload.status
+  end
+
+  test "operator can cancel a scheduled outing before 20:00 and clear pending pay" do
+    departure = @day.departures.first
+    guide = Guide.create!(name: "Cancel test guide", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    assignment = departure.compensation_assignments.create!(
+      guide: guide, role_code: "river_guide")
+    Compensation::RepriceDay.call(@day)
+    assert_operator assignment.reload.total_cents, :>, 0
+    original_start = departure.starts_at
+
     travel_to departure.starts_at + 13.hours + 59.minutes do
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
-        departure: { status: "canceled", starts_at_time: "06:00" }
+        departure: { status: "canceled" }
       }
       assert_equal "canceled", departure.reload.status
+      assert_equal original_start, departure.starts_at
+      assert_equal "canceled", assignment.reload.status
+      assert_equal 0, assignment.total_cents
     end
   end
 
@@ -223,19 +242,19 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     travel_to departure.starts_at + 14.hours do
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
-        departure: { status: "canceled", starts_at_time: "06:00" }
+        departure: { status: "canceled" }
       }
       assert_equal "scheduled", departure.reload.status
 
       sign_out :user
       sign_in user(:admin)
       patch work_day_departure_path(@day, departure), params: {
-        departure: { status: "canceled", starts_at_time: "06:00" }
+        departure: { status: "canceled" }
       }
       assert_equal "scheduled", departure.reload.status
 
       patch work_day_departure_path(@day, departure), params: {
-        departure: { status: "canceled", starts_at_time: "06:00" },
+        departure: { status: "canceled" },
         correction_reason: "Salida cancelada por operación"
       }
       assert_equal "canceled", departure.reload.status

@@ -108,9 +108,7 @@ module Compensation
       location = @guide_day.location.presence || "Balsa"
       @work_day.departures.find_or_create_by!(label: location) do |departure|
         departure.location = location
-        departure.starts_at = Time.find_zone!("America/Costa_Rica").local(
-          @work_day.date.year, @work_day.date.month, @work_day.date.day, 6
-        )
+        departure.starts_at = Departure.fixed_start_for(@work_day.date, location)
       end
     end
 

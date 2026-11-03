@@ -14,7 +14,6 @@ class CompensationWorkDaysController < ApplicationController
     @operating_sections = Departure::OPERATING_SECTIONS.map do |location, locations|
       [location, @departures.select { |departure| locations.include?(departure.location) }]
     end
-    @can_configure = Compensation::EditWindow.applicable?(@work_day)
     @guides = Guide.active.order(:name)
     @drivers = Driver.active.order(:name)
     @can_edit = Compensation::EditWindow.allowed?(

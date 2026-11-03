@@ -26,16 +26,6 @@
                     <% section_departures.each do |departure| %>
                       <%= link_to(section_departures.one? ? (@can_edit ? "Editar" : "Ver detalle") : "#{@can_edit ? "Editar" : "Ver"} #{departure.label}", "#departure-#{departure.id}", class: "btn btn-sm btn-outline-primary me-1") %>
                     <% end %>
-                  <% elsif @can_edit && @can_configure %>
-                    <details>
-                      <summary>Configurar horario</summary>
-                      <%= form_with url: work_day_departures_path(@work_day), method: :post, local: true, class: "d-flex align-items-end gap-2 mt-2" do %>
-                        <%= hidden_field_tag "departure[location]", location %>
-                        <div><%= label_tag "start_#{location}", "Hora de inicio" %><%= time_field_tag "departure[starts_at_time]", nil, id: "start_#{location}", class: "form-control", required: true %></div>
-                        <% if compensation_correction_required?(@work_day) %><div><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
-                        <%= submit_tag "Guardar", class: "btn btn-outline-primary" %>
-                      <% end %>
-                    </details>
                   <% end %>
                 </td>
               </tr>
@@ -84,16 +74,15 @@
         <strong>Total <%= usd(assignments.sum(&:total_cents)) %></strong>
       </div>
       <div class="card-body">
-        <% if @can_edit %>
-          <details class="mb-3">
-            <summary>Editar horario o estado de la salida</summary>
-            <%= form_with url: work_day_departure_path(@work_day, departure), method: :patch, local: true, class: "row g-2 mt-2" do %>
-              <div class="col-md-3"><%= label_tag "departure_time_#{departure.id}", "Hora de inicio" %><%= time_field_tag "departure[starts_at_time]", departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M"), id: "departure_time_#{departure.id}", class: "form-control" %></div>
-              <div class="col-md-3"><%= label_tag "departure_status_#{departure.id}", "Estado" %><%= select_tag "departure[status]", options_for_select([["Programada", "scheduled"], ["Realizada", "completed"], ["Cancelada", "canceled"]], departure.status), id: "departure_status_#{departure.id}", class: "form-select" %></div>
-              <% if compensation_correction_required?(@work_day) %><div class="col-md-4"><%= label_tag "departure_reason_#{departure.id}", "Motivo de corrección" %><%= text_field_tag :correction_reason, nil, id: "departure_reason_#{departure.id}", class: "form-control", required: true %></div><% end %>
-              <div class="col-md-2 d-flex align-items-end"><%= submit_tag "Guardar salida", class: "btn btn-primary" %></div>
+        <% if @can_edit && Compensation::EditWindow.applicable?(@work_day) && departure.status == "scheduled" %>
+          <%= form_with url: work_day_departure_path(@work_day, departure), method: :patch, local: true,
+            class: "mb-3", data: { turbo_confirm: "¿Está seguro de esta acción? Se cancelará la salida #{departure.label} y sus asignaciones pendientes." } do %>
+            <%= hidden_field_tag "departure[status]", "canceled" %>
+            <% if compensation_correction_required?(@work_day) %>
+              <%= text_field_tag :correction_reason, nil, class: "form-control mb-2", placeholder: "Motivo de corrección", required: true %>
             <% end %>
-          </details>
+            <%= submit_tag "Cancelar salida", class: "btn btn-outline-danger" %>
+          <% end %>
         <% end %>
 
         <div class="table-responsive">

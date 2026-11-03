@@ -3,54 +3,31 @@ class DeparturesController < ApplicationController
   before_action :set_work_day
   before_action :require_open_window
 
-  def create
-    location = departure_params[:location]
-    unless Departure::OPERATING_SECTIONS.key?(location)
-      raise ArgumentError, "Seleccione una de las cuatro salidas de la operación."
-    end
-
-    @work_day.with_lock do
-      if @work_day.departures.where(location: Departure::OPERATING_SECTIONS.fetch(location)).exists?
-        raise ArgumentError, "Esta salida ya está configurada. Edite sus datos actuales."
-      end
-
-      departure = @work_day.departures.create!(
-        label: location, location: location, starts_at: scheduled_start
-      )
-      audit!(action: "create_departure", auditable: departure, work_day: @work_day)
-    end
-    redirect_to work_day_compensation_path(@work_day), notice: "Horario de la salida guardado."
-  rescue ActiveRecord::RecordInvalid => e
-    redirect_to work_day_compensation_path(@work_day), alert: e.record.errors.full_messages.to_sentence
-  rescue ArgumentError => e
-    redirect_to work_day_compensation_path(@work_day), alert: e.message
-  end
-
   def update
     departure = @work_day.departures.find(params[:id])
-    if departure.started? && departure_params[:starts_at_time].present? &&
-        scheduled_start != departure.starts_at && !current_user.admin?
-      raise "Solo un administrador puede cambiar la hora de una salida iniciada"
+    requested = params.require(:departure)
+    unless requested.keys == ["status"] && requested[:status] == "canceled"
+      raise ArgumentError, "Solo se permite cancelar la salida; su horario no se puede modificar."
     end
-
-    before = departure.attributes.slice("label", "location", "starts_at", "status")
     Compensation::Current.set(actor: current_user, reason: params[:correction_reason]) do
       Departure.transaction do
-        attrs = departure_params.except(:starts_at_time)
-        attrs[:starts_at] = scheduled_start if departure_params[:starts_at_time].present?
-        departure.update!(attrs)
-        if departure.status == "canceled"
-          departure.compensation_assignments.where(status: "planned")
-            .update_all(status: "canceled", updated_at: Time.current)
+        departure.lock!
+        unless departure.status == "scheduled"
+          raise ArgumentError, "Solo se puede cancelar una salida programada."
         end
+
+        before = departure.attributes.slice("label", "location", "starts_at", "status")
+        departure.update!(status: "canceled")
+        departure.compensation_assignments.where(status: "planned")
+          .update_all(status: "canceled", updated_at: Time.current)
         Compensation::RepriceDay.call(@work_day)
         audit!(action: "update_departure", auditable: departure, work_day: @work_day,
           metadata: { before: before,
             after: departure.attributes.slice(*before.keys), reason: params[:correction_reason] })
       end
     end
-    redirect_to work_day_compensation_path(@work_day), notice: "Salida actualizada."
-  rescue ActiveRecord::RecordInvalid, RuntimeError => e
+    redirect_to work_day_compensation_path(@work_day), notice: "Salida cancelada."
+  rescue ActiveRecord::RecordInvalid, ArgumentError => e
     redirect_to work_day_compensation_path(@work_day), alert: e.message
   end
 
@@ -58,17 +35,6 @@ class DeparturesController < ApplicationController
 
   def set_work_day
     @work_day = WorkDay.find(params[:work_day_id])
-  end
-
-  def departure_params
-    params.require(:departure).permit(:label, :location, :starts_at_time, :status)
-  end
-
-  def scheduled_start
-    hour = departure_params[:starts_at_time].to_s
-    raise "Indique la hora de inicio" unless hour.match?(/\A\d{2}:\d{2}\z/)
-
-    Time.find_zone!("America/Costa_Rica").parse("#{@work_day.date} #{hour}")
   end
 
   def require_open_window
