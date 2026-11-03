@@ -1,15 +1,55 @@
-<div class="container py-4">
+<% categories = [
+  ["Asalariados", "salaried"],
+  ["Freelance aprendiz", "freelance_apprentice"],
+  ["Freelance regular", "freelance_regular"],
+  ["Freelance con factura", "freelance_invoice"]
+] %>
+<% guides_by_category = @guides.group_by(&:pay_category) %>
+<% category_options = [["Sin definir", ""]] + categories.map { |label, value| [label, value] } %>
+
+<div class="container-fluid px-3 px-xl-4 py-4">
   <h1>Perfil económico de guías</h1>
   <p>La categoría de pago es independiente de la prioridad de asignación. Configure cada guía antes de valorar sus salidas.</p>
-  <div class="table-responsive"><table class="table table-striped align-middle">
-    <thead><tr><th>Guía</th><th>Categoría</th><th></th></tr></thead>
-    <tbody><% @guides.each do |guide| %>
-      <tr><td><%= guide.name %></td><td colspan="2">
-        <%= form_with url: compensation_profile_path(guide), method: :patch, local: true, class: "d-flex align-items-center gap-3 flex-wrap" do %>
-          <%= select_tag "guide[pay_category]", options_for_select([["Sin definir", ""], ["Asalariado", "salaried"], ["Freelance aprendiz", "freelance_apprentice"], ["Freelance regular", "freelance_regular"], ["Freelance con factura", "freelance_invoice"]], guide.pay_category), class: "form-select form-select-sm", style: "max-width: 230px" %>
-          <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
+
+  <% if guides_by_category[nil].present? %>
+    <section class="alert alert-warning" aria-label="Guías sin categoría">
+      <h2 class="h5">Sin definir</h2>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+        <% guides_by_category[nil].each do |guide| %>
+          <div class="col">
+            <div class="fw-semibold mb-2"><%= guide.name %></div>
+            <%= form_with url: compensation_profile_path(guide), method: :patch, local: true do %>
+              <%= select_tag "guide[pay_category]", options_for_select(category_options, guide.pay_category), class: "form-select form-select-sm mb-2", aria: { label: "Categoría de #{guide.name}" } %>
+              <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
+            <% end %>
+          </div>
         <% end %>
-      </td></tr>
-    <% end %></tbody>
-  </table></div>
+      </div>
+    </section>
+  <% end %>
+
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+    <% categories.each do |label, value| %>
+      <% category_guides = guides_by_category.fetch(value, []) %>
+      <div class="col">
+        <section class="card h-100" aria-label="<%= label %>">
+          <div class="card-header d-flex justify-content-between align-items-center gap-2">
+            <h2 class="h5 mb-0"><%= label %></h2>
+            <span class="badge text-bg-secondary"><%= category_guides.size %></span>
+          </div>
+          <div class="list-group list-group-flush">
+            <% category_guides.each do |guide| %>
+              <div class="list-group-item">
+                <div class="fw-semibold text-break mb-2"><%= guide.name %></div>
+                <%= form_with url: compensation_profile_path(guide), method: :patch, local: true do %>
+                  <%= select_tag "guide[pay_category]", options_for_select(category_options, guide.pay_category), class: "form-select form-select-sm mb-2", aria: { label: "Categoría de #{guide.name}" } %>
+                  <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </section>
+      </div>
+    <% end %>
+  </div>
 </div>
