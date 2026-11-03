@@ -14,7 +14,7 @@
       <h2 class="h5 mb-4">Datos del vehículo</h2>
       <dl class="row mb-0 g-3">
         <div class="col-12 col-sm-6"><dt class="text-muted small">Placa</dt><dd class="fs-5 mb-0"><%= @bus.plate %></dd></div>
-        <div class="col-12 col-sm-6"><dt class="text-muted small">Capacidad</dt><dd class="fs-5 mb-0"><%= pluralize(@bus.capacity, "pasajero") %></dd></div>
+        <div class="col-12 col-sm-6"><dt class="text-muted small">Capacidad</dt><dd class="fs-5 mb-0"><%= bus_capacity_label(@bus) %></dd></div>
         <div class="col-12 col-sm-6"><dt class="text-muted small">Empresa o propietario</dt><dd class="mb-0"><%= @bus.company.presence || "Sin empresa registrada" %></dd></div>
         <div class="col-12 col-sm-6"><dt class="text-muted small">Teléfono de contacto</dt><dd class="mb-0"><% if @bus.phone.present? %><%= link_to @bus.phone, "tel:#{@bus.phone.gsub(/[^\d+]/, "")}" %><% else %>Sin teléfono registrado<% end %></dd></div>
       </dl>

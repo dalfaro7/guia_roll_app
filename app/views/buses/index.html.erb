@@ -49,7 +49,7 @@
                 <td class="ps-3 fw-semibold"><%= link_to bus.alias, bus_path(bus), class: "text-decoration-none" %></td>
                 <td><%= bus.company.presence || "Sin empresa" %></td>
                 <td><span class="badge text-bg-light border"><%= bus.plate %></span></td>
-                <td><%= pluralize(bus.capacity, "pasajero") %></td>
+                <td><%= bus_capacity_label(bus) %></td>
                 <td><% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></td>
                 <td class="text-end pe-3 text-nowrap">
                   <%= link_to "Ver", bus_path(bus), class: "btn btn-sm btn-outline-secondary" %>
@@ -73,7 +73,7 @@
               </div>
               <span class="badge text-bg-light border"><%= bus.plate %></span>
             </div>
-            <p class="mb-1"><strong>Capacidad:</strong> <%= pluralize(bus.capacity, "pasajero") %></p>
+            <p class="mb-1"><strong>Capacidad:</strong> <%= bus_capacity_label(bus) %></p>
             <p class="mb-3"><strong>Teléfono:</strong> <% if bus.phone.present? %><%= link_to bus.phone, "tel:#{bus.phone.gsub(/[^\d+]/, "")}" %><% else %><span class="text-muted">Sin teléfono</span><% end %></p>
             <div class="d-flex gap-2">
               <%= link_to "Ver detalles", bus_path(bus), class: "btn btn-outline-secondary flex-fill" %>

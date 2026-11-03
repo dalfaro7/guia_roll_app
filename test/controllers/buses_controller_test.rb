@@ -23,6 +23,7 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get buses_url
     assert_response :success
+    assert_select "table tbody tr", text: /20 pasajeros/
   end
 
   test "search finds a bus by plate and shows a clear empty state" do
