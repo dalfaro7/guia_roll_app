@@ -5,9 +5,11 @@ class CompensationCloseDueDaysJob < ApplicationJob
     now = Time.current
     Compensation::ScheduleSync.backfill_future!(now: now)
     local_now = now.in_time_zone("America/Costa_Rica")
+    due_before = local_now.to_date
+    due_before += 1.day if Compensation::EditWindow.cutoff_reached?(now: now)
     due = Departure.joins(:work_day)
       .where(closed_at: nil)
-      .where("work_days.date < ?", local_now.hour >= 18 ? local_now.to_date + 1.day : local_now.to_date)
+      .where("work_days.date < ?", due_before)
       .includes(:work_day)
 
     due.find_each do |departure|

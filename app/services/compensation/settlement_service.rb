@@ -12,16 +12,17 @@ module Compensation
 
     def self.close_due!(now: Time.current)
       local_now = now.in_time_zone(ZONE)
+      due_end = local_now.to_date
+      due_end -= 1.day unless Compensation::EditWindow.cutoff_reached?(now: now)
 
       dates = Departure.joins(:work_day)
-        .where("work_days.date <= ?", local_now.hour >= 18 ? local_now.to_date : local_now.to_date - 1.day)
+        .where("work_days.date <= ?", due_end)
         .distinct
         .pluck("work_days.date")
       dates.each do |date|
         new(week_start(date)).refresh!(now: now)
       end
 
-      due_end = local_now.hour >= 18 ? local_now.to_date : local_now.to_date - 1.day
       CompensationSettlement.where(closed_at: nil, paid_at: nil)
         .where("week_end <= ?", due_end)
         .find_each { |settlement| settlement.update!(closed_at: now) }
@@ -64,7 +65,7 @@ module Compensation
         else
           local_now = now.in_time_zone(ZONE)
           week_closed = local_now.to_date > @week_end ||
-            (local_now.to_date == @week_end && local_now.hour >= 18)
+            (local_now.to_date == @week_end && Compensation::EditWindow.cutoff_reached?(now: now))
           relevant = assignments.select do |assignment|
             assignment.departure.status != "canceled" &&
               (week_closed ? assignment.status == "performed" :

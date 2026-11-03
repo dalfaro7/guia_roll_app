@@ -123,8 +123,6 @@ class CompensationAssignmentsController < ApplicationController
   end
 
   def requires_reason?
-    local_now = Time.current.in_time_zone("America/Costa_Rica")
-    current_user.admin? && (@work_day.date < local_now.to_date ||
-      (@work_day.date == local_now.to_date && local_now.hour >= 18))
+    current_user.admin? && Compensation::EditWindow.closed?(@work_day)
   end
 end

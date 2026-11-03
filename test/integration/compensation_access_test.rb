@@ -138,9 +138,20 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: first.id)
   end
 
-  test "after 18:00 only admin can correct a departure with a reason" do
+  test "operator can update today's programming before 20:00" do
     departure = @day.departures.first
-    travel_to departure.starts_at + 12.hours + 1.minute do
+    travel_to departure.starts_at + 13.hours + 59.minutes do
+      sign_in user(:operador)
+      patch work_day_departure_path(@day, departure), params: {
+        departure: { status: "canceled", starts_at_time: "06:00" }
+      }
+      assert_equal "canceled", departure.reload.status
+    end
+  end
+
+  test "after 20:00 only admin can correct a departure with a reason" do
+    departure = @day.departures.first
+    travel_to departure.starts_at + 14.hours do
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
         departure: { status: "canceled", starts_at_time: "06:00" }

@@ -462,10 +462,7 @@ end
     allowed = Compensation::EditWindow.allowed?(
       user: current_user, work_day: @work_day
     )
-    local_now = Time.current.in_time_zone("America/Costa_Rica")
-    closed = Compensation::EditWindow.applicable?(@work_day) &&
-      (@work_day.date < local_now.to_date ||
-      (@work_day.date == local_now.to_date && local_now.hour >= 18))
+    closed = Compensation::EditWindow.closed?(@work_day)
     return if allowed && (!closed || !current_user.admin? ||
       params[:correction_reason].present?)
 

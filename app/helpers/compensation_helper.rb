@@ -41,8 +41,6 @@ module CompensationHelper
     return false unless current_user&.admin?
     return false unless Compensation::EditWindow.applicable?(work_day)
 
-    now = Time.current.in_time_zone("America/Costa_Rica")
-    work_day.date < now.to_date ||
-      (work_day.date == now.to_date && now.hour >= 18)
+    Compensation::EditWindow.closed?(work_day)
   end
 end

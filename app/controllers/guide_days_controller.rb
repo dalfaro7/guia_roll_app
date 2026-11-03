@@ -26,10 +26,7 @@ class GuideDaysController < ApplicationController
     allowed = Compensation::EditWindow.allowed?(
       user: current_user, work_day: @guide_day.work_day
     )
-    local_now = Time.current.in_time_zone("America/Costa_Rica")
-    closed = Compensation::EditWindow.applicable?(@guide_day.work_day) &&
-      (@guide_day.work_day.date < local_now.to_date ||
-      (@guide_day.work_day.date == local_now.to_date && local_now.hour >= 18))
+    closed = Compensation::EditWindow.closed?(@guide_day.work_day)
     return if allowed && (!closed || !current_user.admin? ||
       params[:correction_reason].present?)
 
