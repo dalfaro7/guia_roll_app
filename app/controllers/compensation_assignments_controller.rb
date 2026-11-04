@@ -49,6 +49,7 @@ class CompensationAssignmentsController < ApplicationController
           end
         end
         assignment.update!(changes)
+        sync_guide_day_role!(assignment)
         ensure_principal_photographer!(assignment.departure)
         Compensation::RepriceDay.call(@work_day)
         audit!(action: "update_compensation_assignment", auditable: assignment,
@@ -57,9 +58,9 @@ class CompensationAssignmentsController < ApplicationController
             reason: params[:correction_reason] })
       end
     end
-    redirect_to work_day_compensation_path(@work_day), notice: "Asignación actualizada."
+    redirect_to assignment_return_path, notice: "Asignación actualizada."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, RuntimeError => e
-    redirect_to work_day_compensation_path(@work_day), alert: e.message
+    redirect_to assignment_return_path, alert: e.message
   end
 
   def destroy
@@ -84,6 +85,11 @@ class CompensationAssignmentsController < ApplicationController
     @work_day = WorkDay.find(params[:work_day_id])
   end
 
+  def assignment_return_path
+    params[:return_to] == "schedule" ? work_day_path(@work_day, anchor: "day-compensation") :
+      work_day_compensation_path(@work_day)
+  end
+
   def assignment_for_day
     CompensationAssignment.joins(:departure)
       .where(departures: { work_day_id: @work_day.id }).find(params[:id])
@@ -94,6 +100,33 @@ class CompensationAssignmentsController < ApplicationController
       :departure_id, :guide_id, :driver_id, :role_code, :photo_task,
       :also_drives, :bus_guide, :principal_photographer, :status
     )
+  end
+
+  def sync_guide_day_role!(assignment)
+    guide_day = assignment.guide_day
+    return unless assignment.guide? && guide_day&.worked?
+
+    primary = case assignment.role_code
+    when "photographer" then "Photographer"
+    when "safety_kayak" then "Safety Kayaker"
+    else "River Guide"
+    end
+    secondary = case assignment.role_code
+    when "tl_balsa", "tl_sara" then "Tour Leader"
+    when "hg_balsa", "hg_sara" then "Head Guide"
+    else
+      ["Tour Leader", "Head Guide"].include?(guide_day.role_secondary) ? nil :
+        guide_day.role_secondary
+    end
+    return if guide_day.role_primary == primary && guide_day.role_secondary == secondary
+
+    before = guide_day.attributes.slice("role_primary", "role_secondary")
+    guide_day.update!(role_primary: primary, role_secondary: secondary,
+      manually_modified: true, modified_by: current_user)
+    audit!(action: "sync_schedule_role_from_compensation", auditable: guide_day,
+      work_day: @work_day, metadata: { before: before,
+        after: guide_day.attributes.slice("role_primary", "role_secondary"),
+        reason: params[:correction_reason] })
   end
 
   def ensure_principal_photographer!(departure)
@@ -110,14 +143,14 @@ class CompensationAssignmentsController < ApplicationController
 
   def require_open_window
     unless Compensation::EditWindow.applicable?(@work_day)
-      redirect_to work_day_compensation_path(@work_day),
+      redirect_to assignment_return_path,
         alert: "La valoración económica aún no aplica a esta fecha."
       return
     end
     return if Compensation::EditWindow.allowed?(user: current_user, work_day: @work_day) &&
       (!requires_reason? || params[:correction_reason].present?)
 
-    redirect_to work_day_compensation_path(@work_day),
+    redirect_to assignment_return_path,
       alert: requires_reason? ? "Indique el motivo de la corrección." :
         "Esta programación ya cerró. Solo un administrador puede corregirla."
   end

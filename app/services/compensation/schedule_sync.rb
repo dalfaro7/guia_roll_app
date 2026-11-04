@@ -42,6 +42,11 @@ module Compensation
           assignment.update!(status: "canceled")
           Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
           promote_principal_photographer(assignment.departure)
+        elsif @guide_day.worked? &&
+            (@guide_day.saved_change_to_role_primary? ||
+              @guide_day.saved_change_to_role_secondary? ||
+              @guide_day.saved_change_to_location?)
+          sync_manual_role(assignment)
         end
         return
       end
@@ -89,7 +94,10 @@ module Compensation
         when "Photographer" then "photographer"
         when "Safety Kayaker" then "safety_kayak"
         else
-          if @guide_day.role_secondary == "Head Guide"
+          case @guide_day.role_secondary
+          when "Tour Leader"
+            @guide_day.location.to_s.start_with?("Sara") ? "tl_sara" : "tl_balsa"
+          when "Head Guide"
             @guide_day.location.to_s.start_with?("Sara") ? "hg_sara" : "hg_balsa"
           else
             "river_guide"
@@ -110,6 +118,31 @@ module Compensation
         departure.location = location
         departure.starts_at = Departure.fixed_start_for(@work_day.date, location)
       end
+    end
+
+    def sync_manual_role(assignment)
+      role = if @guide_day.saved_change_to_role_primary? ||
+          @guide_day.saved_change_to_role_secondary?
+        inferred_role
+      elsif assignment.role_code.start_with?("tl_", "hg_")
+        prefix = assignment.role_code.start_with?("tl_") ? "tl" : "hg"
+        "#{prefix}_#{@guide_day.location.to_s.start_with?("Sara") ? "sara" : "balsa"}"
+      else
+        assignment.role_code
+      end
+      departure = @guide_day.saved_change_to_location? ? find_or_create_departure :
+        assignment.departure
+      return if assignment.role_code == role && assignment.departure_id == departure.id
+
+      before = assignment.attributes.slice("role_code", "departure_id")
+      assignment.update!(role_code: role, departure: departure)
+      AuditLog.create!(user: Compensation::Current.actor,
+        action: "sync_compensation_from_schedule", auditable_type: "CompensationAssignment",
+        auditable_id: assignment.id, work_day: @work_day,
+        metadata: { before: before,
+          after: assignment.attributes.slice("role_code", "departure_id"),
+          reason: Compensation::Current.reason })
+      Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
     end
 
     def remove_automatic_assignment(assignment)

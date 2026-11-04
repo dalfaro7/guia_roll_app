@@ -171,6 +171,125 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_no_match(/Crear otra salida|Configurar horario/, response.body)
   end
 
+  test "Tour Leader in the team schedule creates the matching TL valuation" do
+    guide = Guide.create!(name: "Team TL", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    @day.update!(status: :generated)
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+
+    sign_in user(:operador)
+    get work_day_path(@day)
+    assert_select "select[name='roles[#{guide_day.id}][role_secondary]'] option[value='Tour Leader']", text: /TL/
+    assert_select "select[name='roles[#{guide_day.id}][role_secondary]'] option[value='Head Guide']", text: /HG/
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Tour Leader", location: "Balsa" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert_equal "Tour Leader", guide_day.reload.role_secondary
+    assert_equal "tl_balsa", assignment.reload.role_code
+
+    get work_day_compensation_path(@day)
+    assert_select "td", text: /TL Balsa/
+  end
+
+  test "Balsa offers only Balsa leader rates and rejects a Sara rate" do
+    guide = Guide.create!(name: "Leader by location", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    assignment = @day.departures.first.compensation_assignments.create!(
+      guide: guide, role_code: "hg_balsa")
+    sign_in user(:operador)
+
+    get work_day_compensation_path(@day)
+    assert_select "form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
+      assert_select "option[value='hg_balsa']"
+      assert_select "option[value='tl_balsa']"
+      assert_select "option[value='hg_sara']", count: 0
+      assert_select "option[value='tl_sara']", count: 0
+    end
+
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      compensation_assignment: { role_code: "hg_sara", photo_task: "none",
+        status: "planned", principal_photographer: "0", also_drives: "0",
+        bus_guide: "0" }
+    }
+    assert_redirected_to work_day_compensation_path(@day)
+    assert_equal "hg_balsa", assignment.reload.role_code
+
+    sara = @day.departures.create!(label: "Sara clase 3", location: "Sara-3",
+      starts_at: Departure.fixed_start_for(@day.date, "Sara-3"))
+    sara_assignment = sara.compensation_assignments.create!(guide: guide,
+      role_code: "hg_sara")
+    assert sara_assignment.valid?
+    assert_not sara.compensation_assignments.build(guide: guide,
+      role_code: "hg_balsa").valid?
+  end
+
+  test "changing the team role updates a manually valued leader" do
+    guide = Guide.create!(name: "Manual leader", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    @day.update!(status: :generated)
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+
+    sign_in user(:operador)
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      return_to: "schedule",
+      compensation_assignment: { role_code: "tl_balsa", photo_task: "none",
+        status: "planned", principal_photographer: "0", also_drives: "0",
+        bus_guide: "0" }
+    }
+    assert_equal "Tour Leader", guide_day.reload.role_secondary
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Head Guide", location: "Balsa" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert_equal "Head Guide", guide_day.reload.role_secondary
+    assert_equal "hg_balsa", assignment.reload.role_code
+    assert_equal "manual", assignment.source
+    assert AuditLog.exists?(action: "sync_compensation_from_schedule",
+      auditable_id: assignment.id)
+  end
+
+  test "operator chooses TL and bonus options from the scheduling page" do
+    guide = Guide.create!(name: "Scheduled TL", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    @day.update!(status: :generated)
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+
+    sign_in user(:operador)
+    get work_day_path(@day)
+    assert_response :success
+    assert_select "#day-compensation form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
+      assert_select "select[name='compensation_assignment[role_code]'] option[value='tl_balsa']"
+      assert_select "select[name='compensation_assignment[role_code]'] option[value='hg_balsa']"
+      assert_select "select[name='compensation_assignment[photo_task]'] option[value='take_and_send']"
+    end
+
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      return_to: "schedule",
+      compensation_assignment: { role_code: "tl_balsa", photo_task: "none",
+        status: "planned", principal_photographer: "0", also_drives: "0",
+        bus_guide: "0" }
+    }
+    assert_redirected_to work_day_path(@day, anchor: "day-compensation")
+    assert_equal "tl_balsa", assignment.reload.role_code
+    assert_equal "manual", assignment.source
+    assert_equal "River Guide", guide_day.reload.role_primary
+    assert_equal "Tour Leader", guide_day.role_secondary
+
+    get work_day_compensation_path(@day)
+    assert_select "td", text: /TL Balsa/
+  end
+
   test "operator can designate a different principal photographer" do
     first_guide = Guide.create!(name: "Photo principal", priority: 3,
       active: true, pay_category: "freelance_regular")

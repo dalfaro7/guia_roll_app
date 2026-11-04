@@ -1,0 +1,13 @@
+<%= form_with url: work_day_compensation_assignment_path(work_day, assignment), method: :patch, local: true, class: "d-grid gap-2 mt-2" do %>
+  <%= hidden_field_tag :return_to, return_to if return_to.present? %>
+  <%= select_tag "compensation_assignment[role_code]", options_for_select((assignment.guide? ? compensation_guide_roles_for(assignment.departure) : CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }, assignment.role_code), class: "form-select form-select-sm", aria: { label: "Función de #{assignment.person.name}" } %>
+  <% if assignment.guide? %>
+    <%= select_tag "compensation_assignment[photo_task]", options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]], assignment.photo_task), class: "form-select form-select-sm", aria: { label: "Tarea de fotos de #{assignment.person.name}" } %>
+    <label><%= hidden_field_tag "compensation_assignment[also_drives]", "0" %><%= check_box_tag "compensation_assignment[also_drives]", "1", assignment.also_drives? %> También conduce</label>
+    <label><%= hidden_field_tag "compensation_assignment[bus_guide]", "0" %><%= check_box_tag "compensation_assignment[bus_guide]", "1", assignment.bus_guide? %> Guía de bus</label>
+    <label><%= hidden_field_tag "compensation_assignment[principal_photographer]", "0" %><%= check_box_tag "compensation_assignment[principal_photographer]", "1", assignment.principal_photographer? %> Fotógrafo principal</label>
+  <% end %>
+  <%= select_tag "compensation_assignment[status]", options_for_select([["Programada", "planned"], ["Realizada", "performed"], ["Cancelada", "canceled"], ["No se presentó", "no_show"]], assignment.status), class: "form-select form-select-sm", aria: { label: "Estado de #{assignment.person.name}" } %>
+  <% if compensation_correction_required?(work_day) %><%= text_field_tag :correction_reason, nil, class: "form-control form-control-sm", placeholder: "Motivo de corrección", required: true %><% end %>
+  <%= submit_tag "Guardar función y tareas", class: "btn btn-primary btn-sm" %>
+<% end %>

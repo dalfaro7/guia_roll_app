@@ -32,6 +32,13 @@ module CompensationHelper
     LABELS.fetch(code.to_s, code.to_s.humanize)
   end
 
+  def compensation_guide_roles_for(departure)
+    suffix = departure.location.to_s.start_with?("Sara") ? "sara" : "balsa"
+    CompensationAssignment::GUIDE_ROLES.reject do |code|
+      code.start_with?("tl_", "hg_") && !code.end_with?("_#{suffix}")
+    end
+  end
+
   def usd(cents)
     number_to_currency(cents.to_i / 100.0, unit: "$", precision: 2)
   end

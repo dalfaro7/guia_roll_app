@@ -14,7 +14,8 @@ module ApplicationHelper
 
   def roll_role_label(value)
     { "River Guide" => "Guía de río", "Safety Kayaker" => "Kayakista de seguridad",
-      "Photographer" => "Fotógrafo", "Head Guide" => "Guía líder", "Driver" => "Chofer",
+      "Photographer" => "Fotógrafo", "Tour Leader" => "TL (Tour Líder)",
+      "Head Guide" => "HG (Head Guide)", "Driver" => "Chofer",
       "Bus Guide & Towels" => "Guía de bus y toallas", "Bus Guide" => "Guía de bus",
       "Bus Guide, towels & SendPhotos" => "Guía de bus, toallas y envío de fotos",
       "SendPhotos" => "Envío de fotos" }.fetch(value.to_s, value.presence || "—")

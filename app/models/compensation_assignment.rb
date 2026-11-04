@@ -17,6 +17,7 @@ class CompensationAssignment < ApplicationRecord
   validate :one_person_and_correct_role
   validate :at_most_two_departures_per_day
   validate :photo_responsibility
+  validate :leader_role_matches_departure
 
   scope :payable, -> { where(status: "performed") }
   scope :active, -> { where.not(status: %w[canceled no_show]) }
@@ -60,6 +61,14 @@ class CompensationAssignment < ApplicationRecord
       .where.not(status: %w[canceled no_show])
     peer_scope = peer_scope.where.not(id: id) if persisted?
     errors.add(:base, "Una persona puede tener como máximo dos salidas al día") if peer_scope.count >= 2
+  end
+
+  def leader_role_matches_departure
+    return unless departure && role_code.to_s.start_with?("tl_", "hg_")
+
+    expected = departure.location.to_s.start_with?("Sara") ? "sara" : "balsa"
+    errors.add(:role_code, "no corresponde a la salida #{departure.label}") unless
+      role_code.end_with?("_#{expected}")
   end
 
   def photo_responsibility

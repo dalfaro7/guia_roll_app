@@ -15,6 +15,7 @@
       <% if @work_day.draft? %><a href="#day-availability">Disponibilidad</a><% end %>
       <% if @work_day.generated? %><a href="#day-roles">Roles</a><% end %>
       <% if @work_day.published? %><a href="#day-assigned">Equipo asignado</a><% end %>
+      <% if @compensation_departures.present? %><a href="#day-compensation">Funciones y tareas</a><% end %>
       <a href="#day-fairness">Equidad</a>
     </nav>
 <span class="work-day-eyebrow">GESTIONAR OPERACIÓN</span>        <div class="work-day-actions d-flex align-items-center gap-2 flex-wrap">
@@ -221,6 +222,7 @@
              ] %>
 
             <% secondary_roles = [
+               "Tour Leader",
                "Head Guide",
                "Bus Guide & Towels",
                "Driver",
@@ -792,6 +794,28 @@
 
     <hr>
 
+
+        <% if @compensation_departures.present? %>
+        <section class="card mt-4" id="day-compensation">
+          <div class="card-header"><h2 class="h5 mb-0">Funciones y tareas por salida</h2></div>
+          <div class="card-body">
+            <p class="text-muted">Elige aquí TL, HG y las demás funciones o tareas que afectan el pago. Cada cambio se refleja también en Valoración.</p>
+            <% @compensation_departures.each do |departure| %>
+              <% assignments = departure.compensation_assignments.sort_by { |assignment| [assignment.person&.name.to_s, assignment.id] } %>
+              <h3 class="h6 mt-3"><%= departure.label %> · <%= departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %></h3>
+              <% if assignments.empty? %><p class="text-muted">Sin asignaciones en esta salida.</p><% end %>
+              <% assignments.each do |assignment| %>
+                <details class="border rounded p-2 mb-2">
+                  <summary><strong><%= assignment.person&.name %></strong> · <%= compensation_label(assignment.role_code) %><% if assignment.guide? && assignment.photo_task != "none" %> · <%= compensation_label("bonus_photo_#{assignment.photo_task}") %><% end %><% if assignment.bus_guide? %> · Guía de bus<% end %><% if assignment.also_drives? %> · También conduce<% end %></summary>
+                  <% if @can_edit_compensation %>
+                    <%= render "compensation_assignments/form", work_day: @work_day, assignment: assignment, return_to: "schedule" %>
+                  <% end %>
+                </details>
+              <% end %>
+            <% end %>
+          </div>
+        </section>
+        <% end %>
 
         <!-- FAIRNESS DIAGNOSTIC -->
         <div class="container mt-4">

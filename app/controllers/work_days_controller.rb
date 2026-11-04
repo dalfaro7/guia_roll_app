@@ -47,6 +47,15 @@ class WorkDaysController < ApplicationController
     @available_buses = Bus.available_on(@work_day).includes(:transport_company).order(:alias).to_a
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
+    if Compensation::EditWindow.applicable?(@work_day) &&
+        (@work_day.generated? || @work_day.published?) &&
+        (current_user.admin? || current_user.operador? || current_user.contabilidad?)
+      @compensation_departures = @work_day.departures.chronological
+        .includes(compensation_assignments: [:guide, :driver]).to_a
+      @can_edit_compensation = Compensation::EditWindow.allowed?(
+        user: current_user, work_day: @work_day
+      ) && (current_user.admin? || current_user.operador?)
+    end
 
     @location_counts =
       @work_day
