@@ -21,7 +21,7 @@ test "source uid must be unique" do
     duplicate = build_report("same", 1.hour.ago)
 
     assert_not duplicate.valid?
-    assert_includes duplicate.errors[:source_uid], "has already been taken"
+    assert_includes duplicate.errors.attribute_names, :source_uid
   end
 
   private

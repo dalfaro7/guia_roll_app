@@ -88,14 +88,14 @@ class GuideTrackingTest < ActionDispatch::IntegrationTest
     assert_equal 110, alert.reload.peak_kmh
     assert alert.acknowledged_at
   end
-  test 'five minute estimate persists through ingestion without exposing raw samples' do
+  test %q{one minute estimate persists through ingestion without exposing raw samples} do
     @account.kayaktalkie_teams << KayaktalkieTeam.first!
     started = 5.minutes.ago
     (0..10).each do |i|
       KayaktalkieTrackingIngest.call(@account, {'latitude'=>0.0,'longitude'=>i*0.001,'accuracy'=>5.0,'capturedAt'=>(started+i*30).to_f*1000,'speedMps'=>30.0})
     end
     position=KayaktalkiePosition.find_by!(kayaktalkie_account:@account)
-    assert_equal 11,position.speed_samples.size
+    assert_equal 3,position.speed_samples.size
     assert_equal 'ready',position.speed_estimate['status']
     assert_in_delta 13.3434,position.speed_estimate['kmh'],0.001
     assert_equal 108,position.speed_kmh

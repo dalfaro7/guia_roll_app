@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_000010) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_000011) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -437,9 +437,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000010) do
     t.string "day_off_source"
     t.boolean "holiday_paid", default: false, null: false
     t.text "notes"
-    t.bigint "office_day_credit_id", null: false
+    t.bigint "office_day_credit_id"
     t.bigint "office_employee_id", null: false
-    t.bigint "office_vacation_credit_id", null: false
+    t.bigint "office_vacation_credit_id"
     t.integer "status"
     t.datetime "updated_at", null: false
     t.index ["office_day_credit_id"], name: "index_office_employee_days_on_office_day_credit_id"
