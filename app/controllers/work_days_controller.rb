@@ -282,7 +282,8 @@ class WorkDaysController < ApplicationController
       # Clear former senders before any role callback can create a photographer.
       role_rows.each do |id, guide_day|
         next unless params[:roles][id].key?(:photo_task) ||
-          params[:roles][id].key?(:principal_photographer)
+          params[:roles][id].key?(:principal_photographer) ||
+          params[:roles][id].key?(:send_photos)
         assignment = CompensationAssignment.find_by(guide_day: guide_day)
         next unless assignment
         original_options[assignment.id] = assignment.attributes.slice(
@@ -525,12 +526,16 @@ end
   def sync_team_role_options!(role_rows, original_options)
     rows = role_rows.filter_map do |id, guide_day|
       data = params[:roles][id]
-      next unless data.key?(:photo_task) || data.key?(:principal_photographer)
+      next unless data.key?(:photo_task) || data.key?(:principal_photographer) ||
+        data.key?(:send_photos)
       assignment = CompensationAssignment.find_by(guide_day: guide_day)
       next unless assignment
 
       photo_task = data[:photo_task].presence || "none"
       raise "Tarea de fotos inválida" unless CompensationAssignment::PHOTO_TASKS.include?(photo_task)
+      sends_photos = ActiveModel::Type::Boolean.new.cast(data[:send_photos])
+      raise "Elija una sola función de fotos para este guía" if sends_photos && photo_task != "none"
+      photo_task = "send_only" if sends_photos
       if photo_task != "none" && (assignment.role_code == "photographer" ||
           assignment.role_code.start_with?("tl_", "hg_"))
         raise "Esta función no admite una tarea adicional de fotos"

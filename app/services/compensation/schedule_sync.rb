@@ -107,7 +107,8 @@ module Compensation
     end
 
     def photo_task(role)
-      return "none" if role == "photographer"
+      return "none" unless role == "river_guide" &&
+        CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(@guide_day.location)
 
       @guide_day.role_secondary.to_s.include?("SendPhotos") ? "send_only" : "none"
     end
@@ -145,6 +146,11 @@ module Compensation
           .where.not(id: assignment.id).exists?
       elsif assignment.role_code == "photographer"
         changes[:principal_photographer] = false
+      end
+      if assignment.photo_task == "send_only" &&
+          (role != "river_guide" ||
+            !CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(departure.location))
+        changes[:photo_task] = "none"
       end
       if role.start_with?("tl_", "hg_")
         changes.merge!(photo_task: "none", bus_guide: false, also_drives: false)

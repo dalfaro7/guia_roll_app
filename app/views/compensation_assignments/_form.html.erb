@@ -6,7 +6,9 @@
   <%= select_tag "compensation_assignment[role_code]", options_for_select(role_codes.map { |code| [incompatible_role && code == assignment.role_code ? "Revisar: #{compensation_label(code)} no corresponde a esta salida" : compensation_label(code), code] }, assignment.role_code), class: "form-select form-select-sm", aria: { label: "Función de #{assignment.person.name}" } %>
   <% if incompatible_role %><span class="text-danger">Selecciona una función válida para esta salida antes de guardar.</span><% end %>
   <% if assignment.guide? %>
-    <%= select_tag "compensation_assignment[photo_task]", options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]], assignment.photo_task), class: "form-select form-select-sm", aria: { label: "Tarea de fotos de #{assignment.person.name}" } %>
+    <% photo_options = [["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"]] %>
+    <% photo_options << ["Solo envía", "send_only"] if CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(assignment.departure.location) %>
+    <%= select_tag "compensation_assignment[photo_task]", options_for_select(photo_options, assignment.photo_task), class: "form-select form-select-sm", aria: { label: "Tarea de fotos de #{assignment.person.name}" } %>
     <label><%= hidden_field_tag "compensation_assignment[also_drives]", "0" %><%= check_box_tag "compensation_assignment[also_drives]", "1", assignment.also_drives? %> También conduce</label>
     <label><%= hidden_field_tag "compensation_assignment[bus_guide]", "0" %><%= check_box_tag "compensation_assignment[bus_guide]", "1", assignment.bus_guide? %> Guía de bus</label>
     <label><%= hidden_field_tag "compensation_assignment[principal_photographer]", "0" %><%= check_box_tag "compensation_assignment[principal_photographer]", "1", assignment.principal_photographer? %> Fotógrafo principal</label>

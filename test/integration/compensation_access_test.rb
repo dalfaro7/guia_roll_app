@@ -400,6 +400,55 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert second.reload.principal_photographer?
   end
 
+  test "only PM and Sarapiqui river guides see the send photos checkbox beside primary role" do
+    @day.update!(status: :generated)
+    entries = [
+      ["Balsa guide", "Balsa", "River Guide"],
+      ["PM guide", "PM", "River Guide"],
+      ["Sara guide", "Sara-3&4", "River Guide"],
+      ["PM kayaker", "PM", "Safety Kayaker"],
+      ["PM photographer", "PM", "Photographer"]
+    ]
+    days = entries.map do |name, location, role|
+      guide = Guide.create!(name: name, priority: 3, active: true,
+        pay_category: "freelance_regular")
+      GuideDay.create!(guide: guide, work_day: @day, status: :worked,
+        location: location, role_primary: role)
+    end
+
+    sign_in user(:operador)
+    get work_day_path(@day)
+    assert_response :success
+    days.each_with_index do |day, index|
+      expected = [false, true, true, false, false][index]
+      assert_select "#team-roles-form .team-primary-cell .team-send-photos-control input[name='roles[#{day.id}][send_photos]'][type='checkbox']", 1
+      assert_select "#team-roles-form tr:has(select[name='roles[#{day.id}][role_primary]']) .team-send-photos-control#{expected ? ':not([hidden])' : '[hidden]'}", 1
+    end
+    assert_select "#team-roles-form select[name='roles[#{days[1].id}][photo_task]'] option[value='send_only']", 0
+  end
+
+  test "PM guide send photos checkbox creates the single paid sender" do
+    @day.update!(status: :generated)
+    guide = Guide.create!(name: "PM sender", priority: 3, active: true,
+      pay_category: "freelance_regular")
+    day = GuideDay.create!(guide: guide, work_day: @day, status: :worked,
+      location: "PM", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: day)
+
+    sign_in user(:operador)
+    patch update_roles_work_day_path(@day), params: {
+      roles: { day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "", location: "PM", send_photos: "1",
+        principal_photographer: "0" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert_nil flash[:alert]
+    assert_equal "send_only", assignment.reload.photo_task
+    assert_equal 6_500, assignment.total_cents
+    assert_equal %w[bonus_photo_send_only guide_regular],
+      assignment.compensation_lines.pluck(:code).sort
+  end
+
   test "team roles reject two photo senders and keep the previous schedule" do
     @day.update!(status: :generated)
     first_guide = Guide.create!(name: "Photo sender one", priority: 2,
@@ -407,9 +456,9 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     second_guide = Guide.create!(name: "Photo sender two", priority: 2,
       active: true, pay_category: "salaried")
     first_day = GuideDay.create!(guide: first_guide, work_day: @day,
-      status: :worked, location: "Balsa", role_primary: "River Guide")
+      status: :worked, location: "PM", role_primary: "River Guide")
     second_day = GuideDay.create!(guide: second_guide, work_day: @day,
-      status: :worked, location: "Balsa", role_primary: "River Guide")
+      status: :worked, location: "PM", role_primary: "River Guide")
     first = CompensationAssignment.find_by!(guide_day: first_day)
     second = CompensationAssignment.find_by!(guide_day: second_day)
 
@@ -417,11 +466,11 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     patch update_roles_work_day_path(@day), params: {
       roles: {
         first_day.id.to_s => { role_primary: "River Guide",
-          role_secondary: "Bus Guide & Towels", location: "Balsa",
-          photo_task: "send_only", principal_photographer: "0" },
+          role_secondary: "Bus Guide & Towels", location: "PM",
+          send_photos: "1", principal_photographer: "0" },
         second_day.id.to_s => { role_primary: "River Guide",
-          role_secondary: "", location: "Balsa",
-          photo_task: "take_and_send", principal_photographer: "0" }
+          role_secondary: "", location: "PM",
+          send_photos: "1", principal_photographer: "0" }
       }
     }
     assert_redirected_to work_day_path(@day)
@@ -436,13 +485,13 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     guide = Guide.create!(name: "Photo transition", priority: 3,
       active: true, pay_category: "freelance_regular")
     guide_day = GuideDay.create!(guide: guide, work_day: @day,
-      status: :worked, location: "Balsa", role_primary: "River Guide")
+      status: :worked, location: "PM", role_primary: "River Guide")
     assignment = CompensationAssignment.find_by!(guide_day: guide_day)
 
     sign_in user(:operador)
     patch update_roles_work_day_path(@day), params: {
       roles: { guide_day.id.to_s => { role_primary: "River Guide",
-        role_secondary: "", location: "Balsa", photo_task: "send_only",
+        role_secondary: "", location: "PM", send_photos: "1",
         principal_photographer: "0" } }
     }
     assert_equal "send_only", assignment.reload.photo_task
@@ -450,7 +499,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     patch update_roles_work_day_path(@day), params: {
       roles: { guide_day.id.to_s => { role_primary: "Photographer",
-        role_secondary: "", location: "Balsa",
+        role_secondary: "", location: "PM", send_photos: "0",
         principal_photographer: "0" } }
     }
     assert_redirected_to work_day_path(@day)

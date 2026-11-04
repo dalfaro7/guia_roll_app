@@ -178,11 +178,32 @@ class CompensationPricingTest < ActiveSupport::TestCase
     end
   end
 
+  test "only a PM or Sarapiqui river guide can send photos" do
+    pm = @work_day.departures.create!(label: "PM", location: "PM",
+      starts_at: Departure.fixed_start_for(@date, "PM"))
+    sara = @work_day.departures.create!(label: "Sara-3&4", location: "Sara-3&4",
+      starts_at: Departure.fixed_start_for(@date, "Sara-3&4"))
+    assert_raises(ActiveRecord::RecordInvalid) do
+      assignment(@first, guide("Balsa sender"), "river_guide", photo_task: "send_only")
+    end
+    assert_raises(ActiveRecord::RecordInvalid) do
+      assignment(pm, guide("PM kayaker"), "safety_kayak", photo_task: "send_only")
+    end
+    pm_sender = assignment(pm, guide("PM sender"), "river_guide",
+      photo_task: "send_only")
+    sara_sender = assignment(sara, guide("Sara sender"), "river_guide",
+      photo_task: "send_only")
+    assert_equal 6_500, pm_sender.total_cents
+    assert_equal 6_500, sara_sender.total_cents
+  end
+
   test "one departure cannot pay two separate photo senders" do
-    assignment(@first, guide("First sender"), "river_guide",
+    pm = @work_day.departures.create!(label: "PM", location: "PM",
+      starts_at: Departure.fixed_start_for(@date, "PM"))
+    assignment(pm, guide("First sender"), "river_guide",
       photo_task: "take_and_send")
     error = assert_raises(ActiveRecord::RecordInvalid) do
-      assignment(@first, guide("Second sender"), "river_guide",
+      assignment(pm, guide("Second sender"), "river_guide",
         photo_task: "send_only")
     end
     assert_includes error.record.errors.full_messages.join(" "),

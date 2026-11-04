@@ -2,6 +2,7 @@ class CompensationAssignment < ApplicationRecord
   GUIDE_ROLES = %w[river_guide tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer].freeze
   DRIVER_ROLES = %w[driver_la_fortuna driver_bodega driver_hg driver_per_trip].freeze
   PHOTO_TASKS = %w[none take_and_send send_only].freeze
+  PHOTO_SENDING_LOCATIONS = %w[PM Sara-3&4 Sara-3 Sara-4].freeze
   STATUSES = %w[planned performed canceled no_show].freeze
 
   belongs_to :departure
@@ -84,6 +85,11 @@ class CompensationAssignment < ApplicationRecord
       errors.add(:photo_task, "El fotógrafo ya toma fotos") unless photo_task == "none"
     elsif principal_photographer?
       errors.add(:principal_photographer, "Debe ser fotógrafo")
+    end
+
+    if photo_task == "send_only" && (role_code != "river_guide" ||
+        !PHOTO_SENDING_LOCATIONS.include?(departure.location))
+      errors.add(:photo_task, "Solo un guía de río en PM o Sarapiquí puede enviar fotos")
     end
 
     if role_code == "safety_kayak" && photo_task == "take_and_send"
