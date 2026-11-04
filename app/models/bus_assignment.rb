@@ -10,9 +10,9 @@ class BusAssignment < ApplicationRecord
   validates :cost_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :outing_variant, inclusion: { in: %w[Sara-3 Sara-4] }, allow_nil: true
   validate :cannot_exceed_bus_capacity
-  validate :vehicle_and_driver_available
-  validate :driver_belongs_to_bus_company
-  validate :sara_variant_for_four_by_four, on: :create
+  validate :vehicle_and_driver_available, if: :transport_identity_changed?
+  validate :driver_belongs_to_bus_company, if: :transport_identity_changed?
+  validate :sara_variant_for_four_by_four, if: :transport_identity_changed?
   before_validation :snapshot_fleet_type, on: :create
   before_validation :apply_transport_rate, on: :create
   after_create :sync_driver_payment
@@ -35,6 +35,12 @@ class BusAssignment < ApplicationRecord
   end
 
   private
+
+  def transport_identity_changed?
+    new_record? || %w[bus_id work_day_id driver_id location outing_variant].any? do |attribute|
+      will_save_change_to_attribute?(attribute)
+    end
+  end
 
   def snapshot_fleet_type
     self.internal_fleet_snapshot = bus.transport_company.internal_fleet? if bus
@@ -68,7 +74,7 @@ class BusAssignment < ApplicationRecord
 
     unless VehicleAvailability.available?(bus: bus, work_day: work_day,
         location: location, outing_variant: outing_variant, driver: driver,
-        excluding: self)
+        excluding: self, require_matching_driver: true)
       errors.add(:bus, "ya está asignado a una salida incompatible de este día")
     end
     if driver && !DriverEligibility.available?(driver: driver, bus: bus,

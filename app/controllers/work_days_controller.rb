@@ -101,7 +101,7 @@ class WorkDaysController < ApplicationController
       driver.transport_company_id == bus.transport_company_id
     unless driver_company_ok &&
         VehicleAvailability.available?(bus: bus, work_day: @work_day,
-          location: location, driver: driver) &&
+          location: location, driver: driver, require_matching_driver: true) &&
         (!driver || DriverEligibility.available?(driver: driver, bus: bus,
           work_day: @work_day, location: location))
       return render json: { error: "Vehículo o chofer no disponible" },

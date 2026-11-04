@@ -56,6 +56,7 @@ class FourByFourDriverPaymentsTest < ActiveSupport::TestCase
 
     assert_equal 4_500, first.driver_payment_cents
     assert_equal 0, second.driver_payment_cents
+    assert first.update(cost_usd: "0.00")
     assert_equal 1, CompensationAssignment.where(driver: asdrubal).active.count
   end
 
@@ -127,6 +128,9 @@ class FourByFourDriverPaymentsTest < ActiveSupport::TestCase
     end
     first = assign(bus: @arc_4x4, driver: first_driver,
       location: "Sara-3&4", variant: "Sara-4")
+    assert_raises(ActiveRecord::RecordInvalid) do
+      assign(bus: @arc_4x4, driver: nil, location: "PM")
+    end
     assert_raises(ActiveRecord::RecordInvalid) do
       assign(bus: @arc_4x4, driver: second_driver, location: "PM")
     end

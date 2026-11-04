@@ -6,7 +6,7 @@ class VehicleAvailability
   end
 
   def self.available?(bus:, work_day:, location:, outing_variant: nil,
-    driver: nil, excluding: nil)
+    driver: nil, excluding: nil, require_matching_driver: false)
     assignments = BusAssignment.where(bus_id: bus.id, work_day_id: work_day.id)
     assignments = assignments.where.not(id: excluding.id) if excluding&.persisted?
     previous = assignments.order(:id).to_a
@@ -15,6 +15,7 @@ class VehicleAvailability
 
     first = previous.first
     first.location == "Sara-3&4" && first.outing_variant == "Sara-4" &&
-      first.driver_id.present? && (driver.nil? || first.driver_id == driver.id)
+      first.driver_id.present? &&
+      ((!require_matching_driver && driver.nil?) || first.driver_id == driver&.id)
   end
 end
