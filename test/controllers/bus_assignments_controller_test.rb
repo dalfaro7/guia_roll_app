@@ -98,6 +98,27 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_empty response.parsed_body.fetch("buses")
   end
 
+  test "four by four used in Sara four is offered for PM with its same driver" do
+    vehicle = Bus.create!(transport_company: @company, capacity: 4,
+      plate: "4X4-1", alias: "4x4", vehicle_kind: "four_by_four")
+    driver = Driver.create!(name: "Chofer freelance")
+    BusAssignment.create!(bus: vehicle, driver: driver, work_day: @work_day,
+      location: "Sara-3&4", outing_variant: "Sara-4", seats_assigned: 2)
+
+    get available_buses_work_day_path(@work_day), params: { location: "PM" }
+    assert_response :success
+    option = response.parsed_body.fetch("buses").find { |bus| bus.fetch("id") == vehicle.id }
+    assert_equal driver.id, option.fetch("required_driver_id")
+
+    get available_buses_work_day_path(@work_day), params: { location: "Balsa" }
+    assert_not_includes response.parsed_body.fetch("buses").map { |bus| bus.fetch("id") }, vehicle.id
+
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "form[data-controller='bus-driver'] input[name='bus_assignment[location]'][value='PM']"
+    assert_select "select[name='bus_assignment[bus_id]'] option[value='#{vehicle.id}'][data-required-driver-id='#{driver.id}']"
+  end
+
   test "operator can manually edit a bus cost without changing other assignments" do
     @work_day.update_columns(date: Date.current + 2.days)
     assert_equal 12_000, @assignment.cost_cents
@@ -111,7 +132,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
   test "cost details stay behind a disclosure on the operation screen" do
     get work_day_path(@work_day)
     assert_response :success
-    assert_select "details summary", text: "Ver costo de este bus"
+    assert_select "details summary", text: "Ver costo y pago del chofer"
     assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']"
   end
 
@@ -119,7 +140,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     @user.update!(role: :contabilidad)
     get work_day_path(@work_day)
     assert_response :success
-    assert_select "details summary", text: "Ver costo de este bus"
+    assert_select "details summary", text: "Ver costo y pago del chofer"
     assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']", count: 0
     patch bus_assignment_path(@assignment), params: { bus_assignment: { cost_usd: "155.00" } }
     assert_redirected_to root_path

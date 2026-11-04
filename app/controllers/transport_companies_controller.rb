@@ -16,8 +16,11 @@ class TransportCompaniesController < ApplicationController
 
   def update
     company = TransportCompany.find(params[:id])
+    before = company.attributes.slice("name", "internal_fleet")
     if company.update(company_params)
       company.buses.update_all(company: company.name)
+      audit!(action: "update_transport_company", auditable: company,
+        metadata: { before: before, after: company.attributes.slice(*before.keys) })
       redirect_to transport_companies_path, notice: "Empresa actualizada."
     else
       redirect_to transport_companies_path, alert: company.errors.full_messages.to_sentence
@@ -27,6 +30,6 @@ class TransportCompaniesController < ApplicationController
   private
 
   def company_params
-    params.require(:transport_company).permit(:name)
+    params.require(:transport_company).permit(:name, :internal_fleet)
   end
 end

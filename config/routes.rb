@@ -111,6 +111,7 @@ Rails.application.routes.draw do
 
       get :locations
       get :available_buses
+      get :driver_payment_quote
       post :create_slots
       get :edit_slots
 

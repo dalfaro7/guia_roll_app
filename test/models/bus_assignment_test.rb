@@ -40,7 +40,7 @@ class BusAssignmentTest < ActiveSupport::TestCase
   end
 
   test "new assignment copies the matching tariff and keeps its snapshot" do
-    rate = @company.transport_rates.find_by!(location: "Balsa", size_category: "small")
+    rate = @company.transport_rates.find_by!(location: "Balsa", size_category: "small", vehicle_kind: "bus")
     rate.update!(amount_cents: 15_000)
     assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
       location: "Balsa", seats_assigned: 10)
@@ -50,9 +50,9 @@ class BusAssignmentTest < ActiveSupport::TestCase
   end
 
   test "tariff lookup distinguishes bus category and departure" do
-    small_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "small")
-    large_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "large")
-    small_sara = @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "small")
+    small_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "small", vehicle_kind: "bus")
+    large_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "large", vehicle_kind: "bus")
+    small_sara = @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "small", vehicle_kind: "bus")
     small_balsa.update!(amount_cents: 13_000)
     large_balsa.update!(amount_cents: 15_000)
     small_sara.update!(amount_cents: 17_000)
@@ -70,9 +70,9 @@ class BusAssignmentTest < ActiveSupport::TestCase
   end
 
   test "same outing and size can cost differently for two companies" do
-    @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large")
+    @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large", vehicle_kind: "bus")
       .update!(amount_cents: 15_000)
-    @other_company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large")
+    @other_company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large", vehicle_kind: "bus")
       .update!(amount_cents: 19_000)
     own_bus = Bus.create!(alias: "Grande uno", plate: "ABC-301", capacity: 20,
       transport_company: @company)
@@ -85,8 +85,8 @@ class BusAssignmentTest < ActiveSupport::TestCase
       location: "Sara-3&4", seats_assigned: 10).cost_cents
   end
 
-  test "new transport companies receive eight default tariffs" do
-    assert_equal 8, @company.transport_rates.count
+  test "new transport companies receive bus and four by four tariffs" do
+    assert_equal 12, @company.transport_rates.count
     assert_equal [12_000], @company.transport_rates.distinct.pluck(:amount_cents)
   end
 

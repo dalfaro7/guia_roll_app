@@ -1,7 +1,6 @@
 class BusesController < ApplicationController
   before_action :set_bus, only: [:show, :edit, :update, :destroy]
   before_action :load_companies, only: [:new, :edit, :create, :update]
-  before_action :load_companies, only: [:new, :edit, :create, :update]
 
   def index
     @query = params[:q].to_s.strip
@@ -46,8 +45,11 @@ class BusesController < ApplicationController
   end
 
   def destroy
-    @bus.destroy
-    redirect_to buses_path, notice: "Bus eliminado."
+    if @bus.destroy
+      redirect_to buses_path, notice: "Vehículo eliminado."
+    else
+      redirect_to bus_path(@bus), alert: @bus.errors.full_messages.to_sentence
+    end
   end
 
   private
@@ -64,6 +66,7 @@ class BusesController < ApplicationController
     params.require(:bus).permit(
       :transport_company_id,
       :capacity,
+      :vehicle_kind,
       :plate,
       :alias,
       :phone

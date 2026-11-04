@@ -5,6 +5,8 @@ class TransportCompany < ApplicationRecord
 
   after_create :create_default_transport_rates
 
+  validates :internal_fleet, inclusion: { in: [true, false] }
+
   before_validation :normalize_name
 
   validates :name, presence: true, uniqueness: { case_sensitive: false }
@@ -12,9 +14,11 @@ class TransportCompany < ApplicationRecord
   private
 
   def create_default_transport_rates
-    TransportRate::LOCATIONS.product(TransportRate::CATEGORIES).each do |location, category|
-      transport_rates.create!(location: location, size_category: category,
-        amount_cents: 12_000)
+    TransportRate::LOCATIONS.each do |location|
+      TransportRate::RATE_TYPES.each do |kind, category|
+        transport_rates.create!(location: location, vehicle_kind: kind,
+          size_category: category, amount_cents: 12_000)
+      end
     end
   end
 

@@ -2,27 +2,27 @@
   <div class="card-header bg-secondary text-white"><strong><%= location %></strong></div>
   <div class="card-body">
     <p class="mb-3">Pasajeros: <strong><%= work_day.passengers_for(location) %></strong> · Capacidad: <strong><%= work_day.bus_capacity_for(location) %></strong> · Asientos disponibles: <strong><%= work_day.seats_remaining_for(location) %></strong>
-      <% if work_day.seats_remaining_for(location) < 0 %><span class="badge bg-danger">Se necesitan más buses</span><% end %>
+      <% if work_day.seats_remaining_for(location) < 0 %><span class="badge bg-danger">Se necesitan más vehículos</span><% end %>
     </p>
-    <% bus_assignments = work_day.buses_for(location).includes(:bus, :driver).to_a %>
+    <% bus_assignments = work_day.buses_for(location).includes(:bus, :driver, :compensation_assignment).to_a %>
     <% if bus_assignments.any? && (current_user.admin? || current_user.operador? || current_user.contabilidad?) %>
       <details class="mb-2 small">
         <summary>Ver total de transporte</summary>
-        <p class="mb-0 mt-1">Total: <strong><%= usd(bus_assignments.sum(&:cost_cents)) %></strong>. Tarifa copiada al asignar cada bus; puede ajustar el importe.</p>
+        <p class="mb-0 mt-1">Total: <strong><%= usd(bus_assignments.sum(&:cost_cents)) %></strong>. La tarifa queda copiada al asignar cada vehículo.</p>
       </details>
     <% end %>
     <% bus_assignments.each do |assignment| %>
       <div class="border rounded p-2 mb-2">
         <div class="d-flex justify-content-between align-items-center gap-2">
-          <div><strong><%= assignment.bus.alias %></strong> · <%= assignment.bus.transport_company.name %><br>
+          <div><strong><%= assignment.bus.alias %></strong> · <%= assignment.bus.four_by_four? ? "4x4" : "Bus" %> · <%= assignment.bus.transport_company.name %><% if assignment.outing_variant.present? %> · <%= assignment.outing_variant %><% end %><br>
             <span class="small text-muted"><%= assignment.seats_assigned %> pasajeros · Chofer: <%= assignment.driver&.name || "Sin asignar" %></span>
           </div>
-          <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este bus de la salida?" } } %>
+          <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este vehículo de la salida?" } } %>
         </div>
         <% if current_user.admin? || current_user.operador? || current_user.contabilidad? %>
           <details class="mt-2 small">
-            <summary>Ver costo de este bus</summary>
-            <p class="mt-2 mb-1">Costo: <strong><%= usd(assignment.cost_cents) %></strong></p>
+            <summary>Ver costo y pago del chofer</summary>
+            <p class="mt-2 mb-1">Transporte: <strong><%= usd(assignment.cost_cents) %></strong> · Pago directo al chofer: <strong><%= usd(assignment.driver_payment_cents) %></strong><% if assignment.driver && assignment.internal_fleet_snapshot == false %> (lo cubre la empresa externa)<% end %></p>
             <% if Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
               <%= form_with model: assignment, class: "row g-2 align-items-end" do |f| %>
                 <div class="col-12"><%= f.label :cost_usd, "Costo USD", class: "form-label small" %><%= f.number_field :cost_usd, min: 0, step: 0.01, class: "form-control form-control-sm", required: true %></div>
@@ -36,25 +36,30 @@
         <% end %>
       </div>
     <% end %>
-    <% if @available_buses.any? %>
-      <%= form_with model: BusAssignment.new, class: "row g-2 align-items-end", data: { controller: "bus-driver", available_buses_url: available_buses_work_day_path(work_day) } do |f| %>
+    <% available_buses = VehicleAvailability.for(work_day: work_day, location: location) %>
+    <% if available_buses.any? %>
+      <%= form_with model: BusAssignment.new, class: "row g-2 align-items-end", data: { controller: "bus-driver", available_buses_url: available_buses_work_day_path(work_day), driver_quote_url: driver_payment_quote_work_day_path(work_day) } do |f| %>
         <%= f.hidden_field :work_day_id, value: work_day.id %>
         <%= f.hidden_field :location, value: location %>
-        <div class="col-md-5"><%= f.label :bus_id, "Bus disponible", class: "form-label" %>
+        <div class="col-md-4"><%= f.label :bus_id, "Vehículo disponible", class: "form-label" %>
           <%= f.select :bus_id,
-            options_for_select(@available_buses.map { |bus| ["#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} pax)", bus.id, { "data-company-id": bus.transport_company_id }] }),
-            {}, class: "form-select", data: { bus_driver_target: "bus", action: "change->bus-driver#filterDrivers" } %>
+            options_for_select(available_buses.map { |bus| ["#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} pax, #{bus.four_by_four? ? "4x4" : "bus"})", bus.id, { "data-company-id": bus.transport_company_id, "data-kind": bus.vehicle_kind, "data-internal-fleet": bus.transport_company.internal_fleet?, "data-required-driver-id": (location == "PM" ? work_day.bus_assignments.find_by(bus_id: bus.id)&.driver_id : nil) }] }),
+            {}, class: "form-select", data: { bus_driver_target: "bus" } %>
         </div>
         <div class="col-md-3"><%= f.label :driver_id, "Chofer (opcional)", class: "form-label" %>
           <%= f.select :driver_id,
             options_for_select([["Sin chofer", ""]] + @active_drivers.map { |driver| [driver.name, driver.id, { "data-company-id": driver.transport_company_id }] }),
             {}, class: "form-select", data: { bus_driver_target: "driver" } %>
         </div>
+        <% if location == "Sara-3&4" %>
+          <div class="col-md-2"><%= f.label :outing_variant, "Clase para 4x4", class: "form-label" %><%= f.select :outing_variant, [["Elegir clase", ""], ["Clase 3", "Sara-3"], ["Clase 4", "Sara-4"]], {}, class: "form-select", data: { bus_driver_target: "variant" } %></div>
+        <% end %>
         <div class="col-md-2"><%= f.label :seats_assigned, "Pasajeros", class: "form-label" %><%= f.number_field :seats_assigned, min: 0, class: "form-control", required: true %></div>
-        <div class="col-12"><%= f.submit "Agregar bus", class: "btn btn-primary" %></div>
+        <div class="col-12 small text-muted" data-bus-driver-quote aria-live="polite">Selecciona un vehículo y chofer para ver el costo previsto.</div>
+        <div class="col-12"><%= f.submit "Agregar vehículo", class: "btn btn-primary" %></div>
       <% end %>
     <% else %>
-      <p class="text-muted mb-0">No quedan buses disponibles para esta fecha.</p>
+      <p class="text-muted mb-0">No quedan vehículos disponibles para esta salida.</p>
     <% end %>
   </div>
 </section>

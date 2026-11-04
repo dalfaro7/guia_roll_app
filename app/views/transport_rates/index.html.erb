@@ -3,17 +3,17 @@
     <div>
       <p class="text-uppercase text-muted small fw-semibold mb-1">Transporte</p>
       <h1 class="mb-1">Tarifario de transporte</h1>
-      <p class="text-muted mb-0">Cada empresa tiene sus propios importes por categoría de bus y salida, expresados en USD.</p>
+      <p class="text-muted mb-0">Cada empresa tiene sus propios importes por tipo de vehículo y salida, expresados en USD.</p>
     </div>
     <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
   </div>
 
   <div class="alert alert-info" role="note">
-    Las tarifas de cada empresa comienzan en $120. Se copian al asignar un bus; un cambio posterior no modifica las asignaciones existentes. El costo de una asignación también se puede ajustar en su operación.
+    Las tarifas de cada empresa comienzan en $120. Se copian al asignar un vehículo; un cambio posterior no modifica las asignaciones existentes. El costo de una asignación también se puede ajustar en su operación.
   </div>
 
   <% @companies.each do |company| %>
-    <% rates = company.transport_rates.index_by { |rate| [rate.location, rate.size_category] } %>
+    <% rates = company.transport_rates.index_by { |rate| [rate.location, rate.vehicle_kind, rate.size_category] } %>
     <section class="mb-4" aria-labelledby="company-<%= company.id %>" id="transport-company-<%= company.id %>">
       <h2 class="h4 mb-3" id="company-<%= company.id %>"><%= company.name %></h2>
       <div class="table-responsive card shadow-sm border-0">
@@ -21,11 +21,11 @@
           <thead class="table-light"><tr><th scope="col" class="ps-3">Salida</th><th scope="col">Categoría</th><th scope="col">Tarifa USD</th><th scope="col">Última actualización</th><th scope="col" class="pe-3">Acción</th></tr></thead>
           <tbody>
             <% TransportRate::LOCATIONS.each do |location| %>
-              <% TransportRate::CATEGORIES.each do |category| %>
-                <% rate = rates[[location, category]] %>
+              <% TransportRate::RATE_TYPES.each do |kind, category| %>
+                <% rate = rates[[location, kind, category]] %>
                 <tr>
                   <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
-                  <td><%= rate&.category_label || category %></td>
+                  <td><%= rate&.category_label || kind %></td>
                   <td><strong><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></strong></td>
                   <td class="small text-muted"><%= rate&.updated_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
                   <td class="pe-3">

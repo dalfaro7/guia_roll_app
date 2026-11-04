@@ -13,8 +13,9 @@
   <% @companies.each do |company| %>
     <section class="card mb-3"><div class="card-body">
       <%= form_with model: company, class: "row g-2 align-items-center mb-3" do |f| %>
-        <div class="col-md-8"><%= f.label :name, "Empresa", class: "form-label" %><%= f.text_field :name, class: "form-control", required: true %></div>
-        <div class="col-md-4 pt-md-4"><%= f.submit "Guardar nombre", class: "btn btn-outline-primary" %></div>
+        <div class="col-md-7"><%= f.label :name, "Empresa", class: "form-label" %><%= f.text_field :name, class: "form-control", required: true %></div>
+        <div class="col-md-3 pt-md-4"><label><%= f.check_box :internal_fleet %> Flota propia ARC</label></div>
+        <div class="col-md-2 pt-md-4"><%= f.submit "Guardar", class: "btn btn-outline-primary" %></div>
       <% end %>
       <p class="mb-1"><strong>Buses:</strong> <%= company.buses.map(&:alias).join(", ").presence || "Ninguno" %></p>
       <p class="mb-0"><strong>Choferes:</strong> <%= company.drivers.map(&:name).join(", ").presence || "Ninguno" %></p>

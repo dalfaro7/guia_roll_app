@@ -1,6 +1,6 @@
 class CompensationAssignment < ApplicationRecord
   GUIDE_ROLES = %w[river_guide tl_balsa tl_sara hg_balsa hg_sara safety_kayak photographer].freeze
-  DRIVER_ROLES = %w[driver_la_fortuna driver_bodega driver_hg].freeze
+  DRIVER_ROLES = %w[driver_la_fortuna driver_bodega driver_hg driver_per_trip].freeze
   PHOTO_TASKS = %w[none take_and_send send_only].freeze
   STATUSES = %w[planned performed canceled no_show].freeze
 
@@ -10,6 +10,7 @@ class CompensationAssignment < ApplicationRecord
   belongs_to :guide_day, optional: true
   belongs_to :updated_by, class_name: "User", optional: true
   has_many :compensation_lines, dependent: :destroy
+  has_one :bus_assignment, dependent: :nullify
 
   validates :status, inclusion: { in: STATUSES }
   validates :photo_task, inclusion: { in: PHOTO_TASKS }

@@ -3,10 +3,14 @@ class TransportRate < ApplicationRecord
 
   LOCATIONS = ["Balsa", "Sara-3&4", "PM", "Privado"].freeze
   CATEGORIES = %w[small large].freeze
+  RATE_TYPES = [["bus", "small"], ["bus", "large"],
+    ["four_by_four", "small"]].freeze
 
   validates :location, inclusion: { in: LOCATIONS },
-    uniqueness: { scope: [:transport_company_id, :size_category] }
+    uniqueness: { scope: [:transport_company_id, :vehicle_kind, :size_category] }
   validates :size_category, inclusion: { in: CATEGORIES }
+  validates :vehicle_kind, inclusion: { in: %w[bus four_by_four] }
+  validate :four_by_four_must_be_small
   validates :amount_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   def amount_usd
@@ -21,6 +25,17 @@ class TransportRate < ApplicationRecord
   end
 
   def category_label
-    size_category == "large" ? "Grande (20 o más pasajeros)" : "Pequeño (hasta 15 pasajeros)"
+    return "4x4 (hasta 15 pasajeros)" if vehicle_kind == "four_by_four"
+
+    size_category == "large" ? "Bus grande (20 o más pasajeros)" :
+      "Bus pequeño (hasta 15 pasajeros)"
+  end
+
+  private
+
+  def four_by_four_must_be_small
+    if vehicle_kind == "four_by_four" && size_category != "small"
+      errors.add(:size_category, "de un 4x4 debe ser pequeña")
+    end
   end
 end

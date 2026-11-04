@@ -13,7 +13,7 @@ class TransportRatesController < ApplicationController
       rate.update!(amount_usd: params.require(:transport_rate).fetch(:amount_usd, nil))
       audit!(action: "update_transport_rate", auditable: rate,
         metadata: { transport_company_id: rate.transport_company_id,
-          location: rate.location, size_category: rate.size_category,
+          location: rate.location, vehicle_kind: rate.vehicle_kind, size_category: rate.size_category,
           before_cents: before_cents, after_cents: rate.amount_cents })
     end
     redirect_to transport_rates_path, notice: "Tarifa de transporte actualizada."

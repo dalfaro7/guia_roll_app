@@ -2,6 +2,7 @@ class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
     :available_buses,
+    :driver_payment_quote,
     :update,
     :force_assign,
     :update_availability,
@@ -44,7 +45,6 @@ class WorkDaysController < ApplicationController
   end
 
   def show
-    @available_buses = Bus.available_on(@work_day).includes(:transport_company).order(:alias).to_a
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
     if Compensation::EditWindow.applicable?(@work_day) &&
@@ -72,14 +72,43 @@ class WorkDaysController < ApplicationController
 
   def available_buses
     response.headers["Cache-Control"] = "no-store"
-    buses = Bus.available_on(@work_day).includes(:transport_company).order(:alias).map do |bus|
+    location = params[:location].presence
+    candidates = location ? VehicleAvailability.for(work_day: @work_day,
+      location: location) : Bus.available_on(@work_day).includes(:transport_company).order(:alias)
+    buses = candidates.map do |bus|
+      previous = @work_day.bus_assignments.find_by(bus_id: bus.id)
       {
         id: bus.id,
         label: "#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} pax)",
-        company_id: bus.transport_company_id
+        company_id: bus.transport_company_id,
+        kind: bus.vehicle_kind,
+        internal_fleet: bus.transport_company.internal_fleet?,
+        required_driver_id: location == "PM" ? previous&.driver_id : nil
       }
     end
     render json: { buses: buses }
+  end
+
+  def driver_payment_quote
+    response.headers["Cache-Control"] = "no-store"
+    bus = Bus.find_by(id: params[:bus_id])
+    driver = Driver.find_by(id: params[:driver_id]) if params[:driver_id].present?
+    location = params[:location].to_s
+    unless bus && TransportRate::LOCATIONS.include?(location)
+      return render json: { error: "Vehículo o salida inválidos" }, status: :bad_request
+    end
+    driver_company_ok = !driver || driver.transport_company_id.nil? ||
+      driver.transport_company_id == bus.transport_company_id
+    unless driver_company_ok &&
+        VehicleAvailability.available?(bus: bus, work_day: @work_day,
+          location: location, driver: driver) &&
+        (!driver || DriverEligibility.available?(driver: driver, bus: bus,
+          work_day: @work_day, location: location))
+      return render json: { error: "Vehículo o chofer no disponible" },
+        status: :unprocessable_entity
+    end
+    render json: Compensation::DriverPaymentQuote.call(work_day: @work_day,
+      bus: bus, driver: driver, location: location)
   end
 
   def new

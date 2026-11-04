@@ -89,8 +89,8 @@ class CompensationPricingTest < ActiveSupport::TestCase
     driver_record = assignment(second, driver, "driver_la_fortuna")
     assert_equal 5_000, guide_record.total_cents
     assert_equal 0, guide_record.compensation_lines.find_by!(code: "guide_regular").discount_percent
-    assert_equal 4_000, driver_record.total_cents
-    assert_equal 0, driver_record.compensation_lines.find_by!(code: "driver_la_fortuna").discount_percent
+    assert_equal 0, driver_record.total_cents
+    assert_empty driver_record.compensation_lines
   end
 
   test "two photographers each receive the photo extra but only one is principal" do
@@ -209,7 +209,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
     end
   end
 
-  test "second driver departure discounts only its main rate" do
+  test "round trip driver is paid only once per day" do
     driver = Driver.create!(name: "Driver A", phone: "555-1002", transport_company: TransportCompany.create!(name: "Test Transport B"))
     assignment(@first, driver, "driver_la_fortuna")
     second = @work_day.departures.create!(
@@ -217,7 +217,7 @@ class CompensationPricingTest < ActiveSupport::TestCase
       starts_at: @zone.local(@date.year, @date.month, @date.day, 10)
     )
 
-    assert_equal 3_200,
+    assert_equal 0,
       assignment(second, driver, "driver_la_fortuna").total_cents
   end
 

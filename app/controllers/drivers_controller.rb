@@ -16,7 +16,7 @@ class DriversController < ApplicationController
 
   def update
     driver = Driver.find(params[:id])
-    before = driver.attributes.slice("name", "active", "phone", "transport_company_id")
+    before = driver.attributes.slice("name", "active", "phone", "transport_company_id", "payment_mode")
     driver.update!(driver_params)
     audit!(action: "update_driver", auditable: driver,
       metadata: { before: before, after: driver.attributes.slice(*before.keys) })
@@ -28,6 +28,6 @@ class DriversController < ApplicationController
   private
 
   def driver_params
-    params.require(:driver).permit(:name, :active, :phone, :transport_company_id)
+    params.require(:driver).permit(:name, :active, :phone, :transport_company_id, :payment_mode)
   end
 end

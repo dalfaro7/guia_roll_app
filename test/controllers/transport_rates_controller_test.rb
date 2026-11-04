@@ -14,9 +14,9 @@ class TransportRatesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", "Tarifario de transporte"
     assert_select "section h2", count: 2
-    assert_select "tbody tr", count: 16
-    rate = @company.transport_rates.find_by!(location: "Balsa", size_category: "small")
-    other = @other_company.transport_rates.find_by!(location: "Balsa", size_category: "small")
+    assert_select "tbody tr", count: 24
+    rate = @company.transport_rates.find_by!(location: "Balsa", size_category: "small", vehicle_kind: "bus")
+    other = @other_company.transport_rates.find_by!(location: "Balsa", size_category: "small", vehicle_kind: "bus")
     patch transport_rate_path(rate), params: { transport_rate: { amount_usd: "147.50" } }
     assert_redirected_to transport_rates_path
     assert_equal 14_750, rate.reload.amount_cents

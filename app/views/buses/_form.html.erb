@@ -26,6 +26,10 @@
       <%= f.number_field :capacity, class: "form-control", required: true, min: 1, step: 1, inputmode: "numeric" %>
       <div class="form-text">Pequeño: hasta 15 pasajeros. Grande: desde 20. Se asigna automáticamente.</div>
     </div>
+    <div class="col-12 col-md-6">
+      <%= f.label :vehicle_kind, "Tipo de vehículo", class: "form-label fw-semibold" %>
+      <%= f.select :vehicle_kind, [["Bus", "bus"], ["4x4", "four_by_four"]], {}, class: "form-select", required: true %>
+    </div>
     <div class="col-12">
       <%= f.label :phone, "Teléfono histórico del bus (opcional)", class: "form-label fw-semibold" %>
       <%= f.telephone_field :phone, class: "form-control", autocomplete: "tel", placeholder: "Ej. +506 8888 8888" %>

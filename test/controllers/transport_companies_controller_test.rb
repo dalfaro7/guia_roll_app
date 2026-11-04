@@ -18,18 +18,21 @@ class TransportCompaniesControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", "Empresas de transporte"
   end
 
-  test "driver must have company and phone when created" do
+  test "admin can register a company driver or freelance with phone pending" do
     company = TransportCompany.create!(name: "ARC Test")
     get drivers_url
     assert_response :success
     assert_select "select[name='driver[transport_company_id]']"
-    assert_no_difference("Driver.count") do
-      post drivers_url, params: { driver: { name: "Sin teléfono", transport_company_id: company.id } }
-    end
     assert_difference("Driver.count", 1) do
-      post drivers_url, params: { driver: { name: "Chofer nuevo", phone: "8888-1234",
-        transport_company_id: company.id } }
+      post drivers_url, params: { driver: { name: "Chofer ARC", transport_company_id: company.id,
+        payment_mode: "daily_hg" } }
     end
     assert_equal company, Driver.order(:id).last.transport_company
+    assert_difference("Driver.count", 1) do
+      post drivers_url, params: { driver: { name: "Freelance", phone: "",
+        transport_company_id: "", payment_mode: "round_trip" } }
+    end
+    assert_nil Driver.order(:id).last.transport_company
+    assert_equal "round_trip", Driver.order(:id).last.payment_mode
   end
 end

@@ -97,7 +97,11 @@ module Compensation
     end
 
     def main_code
-      return @assignment.role_code if @assignment.driver?
+      if @assignment.driver?
+        return nil if %w[driver_hg driver_la_fortuna].include?(@assignment.role_code) &&
+          second_departure?
+        return @assignment.role_code
+      end
       raise MissingProfile, "Falta la categoría económica de #{@assignment.guide.name}" if category.blank?
 
       case @assignment.role_code
@@ -165,7 +169,13 @@ module Compensation
     end
 
     def second_departure_discount
-      return 0 unless @departure.location.to_s.start_with?("Sara")
+      transport_second_trip = @assignment.role_code == "driver_per_trip" &&
+        @assignment.bus_assignment&.location == "PM" &&
+        BusAssignment.where(work_day_id: @departure.work_day_id,
+          bus_id: @assignment.bus_assignment.bus_id,
+          driver_id: @assignment.driver_id,
+          location: "Sara-3&4", outing_variant: "Sara-4").exists?
+      return 0 unless @departure.location.to_s.start_with?("Sara") || transport_second_trip
 
       rule = CompensationDiscountRule.for("second_sara", at: @departure.starts_at)
       raise MissingRate, "No hay descuento vigente para second_sara" unless rule

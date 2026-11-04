@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_04_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -29,15 +29,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
 
   create_table "bus_assignments", force: :cascade do |t|
     t.bigint "bus_id", null: false
+    t.bigint "compensation_assignment_id"
     t.integer "cost_cents", default: 12000, null: false
     t.datetime "created_at", null: false
     t.bigint "driver_id"
+    t.boolean "internal_fleet_snapshot"
     t.string "location", null: false
+    t.string "outing_variant"
     t.integer "seats_assigned"
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
-    t.index ["bus_id", "work_day_id"], name: "one_bus_assignment_per_day", unique: true
+    t.index ["bus_id", "work_day_id", "location"], name: "one_bus_per_day_and_outing", unique: true
     t.index ["bus_id"], name: "index_bus_assignments_on_bus_id"
+    t.index ["compensation_assignment_id"], name: "one_transport_per_driver_payment", unique: true
     t.index ["driver_id"], name: "index_bus_assignments_on_driver_id"
     t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
     t.check_constraint "cost_cents >= 0", name: "bus_assignment_cost_nonnegative"
@@ -53,8 +57,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.string "size_category", null: false
     t.bigint "transport_company_id", null: false
     t.datetime "updated_at", null: false
+    t.string "vehicle_kind", default: "bus", null: false
     t.index ["transport_company_id"], name: "index_buses_on_transport_company_id"
     t.check_constraint "size_category::text = 'small'::text AND capacity >= 1 AND capacity <= 15 OR size_category::text = 'large'::text AND capacity >= 20", name: "bus_size_matches_capacity"
+    t.check_constraint "vehicle_kind::text = ANY (ARRAY['bus'::character varying::text, 'four_by_four'::character varying::text])", name: "bus_vehicle_kind_valid"
   end
 
   create_table "compensation_adjustments", force: :cascade do |t|
@@ -93,8 +99,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.index ["departure_id", "driver_id"], name: "unique_departure_driver", unique: true, where: "(driver_id IS NOT NULL)"
     t.index ["departure_id", "guide_id"], name: "unique_departure_guide", unique: true, where: "(guide_id IS NOT NULL)"
     t.index ["departure_id"], name: "index_compensation_assignments_on_departure_id"
-    t.index ["departure_id"], name: "one_photo_task_per_departure", unique: true, where: "(((photo_task)::text = ANY ((ARRAY['take_and_send'::character varying, 'send_only'::character varying])::text[])) AND ((status)::text <> ALL ((ARRAY['canceled'::character varying, 'no_show'::character varying])::text[])))"
-    t.index ["departure_id"], name: "one_principal_photographer", unique: true, where: "((principal_photographer = true) AND ((status)::text <> ALL ((ARRAY['canceled'::character varying, 'no_show'::character varying])::text[])))"
+    t.index ["departure_id"], name: "one_photo_task_per_departure", unique: true, where: "(((photo_task)::text = ANY (ARRAY[('take_and_send'::character varying)::text, ('send_only'::character varying)::text])) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
+    t.index ["departure_id"], name: "one_principal_photographer", unique: true, where: "((principal_photographer = true) AND ((status)::text <> ALL (ARRAY[('canceled'::character varying)::text, ('no_show'::character varying)::text])))"
     t.index ["driver_id"], name: "index_compensation_assignments_on_driver_id"
     t.index ["guide_day_id"], name: "index_compensation_assignments_on_guide_day_id"
     t.index ["guide_id"], name: "index_compensation_assignments_on_guide_id"
@@ -191,10 +197,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
+    t.string "payment_mode", default: "none", null: false
     t.string "phone"
-    t.bigint "transport_company_id", null: false
+    t.bigint "transport_company_id"
     t.datetime "updated_at", null: false
     t.index ["transport_company_id"], name: "index_drivers_on_transport_company_id"
+    t.check_constraint "payment_mode::text = ANY (ARRAY['none'::character varying::text, 'per_trip'::character varying::text, 'daily_hg'::character varying::text, 'round_trip'::character varying::text])", name: "driver_payment_mode_valid"
   end
 
   create_table "guide_activity_changes", force: :cascade do |t|
@@ -270,7 +278,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.index ["phone"], name: "index_kayaktalkie_accounts_on_phone", unique: true
     t.index ["reset_password_digest"], name: "index_kayaktalkie_accounts_on_reset_password_digest", unique: true
     t.check_constraint "length(TRIM(BOTH FROM name)) > 0", name: "kayaktalkie_name"
-    t.check_constraint "role::text = ANY (ARRAY['admin'::character varying, 'operator'::character varying, 'staff'::character varying]::text[])", name: "kayaktalkie_role"
+    t.check_constraint "role::text = ANY (ARRAY['admin'::character varying::text, 'operator'::character varying::text, 'staff'::character varying::text])", name: "kayaktalkie_role"
   end
 
   create_table "kayaktalkie_field_reports", force: :cascade do |t|
@@ -350,7 +358,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.index ["day", "first_at"], name: "index_kayaktalkie_speed_alerts_on_day_and_first_at"
     t.index ["kayaktalkie_account_id", "source"], name: "one_open_kayaktalkie_speed_alert_per_source", unique: true, where: "(ended_at IS NULL)"
     t.index ["kayaktalkie_account_id"], name: "index_kayaktalkie_speed_alerts_on_kayaktalkie_account_id"
-    t.check_constraint "source::text = ANY (ARRAY['gps'::character varying, 'estimated'::character varying]::text[])", name: "kayaktalkie_speed_alert_source"
+    t.check_constraint "source::text = ANY (ARRAY['gps'::character varying::text, 'estimated'::character varying::text])", name: "kayaktalkie_speed_alert_source"
   end
 
   create_table "kayaktalkie_team_memberships", force: :cascade do |t|
@@ -661,6 +669,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
 
   create_table "transport_companies", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.boolean "internal_fleet", default: false, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index "lower((name)::text)", name: "unique_transport_company_name", unique: true
@@ -673,9 +682,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
     t.string "size_category", null: false
     t.bigint "transport_company_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["transport_company_id", "location", "size_category"], name: "one_transport_rate_per_company_outing_size", unique: true
+    t.string "vehicle_kind", default: "bus", null: false
+    t.index ["transport_company_id", "location", "vehicle_kind", "size_category"], name: "one_transport_rate_per_company_outing_vehicle", unique: true
     t.index ["transport_company_id"], name: "index_transport_rates_on_transport_company_id"
     t.check_constraint "amount_cents >= 0", name: "transport_rate_amount_nonnegative"
+    t.check_constraint "vehicle_kind::text = 'bus'::text OR vehicle_kind::text = 'four_by_four'::text AND size_category::text = 'small'::text", name: "transport_rate_vehicle_kind_valid"
   end
 
   create_table "users", force: :cascade do |t|
@@ -759,6 +770,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
   add_foreign_key "audit_logs", "users"
   add_foreign_key "audit_logs", "work_days"
   add_foreign_key "bus_assignments", "buses"
+  add_foreign_key "bus_assignments", "compensation_assignments"
   add_foreign_key "bus_assignments", "drivers"
   add_foreign_key "bus_assignments", "work_days"
   add_foreign_key "buses", "transport_companies"
