@@ -66,9 +66,9 @@ class CompensationAssignment < ApplicationRecord
   def leader_role_matches_departure
     return unless departure && role_code.to_s.start_with?("tl_", "hg_")
 
-    expected = departure.location.to_s.start_with?("Sara") ? "sara" : "balsa"
+    expected = Departure.leader_rate_suffix_for(departure.location)
     errors.add(:role_code, "no corresponde a la salida #{departure.label}") unless
-      role_code.end_with?("_#{expected}")
+      expected && role_code.end_with?("_#{expected}")
   end
 
   def photo_responsibility

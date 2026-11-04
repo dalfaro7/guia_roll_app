@@ -275,7 +275,7 @@
                 <td>
                     <%= select_tag "roles[#{gd.id}][role_secondary]",
                                options_for_select(
-                                 secondary_roles.map { |role| [roll_role_label(role), role] },
+                                 (Departure.leader_rate_suffix_for(gd.location) ? secondary_roles : secondary_roles - ["Tour Leader", "Head Guide"]).map { |role| [roll_role_label(role), role] },
                                  gd.role_secondary
                                ),
                                include_blank: true %>

@@ -196,6 +196,48 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_select "td", text: /TL Balsa/
   end
 
+  test "PM uses Sara leadership rates and Private has no TL or HG" do
+    guide = Guide.create!(name: "PM leader", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    @day.update!(status: :generated)
+    pm = @day.departures.create!(label: "PM", location: "PM",
+      starts_at: Departure.fixed_start_for(@day.date, "PM"))
+    private_departure = @day.departures.create!(label: "Privado", location: "Privado",
+      starts_at: Departure.fixed_start_for(@day.date, "Privado"))
+    pm_guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "PM", role_primary: "River Guide",
+      role_secondary: "Head Guide")
+    pm_assignment = CompensationAssignment.find_by!(guide_day: pm_guide_day)
+    assert_equal pm.id, pm_assignment.departure_id
+    assert_equal "hg_sara", pm_assignment.role_code
+
+    sign_in user(:operador)
+    get work_day_path(@day)
+    assert_select "#day-compensation form[action='#{work_day_compensation_assignment_path(@day, pm_assignment)}']" do
+      assert_select "option[value='hg_sara']"
+      assert_select "option[value='hg_balsa']", count: 0
+    end
+
+    pm_assignment.update_columns(role_code: "hg_balsa")
+    get work_day_compensation_path(@day)
+    assert_select "form[action='#{work_day_compensation_assignment_path(@day, pm_assignment)}'] option[value='hg_balsa'][selected]", text: /Revisar/
+    assert_select "#departure-#{private_departure.id} option[value='hg_sara']", count: 0
+    assert_select "#departure-#{private_departure.id} option[value='hg_balsa']", count: 0
+    assert_select "#departure-#{private_departure.id} option[value='tl_sara']", count: 0
+    assert_select "#departure-#{private_departure.id} option[value='tl_balsa']", count: 0
+
+    private_assignment = private_departure.compensation_assignments.build(
+      guide: Guide.create!(name: "Private guide", priority: 3,
+        active: true, pay_category: "freelance_regular"), role_code: "hg_balsa")
+    assert_not private_assignment.valid?
+    assert private_assignment.errors[:role_code].any?
+
+    pm_guide_day.update!(role_secondary: nil, location: "Privado")
+    assert_raises(ActiveRecord::RecordInvalid) do
+      pm_guide_day.update!(role_secondary: "Tour Leader")
+    end
+  end
+
   test "Balsa offers only Balsa leader rates and rejects a Sara rate" do
     guide = Guide.create!(name: "Leader by location", priority: 3,
       active: true, pay_category: "freelance_regular")

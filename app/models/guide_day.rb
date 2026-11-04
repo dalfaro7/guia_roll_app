@@ -18,6 +18,8 @@ has_many :roll_notes,
   }
 
   validates :status, presence: true
+  validate :leader_role_has_supported_location
+
   validates :status_note,
             presence: true,
             if: :requires_status_note?
@@ -134,6 +136,13 @@ has_many :roll_notes,
   end
 
   private
+
+  def leader_role_has_supported_location
+    return unless worked? && ["Tour Leader", "Head Guide"].include?(role_secondary)
+    return if Departure.leader_rate_suffix_for(location)
+
+    errors.add(:role_secondary, "TL y HG no aplican a la salida Privado")
+  end
 
   def compensation_source_changed?
     saved_change_to_status? || saved_change_to_role_primary? ||

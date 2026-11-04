@@ -1,6 +1,10 @@
 <%= form_with url: work_day_compensation_assignment_path(work_day, assignment), method: :patch, local: true, class: "d-grid gap-2 mt-2" do %>
   <%= hidden_field_tag :return_to, return_to if return_to.present? %>
-  <%= select_tag "compensation_assignment[role_code]", options_for_select((assignment.guide? ? compensation_guide_roles_for(assignment.departure) : CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }, assignment.role_code), class: "form-select form-select-sm", aria: { label: "Función de #{assignment.person.name}" } %>
+  <% role_codes = assignment.guide? ? compensation_guide_roles_for(assignment.departure) : CompensationAssignment::DRIVER_ROLES %>
+  <% incompatible_role = !role_codes.include?(assignment.role_code) %>
+  <% role_codes = [assignment.role_code] + role_codes if incompatible_role %>
+  <%= select_tag "compensation_assignment[role_code]", options_for_select(role_codes.map { |code| [incompatible_role && code == assignment.role_code ? "Revisar: #{compensation_label(code)} no corresponde a esta salida" : compensation_label(code), code] }, assignment.role_code), class: "form-select form-select-sm", aria: { label: "Función de #{assignment.person.name}" } %>
+  <% if incompatible_role %><span class="text-danger">Selecciona una función válida para esta salida antes de guardar.</span><% end %>
   <% if assignment.guide? %>
     <%= select_tag "compensation_assignment[photo_task]", options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]], assignment.photo_task), class: "form-select form-select-sm", aria: { label: "Tarea de fotos de #{assignment.person.name}" } %>
     <label><%= hidden_field_tag "compensation_assignment[also_drives]", "0" %><%= check_box_tag "compensation_assignment[also_drives]", "1", assignment.also_drives? %> También conduce</label>

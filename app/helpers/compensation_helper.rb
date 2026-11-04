@@ -33,9 +33,9 @@ module CompensationHelper
   end
 
   def compensation_guide_roles_for(departure)
-    suffix = departure.location.to_s.start_with?("Sara") ? "sara" : "balsa"
+    suffix = Departure.leader_rate_suffix_for(departure.location)
     CompensationAssignment::GUIDE_ROLES.reject do |code|
-      code.start_with?("tl_", "hg_") && !code.end_with?("_#{suffix}")
+      code.start_with?("tl_", "hg_") && (suffix.nil? || !code.end_with?("_#{suffix}"))
     end
   end
 

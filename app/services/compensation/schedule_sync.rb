@@ -96,9 +96,9 @@ module Compensation
         else
           case @guide_day.role_secondary
           when "Tour Leader"
-            @guide_day.location.to_s.start_with?("Sara") ? "tl_sara" : "tl_balsa"
+            "tl_#{Departure.leader_rate_suffix_for(@guide_day.location)}"
           when "Head Guide"
-            @guide_day.location.to_s.start_with?("Sara") ? "hg_sara" : "hg_balsa"
+            "hg_#{Departure.leader_rate_suffix_for(@guide_day.location)}"
           else
             "river_guide"
           end
@@ -126,7 +126,7 @@ module Compensation
         inferred_role
       elsif assignment.role_code.start_with?("tl_", "hg_")
         prefix = assignment.role_code.start_with?("tl_") ? "tl" : "hg"
-        "#{prefix}_#{@guide_day.location.to_s.start_with?("Sara") ? "sara" : "balsa"}"
+        "#{prefix}_#{Departure.leader_rate_suffix_for(@guide_day.location)}"
       else
         assignment.role_code
       end

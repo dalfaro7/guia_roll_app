@@ -14,6 +14,18 @@ class Departure < ApplicationRecord
     "Privado" => [8, 20]
   }.freeze
 
+  LEADER_RATE_SUFFIX = {
+    "Balsa" => "balsa",
+    "Sara-3&4" => "sara",
+    "Sara-3" => "sara",
+    "Sara-4" => "sara",
+    "PM" => "sara"
+  }.freeze
+
+  def self.leader_rate_suffix_for(location)
+    LEADER_RATE_SUFFIX[location]
+  end
+
   def self.fixed_start_for(date, location)
     hour, minute = FIXED_START_TIMES.fetch(location)
     Time.find_zone!("America/Costa_Rica").local(date.year, date.month, date.day,
