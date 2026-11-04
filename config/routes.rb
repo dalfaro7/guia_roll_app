@@ -76,6 +76,7 @@ Rails.application.routes.draw do
   get "buses/edit"
 
   devise_for :users
+  resources :user_roles, only: [:index, :update]
 
   root "dashboard#index"
   get "dashboard", to: "dashboard#index"

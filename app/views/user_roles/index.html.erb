@@ -1,0 +1,83 @@
+<% content_for :title, "Roles y accesos" %>
+<div class="container py-4">
+  <div class="mb-4">
+    <p class="text-uppercase text-muted small fw-semibold mb-1">Administración de usuarios</p>
+    <h1>Roles y accesos</h1>
+    <p class="text-muted mb-0">Solo Super Admin puede cambiar los roles. Los cambios se registran en Auditoría.</p>
+  </div>
+
+  <% access_roles = %w[superadmin admin operador contabilidad recursos_humanos] %>
+  <% access_rows = [
+    ["Programación de guías", "Gestionar y corregir tras el cierre", "Gestionar y corregir tras el cierre", "Gestionar hasta el cierre", "Consultar", "Consultar"],
+    ["Reportes semanales y valoración", "Consultar", "Consultar", "Consultar", "Consultar", "Sin acceso"],
+    ["Tarifas de guías y perfiles económicos", "Gestionar; Tarifas requiere clave", "Gestionar; Tarifas requiere clave", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Tarifario de transporte", "Consultar y editar", "Consultar y editar", "Consultar y editar", "Consultar", "Sin acceso"],
+    ["Consolidados y pagos", "Consultar y marcar pagado", "Consultar y marcar pagado", "Consultar", "Consultar y marcar pagado", "Sin acceso"],
+    ["Calendarios y créditos de oficina", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso", "Consultar"],
+    ["Choferes y empresas de transporte", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Pruebas de WhatsApp", "Usar", "Usar", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Roles de usuarios", "Consultar y cambiar", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso"]
+  ] %>
+
+  <section class="mb-4" aria-labelledby="role-access-heading">
+    <h2 class="h4" id="role-access-heading">Accesos por rol</h2>
+    <p class="text-muted">Permisos vigentes en la aplicación para cada cuenta con sesión iniciada.</p>
+    <div class="alert alert-info" role="note">
+      <strong>Accesos compartidos:</strong> todos los roles pueden consultar la programación, guías, buses, días libres, el panel de equidad y Auditoría. También pueden editar fichas de guías y buses, registrar días libres y notas, y agregar o retirar buses de una programación.
+    </div>
+    <div class="table-responsive card shadow-sm border-0">
+      <table class="table table-bordered align-middle mb-0">
+        <caption class="visually-hidden">Accesos adicionales de cada rol</caption>
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Área</th>
+            <% access_roles.each do |role| %>
+              <th scope="col"><%= User::ACCESS_ROLE_LABELS.fetch(role) %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% access_rows.each do |area, *permissions| %>
+            <tr>
+              <th scope="row"><%= area %></th>
+              <% permissions.each do |permission| %>
+                <td class="<%= 'text-muted' if permission == 'Sin acceso' %>"><%= permission %></td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <p class="text-muted small mt-2 mb-0">El operador puede editar la programación hasta las 8:00 p. m. (hora de Costa Rica). Un administrador puede corregirla después del cierre indicando el motivo. KayakTalkie tiene permisos propios.</p>
+  </section>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th scope="col" class="ps-3">Persona</th><th scope="col">Usuario</th><th scope="col">Rol actual</th><th scope="col" class="pe-3">Cambiar rol</th></tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <tr>
+              <td class="ps-3 fw-semibold"><%= user.name %><% if user == current_user %> <span class="badge text-bg-secondary">Tu cuenta</span><% end %></td>
+              <td><%= user.email %></td>
+              <td><%= User::ACCESS_ROLE_LABELS[user.access_role] || "Sin rol" %></td>
+              <td class="pe-3">
+                <% if user == current_user %>
+                  <span class="text-muted small">Tu acceso se protege desde esta página.</span>
+                <% else %>
+                  <%= form_with url: user_role_path(user), method: :patch, local: true, class: "d-flex flex-wrap gap-2" do %>
+                    <%= select_tag "user[access_role]", options_for_select([["Seleccionar rol", ""]] + User::ACCESS_ROLE_LABELS.map { |value, label| [label, value] }, user.access_role), class: "form-select form-select-sm w-auto", aria: { label: "Rol de #{user.name}" } %>
+                    <%= submit_tag "Guardar", class: "btn btn-sm btn-primary", data: { turbo_confirm: "¿Seguro que desea cambiar el rol de #{user.name}?" } %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-muted small mt-3">La cuenta Super Admin no puede cambiar su propio rol aquí. Para transferir el acceso, primero asigne Super Admin a otra cuenta.</p>
+</div>

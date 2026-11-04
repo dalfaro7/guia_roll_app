@@ -27,6 +27,12 @@ class ApplicationController < ActionController::Base
                 alert: "Solo los administradores pueden realizar esta acción."
   end
 
+  def require_superadmin!
+    return if current_user&.admin? && current_user&.superadmin?
+
+    redirect_to root_path, alert: "Solo Super Admin puede gestionar roles."
+  end
+
   def require_rates_page_key!
     return if current_user && session[:compensation_rates_unlocked_user_id] == current_user.id
 
