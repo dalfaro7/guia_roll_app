@@ -40,9 +40,7 @@ class BusAssignmentTest < ActiveSupport::TestCase
   end
 
   test "new assignment copies the matching tariff and keeps its snapshot" do
-    rate = TransportRate.find_or_create_by!(location: "Balsa", size_category: "small") do |record|
-      record.amount_cents = 12_000
-    end
+    rate = @company.transport_rates.find_by!(location: "Balsa", size_category: "small")
     rate.update!(amount_cents: 15_000)
     assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
       location: "Balsa", seats_assigned: 10)
@@ -52,9 +50,9 @@ class BusAssignmentTest < ActiveSupport::TestCase
   end
 
   test "tariff lookup distinguishes bus category and departure" do
-    small_balsa = TransportRate.find_or_create_by!(location: "Balsa", size_category: "small") { |r| r.amount_cents = 12_000 }
-    large_balsa = TransportRate.find_or_create_by!(location: "Balsa", size_category: "large") { |r| r.amount_cents = 12_000 }
-    small_sara = TransportRate.find_or_create_by!(location: "Sara-3&4", size_category: "small") { |r| r.amount_cents = 12_000 }
+    small_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "small")
+    large_balsa = @company.transport_rates.find_by!(location: "Balsa", size_category: "large")
+    small_sara = @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "small")
     small_balsa.update!(amount_cents: 13_000)
     large_balsa.update!(amount_cents: 15_000)
     small_sara.update!(amount_cents: 17_000)
@@ -69,6 +67,27 @@ class BusAssignmentTest < ActiveSupport::TestCase
       location: "Balsa", seats_assigned: 10).cost_cents
     assert_equal 17_000, BusAssignment.create!(bus: @bus, work_day: another_day,
       location: "Sara-3&4", seats_assigned: 10).cost_cents
+  end
+
+  test "same outing and size can cost differently for two companies" do
+    @company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large")
+      .update!(amount_cents: 15_000)
+    @other_company.transport_rates.find_by!(location: "Sara-3&4", size_category: "large")
+      .update!(amount_cents: 19_000)
+    own_bus = Bus.create!(alias: "Grande uno", plate: "ABC-301", capacity: 20,
+      transport_company: @company)
+    other_bus = Bus.create!(alias: "Grande dos", plate: "ABC-302", capacity: 20,
+      transport_company: @other_company)
+
+    assert_equal 15_000, BusAssignment.create!(bus: own_bus, work_day: @work_day,
+      location: "Sara-3&4", seats_assigned: 10).cost_cents
+    assert_equal 19_000, BusAssignment.create!(bus: other_bus, work_day: @work_day,
+      location: "Sara-3&4", seats_assigned: 10).cost_cents
+  end
+
+  test "new transport companies receive eight default tariffs" do
+    assert_equal 8, @company.transport_rates.count
+    assert_equal [12_000], @company.transport_rates.distinct.pluck(:amount_cents)
   end
 
   test "capacity determines the allowed category" do

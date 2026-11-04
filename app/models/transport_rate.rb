@@ -1,8 +1,11 @@
 class TransportRate < ApplicationRecord
+  belongs_to :transport_company
+
   LOCATIONS = ["Balsa", "Sara-3&4", "PM", "Privado"].freeze
   CATEGORIES = %w[small large].freeze
 
-  validates :location, inclusion: { in: LOCATIONS }, uniqueness: { scope: :size_category }
+  validates :location, inclusion: { in: LOCATIONS },
+    uniqueness: { scope: [:transport_company_id, :size_category] }
   validates :size_category, inclusion: { in: CATEGORIES }
   validates :amount_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 

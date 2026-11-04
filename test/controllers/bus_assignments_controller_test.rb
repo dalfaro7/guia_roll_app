@@ -52,7 +52,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
              bus_assignment: {
                bus_id: second_bus.id,
                work_day_id: @work_day.id,
-               location: "Sarapiqui",
+               location: "Sara-3&4",
                seats_assigned: 12
              }
            }

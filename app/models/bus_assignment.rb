@@ -4,6 +4,7 @@ class BusAssignment < ApplicationRecord
   belongs_to :driver, optional: true
 
   validates :location, presence: true
+  validates :location, inclusion: { in: TransportRate::LOCATIONS }, on: :create
   validates :seats_assigned, numericality: { greater_than_or_equal_to: 0 }
   validates :cost_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
@@ -28,8 +29,13 @@ class BusAssignment < ApplicationRecord
   def apply_transport_rate
     return unless bus && location.present?
 
-    rate = TransportRate.find_by(location: location, size_category: bus.size_category)
-    self.cost_cents = rate.amount_cents if rate
+    rate = TransportRate.find_by(transport_company_id: bus.transport_company_id,
+      location: location, size_category: bus.size_category)
+    if rate
+      self.cost_cents = rate.amount_cents
+    elsif TransportRate::LOCATIONS.include?(location)
+      errors.add(:base, "No hay tarifa de transporte para esta empresa, salida y categoría")
+    end
   end
 
   def cannot_exceed_bus_capacity

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_03_000008) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_000009) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -671,8 +671,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000008) do
     t.datetime "created_at", null: false
     t.string "location", null: false
     t.string "size_category", null: false
+    t.bigint "transport_company_id", null: false
     t.datetime "updated_at", null: false
-    t.index ["location", "size_category"], name: "index_transport_rates_on_location_and_size_category", unique: true
+    t.index ["transport_company_id", "location", "size_category"], name: "one_transport_rate_per_company_outing_size", unique: true
+    t.index ["transport_company_id"], name: "index_transport_rates_on_transport_company_id"
     t.check_constraint "amount_cents >= 0", name: "transport_rate_amount_nonnegative"
   end
 
@@ -819,6 +821,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_03_000008) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "transport_rates", "transport_companies"
   add_foreign_key "voice_channels", "kayaktalkie_teams"
   add_foreign_key "voice_memberships", "kayaktalkie_accounts"
   add_foreign_key "voice_memberships", "voice_channels"

@@ -3,9 +3,7 @@ class TransportRatesController < ApplicationController
   before_action :require_compensation_operator!, only: :update
 
   def index
-    @rates = TransportRate.order(:location, :size_category).index_by do |rate|
-      [rate.location, rate.size_category]
-    end
+    @companies = TransportCompany.includes(:transport_rates).order(:name).to_a
   end
 
   def update
@@ -14,7 +12,8 @@ class TransportRatesController < ApplicationController
     TransportRate.transaction do
       rate.update!(amount_usd: params.require(:transport_rate).fetch(:amount_usd, nil))
       audit!(action: "update_transport_rate", auditable: rate,
-        metadata: { location: rate.location, size_category: rate.size_category,
+        metadata: { transport_company_id: rate.transport_company_id,
+          location: rate.location, size_category: rate.size_category,
           before_cents: before_cents, after_cents: rate.amount_cents })
     end
     redirect_to transport_rates_path, notice: "Tarifa de transporte actualizada."
