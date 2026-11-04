@@ -208,7 +208,7 @@
                 <th>Nuevo rol principal</th>
                 <th>Rol secundario actual</th>
                 <th>Nuevo rol secundario</th>
-                <th>Fotografía</th>
+                <th>Tarea de fotos</th>
                 <th>Ubicación actual</th>
                 <th>Nueva ubicación</th>
             </tr>
@@ -260,13 +260,17 @@
                     <%= roll_role_label(gd.role_primary) %>
                 </td>
 
-                <td>
+                <td class="team-primary-cell">
                     <%= select_tag "roles[#{gd.id}][role_primary]",
                                options_for_select(
                                  primary_roles.map { |role| [roll_role_label(role), role] },
                                  gd.role_primary
                                ),
                                include_blank: true, class: "team-primary-role" %>
+                    <span class="team-principal-control" <%= "hidden" unless gd.role_primary == "Photographer" %>>
+                        <%= hidden_field_tag "roles[#{gd.id}][principal_photographer]", "0" %>
+                        <label><%= check_box_tag "roles[#{gd.id}][principal_photographer]", "1", compensation_assignment&.principal_photographer?, class: "team-principal-checkbox", aria: { label: "Fotógrafo principal: #{gd.guide.name}" } %> Principal</label>
+                    </span>
                 </td>
 
                 <td>
@@ -288,10 +292,6 @@
                           options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"], ["Solo envía", "send_only"]], selected_photo_task),
                           class: "form-select form-select-sm team-photo-task",
                           aria: { label: "Fotos de #{gd.guide.name}" } %>
-                    </span>
-                    <span class="team-principal-control" <%= "hidden" unless gd.role_primary == "Photographer" %>>
-                        <%= hidden_field_tag "roles[#{gd.id}][principal_photographer]", "0" %>
-                        <label><%= check_box_tag "roles[#{gd.id}][principal_photographer]", "1", compensation_assignment&.principal_photographer?, class: "team-principal-checkbox", aria: { label: "Fotógrafo principal: #{gd.guide.name}" } %> Principal</label>
                     </span>
                 </td>
                 <td>

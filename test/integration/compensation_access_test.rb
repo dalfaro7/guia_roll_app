@@ -315,7 +315,8 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_select "#day-compensation", count: 0
     assert_select "#team-roles-form select[name='roles[#{guide_day.id}][role_secondary]'] option[value='Tour Leader']"
     assert_select "#team-roles-form select[name='roles[#{guide_day.id}][photo_task]'] option[value='take_and_send']"
-    assert_select "#team-roles-form .team-principal-control[hidden]"
+    assert_select "#team-roles-form .team-primary-cell .team-principal-control[hidden]"
+    assert_select "#team-roles-form th", text: "Tarea de fotos"
 
     patch update_roles_work_day_path(@day), params: {
       roles: { guide_day.id.to_s => { role_primary: "River Guide",
@@ -380,7 +381,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     sign_in user(:operador)
     get work_day_path(@day)
-    assert_select "#team-roles-form .team-principal-control:not([hidden])", 2
+    assert_select "#team-roles-form .team-primary-cell .team-principal-control:not([hidden])", 2
     rows = {
       first_day.id.to_s => { role_primary: "Photographer", location: "Balsa",
         role_secondary: "", principal_photographer: "0" },
