@@ -20,7 +20,12 @@ class BusesController < ApplicationController
   end
 
   def new
-    @bus = Bus.new
+    four_by_four = params[:vehicle_kind] == "four_by_four"
+    @bus = Bus.new(vehicle_kind: four_by_four ? "four_by_four" : "bus")
+    if four_by_four
+      @bus.transport_company = TransportCompany.find_by(name: "ARC", internal_fleet: true) ||
+        TransportCompany.where(internal_fleet: true).order(:name).first
+    end
   end
 
   def edit

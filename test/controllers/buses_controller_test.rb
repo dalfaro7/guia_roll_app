@@ -51,6 +51,19 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "new four by four defaults to internal fleet and allows company choice" do
+    TransportCompany.create!(name: "AAA Internal", internal_fleet: true)
+    internal = TransportCompany.create!(name: "ARC", internal_fleet: true)
+
+    get new_bus_url, params: { vehicle_kind: "four_by_four" }
+
+    assert_response :success
+    assert_select "h1", "Agregar 4x4"
+    assert_select "select[name='bus[vehicle_kind]'] option[value='four_by_four'][selected]"
+    assert_select "select[name='bus[transport_company_id]'] option[value='#{internal.id}'][selected]"
+    assert_select "select[name='bus[transport_company_id]'] option[value='#{@company.id}']"
+  end
+
   test "should get edit" do
     get edit_bus_url(@bus)
     assert_response :success

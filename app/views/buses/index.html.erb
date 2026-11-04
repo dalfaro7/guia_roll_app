@@ -5,7 +5,7 @@
       <h1 class="mb-1">Vehículos</h1>
       <p class="text-muted mb-0">Consulta la capacidad, los datos del vehículo y su contacto.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2"><% if current_user.admin? %><%= link_to "Empresas", transport_companies_path, class: "btn btn-outline-primary" %><%= link_to "Choferes", drivers_path, class: "btn btn-outline-primary" %><% end %><% if current_user.admin? || current_user.operador? || current_user.contabilidad? %><%= link_to "Tarifario de transporte", transport_rates_path, class: "btn btn-outline-primary" %><% end %><%= link_to "Agregar bus", new_bus_path, class: "btn btn-primary" %></div>
+    <div class="d-flex flex-wrap gap-2"><% if current_user.admin? %><%= link_to "Empresas", transport_companies_path, class: "btn btn-outline-primary" %><%= link_to "Choferes", drivers_path, class: "btn btn-outline-primary" %><% end %><% if current_user.admin? || current_user.operador? || current_user.contabilidad? %><%= link_to "Tarifario de transporte", transport_rates_path, class: "btn btn-outline-primary" %><% end %><%= link_to "Agregar bus", new_bus_path, class: "btn btn-primary" %><%= link_to "Agregar 4x4", new_bus_path(vehicle_kind: "four_by_four"), class: "btn btn-outline-primary" %></div>
   </div>
 
   <div class="card shadow-sm border-0 mb-4">

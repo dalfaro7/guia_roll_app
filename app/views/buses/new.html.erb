@@ -1,7 +1,7 @@
 <main class="container py-4">
   <div class="mb-4">
     <%= link_to "← Volver a buses", buses_path, class: "text-decoration-none" %>
-    <h1 class="mt-3 mb-1">Agregar bus</h1>
+    <h1 class="mt-3 mb-1"><%= @bus.four_by_four? ? "Agregar 4x4" : "Agregar bus" %></h1>
     <p class="text-muted mb-0">Registra los datos necesarios para identificarlo y asignarlo.</p>
   </div>
   <div class="card shadow-sm border-0"><div class="card-body p-4"><%= render "form" %></div></div>
