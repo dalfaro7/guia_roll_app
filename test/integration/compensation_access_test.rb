@@ -213,11 +213,13 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     sign_in user(:operador)
     get work_day_path(@day)
-    assert_select "#day-compensation form[action='#{work_day_compensation_assignment_path(@day, pm_assignment)}']" do
-      assert_select "option[value='hg_sara']"
-      assert_select "option[value='hg_balsa']", count: 0
-    end
+    assert_select "select[name='roles[#{pm_guide_day.id}][role_secondary]'] option[value='Head Guide'][selected]"
+    assert_select "#day-compensation", count: 0
 
+    get work_day_compensation_path(@day)
+    assert_select "a[href='#{work_day_path(@day, anchor: "day-roles")}']", text: /Editar en roles/
+
+    @day.update!(status: :published)
     pm_assignment.update_columns(role_code: "hg_balsa")
     get work_day_compensation_path(@day)
     assert_select "form[action='#{work_day_compensation_assignment_path(@day, pm_assignment)}'] option[value='hg_balsa'][selected]", text: /Revisar/
@@ -299,7 +301,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: assignment.id)
   end
 
-  test "operator chooses TL and bonus options from the scheduling page" do
+  test "operator chooses TL in the single team roles form" do
     guide = Guide.create!(name: "Scheduled TL", priority: 3,
       active: true, pay_category: "freelance_regular")
     @day.update!(status: :generated)
@@ -310,26 +312,151 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     sign_in user(:operador)
     get work_day_path(@day)
     assert_response :success
-    assert_select "#day-compensation form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
-      assert_select "select[name='compensation_assignment[role_code]'] option[value='tl_balsa']"
-      assert_select "select[name='compensation_assignment[role_code]'] option[value='hg_balsa']"
-      assert_select "select[name='compensation_assignment[photo_task]'] option[value='take_and_send']"
-    end
+    assert_select "#day-compensation", count: 0
+    assert_select "#team-roles-form select[name='roles[#{guide_day.id}][role_secondary]'] option[value='Tour Leader']"
+    assert_select "#team-roles-form select[name='roles[#{guide_day.id}][photo_task]'] option[value='take_and_send']"
+    assert_select "#team-roles-form .team-principal-control[hidden]"
 
-    patch work_day_compensation_assignment_path(@day, assignment), params: {
-      return_to: "schedule",
-      compensation_assignment: { role_code: "tl_balsa", photo_task: "none",
-        status: "planned", principal_photographer: "0", also_drives: "0",
-        bus_guide: "0" }
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Tour Leader", location: "Balsa",
+        photo_task: "none", principal_photographer: "0" } }
     }
-    assert_redirected_to work_day_path(@day, anchor: "day-compensation")
+    assert_redirected_to work_day_path(@day)
     assert_equal "tl_balsa", assignment.reload.role_code
-    assert_equal "manual", assignment.source
-    assert_equal "River Guide", guide_day.reload.role_primary
-    assert_equal "Tour Leader", guide_day.role_secondary
+    assert_equal "Tour Leader", guide_day.reload.role_secondary
 
     get work_day_compensation_path(@day)
     assert_select "td", text: /TL Balsa/
+    assert_select "a[href='#{work_day_path(@day, anchor: "day-roles")}']", text: /Editar en roles/
+  end
+
+  test "team roles also set the bus guide and photo task without another form" do
+    guide = Guide.create!(name: "Bus and photos", priority: 2,
+      active: true, pay_category: "salaried")
+    @day.update!(status: :generated)
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+
+    sign_in user(:operador)
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Bus Guide & Towels", location: "Balsa",
+        photo_task: "take_and_send", principal_photographer: "0" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert_equal "Bus Guide & Towels", guide_day.reload.role_secondary
+    assert assignment.reload.bus_guide?
+    assert_equal "take_and_send", assignment.photo_task
+    assert_equal 2_600, assignment.total_cents
+    assert_equal %w[bonus_bus_guide bonus_photo_take_and_send].sort,
+      assignment.compensation_lines.pluck(:code).sort
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Driver", location: "Balsa",
+        photo_task: "none", principal_photographer: "0" } }
+    }
+    assert assignment.reload.also_drives?
+    assert_not assignment.bus_guide?
+    assert_equal "none", assignment.photo_task
+  end
+
+  test "team roles require one principal when two photographers share an outing" do
+    @day.update!(status: :generated)
+    first_guide = Guide.create!(name: "First photo", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    second_guide = Guide.create!(name: "Second photo", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    first_day = GuideDay.create!(guide: first_guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "Photographer")
+    second_day = GuideDay.create!(guide: second_guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "Photographer")
+    first = CompensationAssignment.find_by!(guide_day: first_day)
+    second = CompensationAssignment.find_by!(guide_day: second_day)
+    assert first.principal_photographer?
+    assert_not second.principal_photographer?
+
+    sign_in user(:operador)
+    get work_day_path(@day)
+    assert_select "#team-roles-form .team-principal-control:not([hidden])", 2
+    rows = {
+      first_day.id.to_s => { role_primary: "Photographer", location: "Balsa",
+        role_secondary: "", principal_photographer: "0" },
+      second_day.id.to_s => { role_primary: "Photographer", location: "Balsa",
+        role_secondary: "", principal_photographer: "1" }
+    }
+    patch update_roles_work_day_path(@day), params: { roles: rows }
+    assert_redirected_to work_day_path(@day)
+    assert_not first.reload.principal_photographer?
+    assert second.reload.principal_photographer?
+
+    rows[second_day.id.to_s][:principal_photographer] = "0"
+    patch update_roles_work_day_path(@day), params: { roles: rows }
+    assert_redirected_to work_day_path(@day)
+    assert_match(/Seleccione un fotógrafo principal/, flash[:alert])
+    assert second.reload.principal_photographer?
+  end
+
+  test "team roles reject two photo senders and keep the previous schedule" do
+    @day.update!(status: :generated)
+    first_guide = Guide.create!(name: "Photo sender one", priority: 2,
+      active: true, pay_category: "salaried")
+    second_guide = Guide.create!(name: "Photo sender two", priority: 2,
+      active: true, pay_category: "salaried")
+    first_day = GuideDay.create!(guide: first_guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    second_day = GuideDay.create!(guide: second_guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    first = CompensationAssignment.find_by!(guide_day: first_day)
+    second = CompensationAssignment.find_by!(guide_day: second_day)
+
+    sign_in user(:operador)
+    patch update_roles_work_day_path(@day), params: {
+      roles: {
+        first_day.id.to_s => { role_primary: "River Guide",
+          role_secondary: "Bus Guide & Towels", location: "Balsa",
+          photo_task: "send_only", principal_photographer: "0" },
+        second_day.id.to_s => { role_primary: "River Guide",
+          role_secondary: "", location: "Balsa",
+          photo_task: "take_and_send", principal_photographer: "0" }
+      }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert flash[:alert].present?
+    assert_nil first_day.reload.role_secondary
+    assert_equal "none", first.reload.photo_task
+    assert_equal "none", second.reload.photo_task
+  end
+
+  test "a photo sender can become the sole photographer from team roles" do
+    @day.update!(status: :generated)
+    guide = Guide.create!(name: "Photo transition", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+
+    sign_in user(:operador)
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "", location: "Balsa", photo_task: "send_only",
+        principal_photographer: "0" } }
+    }
+    assert_equal "send_only", assignment.reload.photo_task
+    assert_equal "manual", assignment.source
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "Photographer",
+        role_secondary: "", location: "Balsa",
+        principal_photographer: "0" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert_equal "Photographer", guide_day.reload.role_primary
+    assert_equal "photographer", assignment.reload.role_code
+    assert_equal "none", assignment.photo_task
+    assert assignment.principal_photographer?
   end
 
   test "operator can designate a different principal photographer" do

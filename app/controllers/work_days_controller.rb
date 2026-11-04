@@ -47,16 +47,9 @@ class WorkDaysController < ApplicationController
   def show
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
-    if Compensation::EditWindow.applicable?(@work_day) &&
-        (@work_day.generated? || @work_day.published?) &&
-        (current_user.admin? || current_user.operador? || current_user.contabilidad?)
-      @compensation_departures = @work_day.departures.chronological
-        .includes(compensation_assignments: [:guide, :driver]).to_a
-      @can_edit_compensation = Compensation::EditWindow.allowed?(
-        user: current_user, work_day: @work_day
-      ) && (current_user.admin? || current_user.operador?)
-    end
-
+    @team_compensation_assignments = CompensationAssignment
+      .where(guide_day_id: @work_day.guide_days.select(:id))
+      .index_by(&:guide_day_id) if @work_day.generated?
     @location_counts =
       @work_day
         .location_slots
@@ -283,14 +276,29 @@ class WorkDaysController < ApplicationController
 
     return redirect_to(@work_day) unless params[:roles]
 
+    role_rows = @work_day.guide_days.where(id: params[:roles].keys).index_by { |day| day.id.to_s }
     ActiveRecord::Base.transaction do
-      @work_day.guide_days.where(id: params[:roles].keys).each do |guide_day|
-        role_data = params[:roles][guide_day.id.to_s]
+      original_options = {}
+      # Clear former senders before any role callback can create a photographer.
+      role_rows.each do |id, guide_day|
+        next unless params[:roles][id].key?(:photo_task) ||
+          params[:roles][id].key?(:principal_photographer)
+        assignment = CompensationAssignment.find_by(guide_day: guide_day)
+        next unless assignment
+        original_options[assignment.id] = assignment.attributes.slice(
+          "photo_task", "principal_photographer", "also_drives", "bus_guide"
+        )
+        assignment.update_columns(photo_task: "none") if assignment.photo_task != "none"
+      end
+
+      role_rows.each do |id, guide_day|
+        role_data = params[:roles][id]
         updates = {}
         %w[role_primary role_secondary location].each do |field|
           updates[field] = role_data[field].presence if role_data.key?(field)
         end
-        next if updates.empty?
+        next if updates.empty? ||
+          updates.all? { |field, value| guide_day.public_send(field) == value }
 
         before = guide_day.attributes.slice(*updates.keys)
         guide_day.update!(updates.merge(manually_modified: true, modified_by: current_user))
@@ -298,6 +306,8 @@ class WorkDaysController < ApplicationController
           metadata: { before: before, after: guide_day.attributes.slice(*updates.keys),
             reason: params[:correction_reason] })
       end
+
+      sync_team_role_options!(role_rows, original_options)
     end
 
     redirect_to(
@@ -511,6 +521,93 @@ class WorkDaysController < ApplicationController
 end
 
   private
+
+  def sync_team_role_options!(role_rows, original_options)
+    rows = role_rows.filter_map do |id, guide_day|
+      data = params[:roles][id]
+      next unless data.key?(:photo_task) || data.key?(:principal_photographer)
+      assignment = CompensationAssignment.find_by(guide_day: guide_day)
+      next unless assignment
+
+      photo_task = data[:photo_task].presence || "none"
+      raise "Tarea de fotos inválida" unless CompensationAssignment::PHOTO_TASKS.include?(photo_task)
+      if photo_task != "none" && (assignment.role_code == "photographer" ||
+          assignment.role_code.start_with?("tl_", "hg_"))
+        raise "Esta función no admite una tarea adicional de fotos"
+      end
+      selected = ActiveModel::Type::Boolean.new.cast(data[:principal_photographer])
+      raise "El responsable principal debe ser fotógrafo" if selected && assignment.role_code != "photographer"
+      { assignment: assignment, photo_task: photo_task, selected: selected }
+    end
+    return if rows.empty?
+
+    departures = rows.map { |row| row[:assignment].departure }.uniq
+    chosen = {}
+    departures.each do |departure|
+      photographers = departure.compensation_assignments.active.where(role_code: "photographer").to_a
+      submitted = rows.select { |row| row[:assignment].departure_id == departure.id &&
+        row[:assignment].role_code == "photographer" }
+      selected = submitted.select { |row| row[:selected] }
+      raise "Seleccione un solo fotógrafo principal para #{departure.label}" if selected.size > 1
+      external_principal = photographers.find do |photographer|
+        photographer.principal_photographer? &&
+          submitted.none? { |row| row[:assignment].id == photographer.id }
+      end
+      if photographers.size > 1 && submitted.any? && selected.empty? &&
+          external_principal.nil?
+        raise "Seleccione un fotógrafo principal para #{departure.label}"
+      end
+      chosen[departure.id] = selected.first&.dig(:assignment) ||
+        external_principal ||
+        (photographers.one? ? photographers.first : photographers.find(&:principal_photographer?))
+    end
+
+    # Move the principal in one transaction, including an existing manual
+    # assignment that is not shown in the team table.
+    departures.each do |departure|
+      principal = chosen[departure.id]
+      next unless principal
+      departure.compensation_assignments.active.where(principal_photographer: true)
+        .where.not(id: principal.id).each do |previous|
+          previous.update_columns(principal_photographer: false,
+            updated_by_id: current_user.id, updated_at: Time.current)
+          audit!(action: "transfer_principal_photographer", auditable: previous,
+            work_day: @work_day, metadata: { new_principal_assignment_id: principal.id })
+        end
+      unless principal.principal_photographer?
+        principal.update_columns(principal_photographer: true,
+          updated_by_id: current_user.id, updated_at: Time.current)
+        audit!(action: "assign_principal_photographer", auditable: principal,
+          work_day: @work_day, metadata: { departure_id: departure.id })
+      end
+    end
+
+    rows.each do |row|
+      assignment = row[:assignment]
+      role = assignment.role_code
+      secondary = assignment.guide_day.role_secondary.to_s
+      head_role = role.start_with?("tl_", "hg_")
+      changes = {
+        photo_task: role == "photographer" || head_role ? "none" : row[:photo_task],
+        principal_photographer: assignment.id == chosen[assignment.departure_id]&.id,
+        also_drives: !head_role && secondary == "Driver",
+        bus_guide: !head_role && secondary.include?("Bus Guide")
+      }
+      before = original_options[assignment.id] || assignment.attributes.slice(*changes.keys)
+      changed = before.stringify_keys != changes.stringify_keys
+      assignment.update!(changes.merge(updated_by: current_user,
+        source: changed ? "manual" : assignment.source))
+      if changed
+        audit!(action: "update_compensation_from_team_roles", auditable: assignment,
+          work_day: @work_day, metadata: { before: before,
+            after: assignment.attributes.slice(*changes.keys) })
+      end
+    end
+    departures.each do |departure|
+      departure.compensation_assignments.active.each { |assignment| raise ActiveRecord::RecordInvalid, assignment unless assignment.valid? }
+    end
+    Compensation::RepriceDay.call(@work_day)
+  end
 
   def enforce_edit_window
     allowed = Compensation::EditWindow.allowed?(

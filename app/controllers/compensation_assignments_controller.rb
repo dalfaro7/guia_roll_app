@@ -86,7 +86,7 @@ class CompensationAssignmentsController < ApplicationController
   end
 
   def assignment_return_path
-    params[:return_to] == "schedule" ? work_day_path(@work_day, anchor: "day-compensation") :
+    params[:return_to] == "schedule" ? work_day_path(@work_day, anchor: @work_day.generated? ? "day-roles" : "day-assigned") :
       work_day_compensation_path(@work_day)
   end
 

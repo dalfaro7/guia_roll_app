@@ -97,9 +97,13 @@
                   <td class="text-end fw-bold"><%= usd(assignment.total_cents) %></td>
                   <% if @can_edit %>
                     <td>
-                      <details><summary>Modificar</summary>
-                        <%= render "compensation_assignments/form", work_day: @work_day, assignment: assignment, return_to: nil %>
-                      </details>
+                      <% if @work_day.generated? && assignment.guide_day_id.present? %>
+                        <%= link_to "Editar en roles del equipo", work_day_path(@work_day, anchor: "day-roles"), class: "btn btn-sm btn-outline-primary" %>
+                      <% else %>
+                        <details><summary>Ajuste excepcional</summary>
+                          <%= render "compensation_assignments/form", work_day: @work_day, assignment: assignment, return_to: nil %>
+                        </details>
+                      <% end %>
                     </td>
                   <% end %>
                 </tr>

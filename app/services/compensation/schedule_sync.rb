@@ -134,13 +134,30 @@ module Compensation
         assignment.departure
       return if assignment.role_code == role && assignment.departure_id == departure.id
 
-      before = assignment.attributes.slice("role_code", "departure_id")
-      assignment.update!(role_code: role, departure: departure)
+      former_departure = assignment.departure
+      before = assignment.attributes.slice("role_code", "departure_id",
+        "photo_task", "principal_photographer")
+      changes = { role_code: role, departure: departure }
+      if role == "photographer"
+        changes[:photo_task] = "none"
+        changes[:principal_photographer] = !departure.compensation_assignments.active
+          .where(role_code: "photographer", principal_photographer: true)
+          .where.not(id: assignment.id).exists?
+      elsif assignment.role_code == "photographer"
+        changes[:principal_photographer] = false
+      end
+      if role.start_with?("tl_", "hg_")
+        changes.merge!(photo_task: "none", bus_guide: false, also_drives: false)
+      end
+      assignment.update!(changes)
+      promote_principal_photographer(former_departure)
+      promote_principal_photographer(departure) if former_departure.id != departure.id
       AuditLog.create!(user: Compensation::Current.actor,
         action: "sync_compensation_from_schedule", auditable_type: "CompensationAssignment",
         auditable_id: assignment.id, work_day: @work_day,
         metadata: { before: before,
-          after: assignment.attributes.slice("role_code", "departure_id"),
+          after: assignment.attributes.slice("role_code", "departure_id",
+            "photo_task", "principal_photographer"),
           reason: Compensation::Current.reason })
       Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
     end
