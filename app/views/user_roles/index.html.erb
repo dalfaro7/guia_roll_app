@@ -1,0 +1,38 @@
+<% content_for :title, "Roles y accesos" %>
+<div class="container py-4">
+  <div class="mb-4">
+    <p class="text-uppercase text-muted small fw-semibold mb-1">Administración de usuarios</p>
+    <h1>Roles y accesos</h1>
+    <p class="text-muted mb-0">Solo Super Admin puede cambiar los roles. Los cambios se registran en Auditoría.</p>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr><th scope="col" class="ps-3">Persona</th><th scope="col">Usuario</th><th scope="col">Rol actual</th><th scope="col" class="pe-3">Cambiar rol</th></tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <tr>
+              <td class="ps-3 fw-semibold"><%= user.name %><% if user == current_user %> <span class="badge text-bg-secondary">Tu cuenta</span><% end %></td>
+              <td><%= user.email %></td>
+              <td><%= User::ACCESS_ROLE_LABELS[user.access_role] || "Sin rol" %></td>
+              <td class="pe-3">
+                <% if user == current_user %>
+                  <span class="text-muted small">Tu acceso se protege desde esta página.</span>
+                <% else %>
+                  <%= form_with url: user_role_path(user), method: :patch, local: true, class: "d-flex flex-wrap gap-2" do %>
+                    <%= select_tag "user[access_role]", options_for_select([["Seleccionar rol", ""]] + User::ACCESS_ROLE_LABELS.map { |value, label| [label, value] }, user.access_role), class: "form-select form-select-sm w-auto", aria: { label: "Rol de #{user.name}" } %>
+                    <%= submit_tag "Guardar", class: "btn btn-sm btn-primary", data: { turbo_confirm: "¿Seguro que desea cambiar el rol de #{user.name}?" } %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="text-muted small mt-3">La cuenta Super Admin no puede cambiar su propio rol aquí. Para transferir el acceso, primero asigne Super Admin a otra cuenta.</p>
+</div>
