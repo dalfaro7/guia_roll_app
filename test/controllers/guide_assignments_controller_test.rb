@@ -168,6 +168,21 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "operator can open weekly reports from navigation" do
+    sign_out @admin
+    sign_in User.create!(name: "Operador", email: "weekly-report-operator@example.test",
+      password: "password123", role: :operador)
+    get guide_assignments_path
+    assert_response :success
+    assert_select "h1", "Reportes semanales"
+    assert_select "nav a[href='#{guide_assignments_path}']", text: "Reportes semanales"
+    work_day = WorkDay.create!(date: Date.current + 2.days, guides_requested: 0)
+    get work_day_path(work_day)
+    assert_response :success
+    assert_select "aside.day-sidebar-left a[href='#{guide_assignments_path}']",
+      text: "Reportes semanales"
+  end
+
   test "human resources cannot view monetary reports" do
     sign_out @admin
     sign_in User.create!(name: "HR", email: "weekly-report-hr@example.test",
