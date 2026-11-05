@@ -205,7 +205,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert @day.reload.generated?
     get work_day_path(@day)
     assert_select "#team-roles-form"
-    assert_select "#day-operation-edits"
+    assert_select "#day-operation-edits", count: 0
     patch update_roles_work_day_path(@day), params: {
       roles: { guide_day.id.to_s => { role_primary: "River Guide",
         role_secondary: "Tour Leader", location: "Balsa" } }
@@ -266,12 +266,8 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     post unpublish_work_day_path(@day)
     assert_redirected_to work_day_path(@day)
     get work_day_path(@day)
-    assert_select "#day-operation-edits"
+    assert_select "#day-operation-edits", count: 0
     assert_select "#team-roles-form select[name='roles[#{pm_guide_day.id}][role_secondary]'] option[value='Head Guide']"
-    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='hg_sara']", count: 0
-    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='hg_balsa']", count: 0
-    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='tl_sara']", count: 0
-    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='tl_balsa']", count: 0
 
     private_assignment = private_departure.compensation_assignments.build(
       guide: Guide.create!(name: "Private guide", priority: 3,
@@ -294,12 +290,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     @day.update!(status: :generated)
     get work_day_path(@day)
-    assert_select "#day-operation-edits form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
-      assert_select "option[value='hg_balsa']"
-      assert_select "option[value='tl_balsa']"
-      assert_select "option[value='hg_sara']", count: 0
-      assert_select "option[value='tl_sara']", count: 0
-    end
+    assert_select "#day-operation-edits", count: 0
 
     patch work_day_compensation_assignment_path(@day, assignment), params: {
       compensation_assignment: { role_code: "hg_sara", photo_task: "none",
@@ -347,7 +338,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: assignment.id)
   end
 
-  test "saving guide or driver functions without a choice does not change status or source" do
+  test "updating assignments without a status action preserves status and source" do
     departure = @day.departures.first
     guide = Guide.create!(name: "Unchanged guide", priority: 3,
       active: true, pay_category: "freelance_regular")
@@ -360,15 +351,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     @day.update!(status: :generated)
     get work_day_path(@day)
-    [guide_assignment, driver_assignment].each do |assignment|
-      selector = "form[action='#{work_day_compensation_assignment_path(@day, assignment)}']"
-      forms = css_select(selector)
-      assert_equal 2, forms.size
-      assert_empty forms.first.css("select[name='compensation_assignment[status]']")
-      assert_select "#{selector} input[name='status_action'][value='change']", count: 1
-      assert_select "#{selector} select[name='compensation_assignment[status]'] option[value='']", count: 1
-      assert_select "#{selector} select[name='compensation_assignment[status]'] option[selected]", count: 0
-    end
+    assert_select "#day-operation-edits", count: 0
 
     assert_no_difference "AuditLog.count" do
       patch work_day_compensation_assignment_path(@day, guide_assignment), params: {

@@ -13,7 +13,7 @@
     <nav class="work-day-nav" aria-label="Secciones del día">
       <a href="#day-overview">Resumen</a><a href="#day-transport">Transporte</a>
       <% if @work_day.draft? %><a href="#day-availability">Disponibilidad</a><% end %>
-      <% if @work_day.generated? %><a href="#day-roles">Roles</a><a href="#day-operation-edits">Ajustes de operación</a><% end %>
+      <% if @work_day.generated? %><a href="#day-roles">Roles</a><% end %>
       <% if @work_day.published? %><a href="#day-assigned">Equipo asignado</a><% end %>
       <a href="#day-fairness">Equidad</a>
     </nav>
@@ -439,51 +439,6 @@
             updateGuidePreview();
         });
     </script>
-    <% end %>
-
-    <% if @work_day.generated? && @operation_departures.present? %>
-      <section id="day-operation-edits" class="card my-4">
-        <div class="card-body">
-          <h2 class="h4">Ajustes de operación</h2>
-          <p class="text-muted">Edita roles de guías asignados en «Roles del equipo». Aquí puedes ajustar choferes, asignaciones adicionales y resultados de cada salida.</p>
-          <% @operation_departures.each do |departure| %>
-            <div class="border-top pt-3 mt-3">
-              <h3 class="h5"><%= departure.label %> · <%= departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %></h3>
-              <% if departure.status == "canceled" %>
-                <p class="text-muted">Salida cancelada. Sus asignaciones no se pueden editar.</p>
-              <% else %>
-              <% departure.compensation_assignments.sort_by { |assignment| [assignment.person&.name.to_s, assignment.id] }.each do |assignment| %>
-                <details class="mb-2">
-                  <summary><%= assignment.person&.name %> · <%= compensation_label(assignment.role_code) %> · <%= compensation_status_label(assignment.status) %></summary>
-                  <% if assignment.guide_day&.worked? %>
-                    <p class="mt-2 mb-1">Edita la función y las fotos de este guía en «Roles del equipo».</p>
-                    <%= link_to "Ir a roles", "#day-roles", class: "btn btn-sm btn-outline-primary" %>
-                  <% else %>
-                    <%= render "compensation_assignments/form", work_day: @work_day, assignment: assignment, return_to: "schedule" %>
-                  <% end %>
-                  <%= render "compensation_assignments/operation_status_form", work_day: @work_day, assignment: assignment, return_to: "schedule" %>
-                </details>
-              <% end %>
-              <details class="mt-3"><summary>Agregar persona a esta salida</summary>
-                <%= form_with url: work_day_compensation_assignments_path(@work_day), method: :post, local: true, class: "row g-2 mt-2" do %>
-                  <%= hidden_field_tag :return_to, "schedule" %>
-                  <%= hidden_field_tag "compensation_assignment[departure_id]", departure.id %>
-                  <div class="col-md-4"><%= label_tag "new_guide_#{departure.id}", "Guía" %><%= select_tag "compensation_assignment[guide_id]", options_from_collection_for_select(@operation_guides, :id, :name), include_blank: "Seleccionar si es guía", id: "new_guide_#{departure.id}", class: "form-select" %></div>
-                  <div class="col-md-4"><%= label_tag "new_driver_#{departure.id}", "Chofer" %><%= select_tag "compensation_assignment[driver_id]", options_from_collection_for_select(@active_drivers, :id, :name), include_blank: "Seleccionar si es chofer", id: "new_driver_#{departure.id}", class: "form-select" %></div>
-                  <div class="col-md-4"><%= label_tag "new_role_#{departure.id}", "Función" %><%= select_tag "compensation_assignment[role_code]", options_for_select((compensation_guide_roles_for(departure) + CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }), id: "new_role_#{departure.id}", class: "form-select" %></div>
-                  <% photo_options = [["Sin tarea", "none"], ["Toma y envía", "take_and_send"]] %>
-                  <% photo_options << ["Solo envía", "send_only"] if CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(departure.location) %>
-                  <div class="col-md-4"><%= label_tag "new_photo_#{departure.id}", "Fotos" %><%= select_tag "compensation_assignment[photo_task]", options_for_select(photo_options), id: "new_photo_#{departure.id}", class: "form-select" %></div>
-                  <div class="col-md-4"><label class="d-block"><%= check_box_tag "compensation_assignment[also_drives]", "1" %> También conduce</label><label><%= check_box_tag "compensation_assignment[bus_guide]", "1" %> Guía de bus</label></div>
-                  <% if compensation_correction_required?(@work_day) %><div class="col-md-4"><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
-                  <div class="col-12"><%= submit_tag "Agregar asignación", class: "btn btn-primary" %></div>
-                <% end %>
-              </details>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
-      </section>
     <% end %>
 
     <!-- PUBLISHED VIEW -->

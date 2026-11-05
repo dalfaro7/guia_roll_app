@@ -50,12 +50,6 @@ class WorkDaysController < ApplicationController
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
-    if @work_day.generated? && Compensation::EditWindow.applicable?(@work_day) &&
-        Compensation::EditWindow.allowed?(user: current_user, work_day: @work_day)
-      @operation_departures = @work_day.departures.chronological
-        .includes(compensation_assignments: [:guide, :driver, :guide_day]).to_a
-      @operation_guides = Guide.active.order(:name)
-    end
     @location_counts =
       @work_day
         .location_slots
