@@ -84,9 +84,10 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#operation-expenses-table tbody tr", count: 7
       assert_select "#operation-expenses-table tbody tr", text: /#{paid_date.strftime("%d\/%m")}.*160[,.]00.*30[,.]00.*190[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total semanal.*190[,.]00/
-      assert_select "#transport-driver-payments-table tbody tr", text: /A Driver.*Balsa mañana.*30[,.]00/
-      assert_select "#transport-driver-payments-table tfoot", text: /Total de choferes.*30[,.]00/
-      assert_select "#payment-recipient-totals-table tbody tr", text: /Chofer.*A Driver.*30[,.]00/
+      assert_select "#driver-payments-table tbody tr", text: /A Driver.*Balsa mañana.*30[,.]00/
+      assert_select "#driver-payments-table tfoot", text: /Total de choferes.*30[,.]00/
+      assert_select "#driver-recipient-totals-table tbody tr", text: /A Driver.*30[,.]00/
+      assert_select "#company-payments-table", count: 0
       assert_select "td", text: /Host/
       assert_select "td", text: /Balsa mañana.*Toma y envía fotos/
       modal_id = "#weekly-day-#{paid_date.strftime("%Y%m%d")}"
@@ -160,9 +161,10 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#operation-expenses-table tbody tr", text: /13\/11.*Provisional.*50[,.]00.*0[,.]00.*120[,.]00.*170[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*170[,.]00/
       assert_select "#operation-expenses-table th", text: "Transporte"
-      assert_select "#transport-driver-payments-table tbody tr", text: /Transporte del día.*Balsa.*Bus de hoy.*Chofer: Diego de prueba.*120[,.]00/
-      assert_select "#transport-driver-payments-table tfoot", text: /Total de empresas de transporte.*120[,.]00/
-      assert_select "#payment-recipient-totals-table tbody tr", text: /Empresa.*Transporte del día.*120[,.]00/
+      assert_select "#company-payments-table tbody tr", text: /Transporte del día.*Balsa.*Bus de hoy.*Chofer: Diego de prueba.*120[,.]00/
+      assert_select "#company-payments-table tfoot", text: /Total de empresas de transporte.*120[,.]00/
+      assert_select "#company-recipient-totals-table tbody tr", text: /Transporte del día.*120[,.]00/
+      assert_select "#driver-payments-table", count: 0
     end
   end
 

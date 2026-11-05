@@ -152,6 +152,10 @@ class GuideAssignmentsController < ApplicationController
         { kind: kind, recipient: details.first[:recipient],
           amount_cents: details.sum { |detail| detail[:amount_cents] } }
       end.sort_by { |row| [row[:kind], row[:recipient]] }
+    @driver_payment_details, @company_payment_details =
+      @operation_payment_details.partition { |detail| detail[:kind] == "Chofer" }
+    @driver_totals_by_recipient, @company_totals_by_recipient =
+      @payment_totals_by_recipient.partition { |row| row[:kind] == "Chofer" }
 
     @operation_days = totals.map do |date, amounts|
       amounts.merge(date: date, total_cents: amounts[:guide_cents] +
@@ -164,7 +168,7 @@ class GuideAssignmentsController < ApplicationController
       @operation_adjustments_cents
     @driver_weekly_total_cents = @operation_days.sum { |day| day[:driver_cents] } +
       @driver_adjustments_cents
-    @company_weekly_total_cents = @operation_days.sum { |day| day[:transport_cents] }
+    @company_weekly_total_cents = @company_payment_details.sum { |detail| detail[:amount_cents] }
   end
 
   def load_earnings_chart
