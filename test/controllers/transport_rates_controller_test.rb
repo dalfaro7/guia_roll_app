@@ -21,6 +21,8 @@ class TransportRatesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", "Tarifario de transporte"
     assert_select "section h2", count: 2
+    assert_select "details[name='transport-rate-companies']", count: 2
+    assert_select "details[open]", count: 1
     assert_select "tbody tr", count: 16
     assert_select "select[name='transport_company_id'] option", count: 3
     assert_select "a", text: "Editar tarifas de esta empresa", count: 0
@@ -29,6 +31,7 @@ class TransportRatesControllerTest < ActionDispatch::IntegrationTest
     get transport_rates_path(transport_company_id: @company.id)
     assert_response :success
     assert_select "section h2", text: @company.name, count: 1
+    assert_select "details[name='transport-rate-companies'][open]", count: 1
     assert_select "tbody tr", count: 8
     assert_select "a[href='#{transport_rates_path(transport_company_id: @company.id, edit: 1)}']", text: "Editar tarifas de esta empresa"
 

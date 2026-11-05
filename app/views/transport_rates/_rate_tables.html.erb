@@ -1,34 +1,39 @@
-<% @companies.each do |company| %>
+<% @companies.each_with_index do |company, index| %>
   <% rates = company.transport_rates.index_by { |rate| [rate.location, rate.vehicle_kind, rate.size_category] } %>
-  <section class="mb-4" aria-labelledby="company-<%= company.id %>" id="transport-company-<%= company.id %>">
-    <h2 class="h4 mb-3" id="company-<%= company.id %>"><%= company.name %></h2>
-    <div class="table-responsive card shadow-sm border-0">
-      <table class="table table-striped align-middle mb-0">
-        <thead class="table-light"><tr><th scope="col" class="ps-3">Salida</th><th scope="col">Categoría</th><th scope="col">Tarifa USD</th><th scope="col" class="pe-3">Última actualización</th></tr></thead>
-        <tbody>
-          <% TransportRate::LOCATIONS.each do |location| %>
-            <% TransportRate::RATE_TYPES.each do |kind, category| %>
-              <% next unless company.offers_vehicle_category?(vehicle_kind: kind, size_category: category) %>
-              <% rate = rates[[location, kind, category]] %>
-              <tr>
-                <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
-                <td><%= rate&.category_label || kind %></td>
-                <td>
-                  <% if @editing && rate %>
-                    <%= label_tag "rate_#{rate.id}", "#{company.name}, #{location}, #{rate.category_label}", class: "visually-hidden" %>
-                    <%= number_field_tag "rates[#{rate.id}]", @submitted_rates&.fetch(rate.id.to_s, rate.amount_usd) || rate.amount_usd, id: "rate_#{rate.id}",
-                      min: 0, step: 0.01, required: true, class: "form-control form-control-sm",
-                      style: "max-width: 9rem" %>
-                  <% else %>
-                    <strong><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></strong>
-                  <% end %>
-                </td>
-                <td class="small text-muted pe-3"><%= rate&.updated_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
-              </tr>
+  <section class="mb-3" aria-labelledby="company-<%= company.id %>" id="transport-company-<%= company.id %>">
+    <details class="card shadow-sm border-0" name="transport-rate-companies" <%= "open" if index.zero? %>>
+      <summary class="card-header py-3" style="cursor: pointer;">
+        <h2 class="h5 d-inline mb-0" id="company-<%= company.id %>"><%= company.name %></h2>
+        <span class="small text-muted ms-2">Ver tarifario</span>
+      </summary>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+          <thead class="table-light"><tr><th scope="col" class="ps-3">Salida</th><th scope="col">Categoría</th><th scope="col">Tarifa USD</th><th scope="col" class="pe-3">Última actualización</th></tr></thead>
+          <tbody>
+            <% TransportRate::LOCATIONS.each do |location| %>
+              <% TransportRate::RATE_TYPES.each do |kind, category| %>
+                <% next unless company.offers_vehicle_category?(vehicle_kind: kind, size_category: category) %>
+                <% rate = rates[[location, kind, category]] %>
+                <tr>
+                  <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
+                  <td><%= rate&.category_label || kind %></td>
+                  <td>
+                    <% if @editing && rate %>
+                      <%= label_tag "rate_#{rate.id}", "#{company.name}, #{location}, #{rate.category_label}", class: "visually-hidden" %>
+                      <%= number_field_tag "rates[#{rate.id}]", @submitted_rates&.fetch(rate.id.to_s, rate.amount_usd) || rate.amount_usd, id: "rate_#{rate.id}",
+                        min: 0, step: 0.01, required: true, class: "form-control form-control-sm",
+                        style: "max-width: 9rem" %>
+                    <% else %>
+                      <strong><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></strong>
+                    <% end %>
+                  </td>
+                  <td class="small text-muted pe-3"><%= rate&.updated_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
+                </tr>
+              <% end %>
             <% end %>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </details>
   </section>
 <% end %>
