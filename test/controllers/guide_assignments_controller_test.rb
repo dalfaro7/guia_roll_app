@@ -84,6 +84,9 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#operation-expenses-table tbody tr", count: 7
       assert_select "#operation-expenses-table tbody tr", text: /#{paid_date.strftime("%d\/%m")}.*160[,.]00.*30[,.]00.*190[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total semanal.*190[,.]00/
+      assert_select "#transport-driver-payments-table tbody tr", text: /A Driver.*Balsa mañana.*30[,.]00/
+      assert_select "#transport-driver-payments-table tfoot", text: /Total de choferes.*30[,.]00/
+      assert_select "#payment-recipient-totals-table tbody tr", text: /Chofer.*A Driver.*30[,.]00/
       assert_select "td", text: /Host/
       assert_select "td", text: /Balsa mañana.*Toma y envía fotos/
       modal_id = "#weekly-day-#{paid_date.strftime("%Y%m%d")}"
@@ -130,6 +133,36 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "input#week[max='2026-11-13']", count: 1
       assert_select "span", text: /Quincena.*13\/11\/2026/
       assert_select "span", text: /Mes.*13\/11\/2026/
+    end
+  end
+
+  test "today shows planned personnel and assigned transport as provisional expenses" do
+    travel_to @zone.local(2026, 11, 13, 12) do
+      CompensationRate.create!(code: "guide_regular", amount_cents: 5_000,
+        effective_at: Time.utc(2020, 1, 1))
+      day = WorkDay.create!(date: Date.new(2026, 11, 13), guides_requested: 0)
+      departure = day.departures.create!(label: "Balsa", location: "Balsa",
+        starts_at: @zone.local(2026, 11, 13, 9, 20), status: "scheduled")
+      departure.compensation_assignments.create!(guide: @guide,
+        role_code: "river_guide", status: "planned")
+      company = TransportCompany.create!(name: "Transporte del día")
+      bus = Bus.create!(transport_company: company, alias: "Bus de hoy",
+        plate: "HOY-13", capacity: 20)
+      driver = Driver.create!(name: "Diego de prueba", phone: "555-2013",
+        transport_company: company)
+      BusAssignment.create!(bus: bus, driver: driver, work_day: day, location: "Balsa",
+        seats_assigned: 10)
+      Compensation::RepriceDay.call(day)
+
+      get guide_assignments_path, params: { guide_id: @guide.id, week: day.date.iso8601 }
+      assert_response :success
+      assert_select "#guide-weekly-table tbody tr", text: /13\/11.*50[,.]00/
+      assert_select "#operation-expenses-table tbody tr", text: /13\/11.*Provisional.*50[,.]00.*0[,.]00.*120[,.]00.*170[,.]00/
+      assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*170[,.]00/
+      assert_select "#operation-expenses-table th", text: "Transporte"
+      assert_select "#transport-driver-payments-table tbody tr", text: /Transporte del día.*Balsa.*Bus de hoy.*Chofer: Diego de prueba.*120[,.]00/
+      assert_select "#transport-driver-payments-table tfoot", text: /Total de empresas de transporte.*120[,.]00/
+      assert_select "#payment-recipient-totals-table tbody tr", text: /Empresa.*Transporte del día.*120[,.]00/
     end
   end
 

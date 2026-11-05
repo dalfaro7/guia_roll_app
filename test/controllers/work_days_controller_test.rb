@@ -66,4 +66,28 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     ExternalRollSender.define_singleton_method(:send_work_day, original_external_sender) if original_external_sender
     Whatsapp::RollNotificationSender.define_singleton_method(:send_work_day, original_whatsapp_sender) if original_whatsapp_sender
   end
+
+  test "published operation shows the PM vehicle and driver beside its assigned river team" do
+    user = User.create!(name: "Operation admin", email: "operation-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    day = WorkDay.create!(date: Date.current + 2.days, status: :published,
+      guides_requested: 0)
+    day.location_slots.create!(location: "Sara-3&4", passengers: 14)
+    company = TransportCompany.create!(name: "Transportes PM")
+    driver = Driver.create!(name: "Diego", phone: "555-1010",
+      transport_company: company)
+    bus = Bus.create!(transport_company: company, alias: "Bus PM",
+      plate: "PM-101", capacity: 20)
+    BusAssignment.create!(bus: bus, driver: driver, work_day: day,
+      location: "PM", seats_assigned: 4)
+
+    get work_day_path(day)
+    assert_response :success
+    assert_select "h2#day-assigned", text: "Equipo y transporte por salida"
+    assert_select "tr[data-location-section='PM']", count: 1
+    assert_select "tr[data-transport-location='PM']", text: /Bus PM.*Chofer asignado: Diego/
+    assert_select "tr[data-guide-warning='Sara-3&4']", text: /14 pasajeros y ningún guía de río/
+    assert_select "h2#day-transport", count: 0
+  end
 end

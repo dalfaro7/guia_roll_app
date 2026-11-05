@@ -49,7 +49,10 @@ class GuideAssignmentsController < ApplicationController
       total_cents = if @settlement
         day_items.sum(&:amount_cents)
       else
-        day_assignments.select { |assignment| assignment.status == "performed" }
+        day_assignments.select { |assignment|
+          assignment.status == "performed" ||
+            (@week_open && date == @today && assignment.status == "planned")
+        }
           .sum(&:total_cents)
       end
       { date: date, guide_day: guide_days[date], assignments: day_assignments,
@@ -69,9 +72,12 @@ class GuideAssignmentsController < ApplicationController
   private
 
   def load_operation_expenses(range)
-    totals = range.index_with { { guide_cents: 0, driver_cents: 0 } }
+    totals = range.index_with { { guide_cents: 0, driver_cents: 0,
+      transport_cents: 0 } }
+    @operation_payment_details = []
     settlements = CompensationSettlement.where(week_start: @week_start)
-      .includes(:compensation_settlement_items, :compensation_adjustments).to_a
+      .includes(:driver, :compensation_settlement_items,
+        :compensation_adjustments).to_a
     snapshot_assignment_ids = []
 
     unless @week_open
@@ -83,29 +89,82 @@ class GuideAssignmentsController < ApplicationController
 
           totals[date][key] += item.amount_cents
           snapshot_assignment_ids << item.compensation_assignment_id
+          if settlement.driver_id.present?
+            @operation_payment_details << { date: date, kind: "Chofer",
+              recipient_id: settlement.driver_id, recipient: settlement.driver.name,
+              concept: item.details.fetch("departure", "Salida"),
+              amount_cents: item.amount_cents }
+          end
         end
       end
     end
 
     CompensationAssignment.joins(departure: :work_day)
-      .where(status: "performed", work_days: { date: range })
+      .where(status: %w[performed planned], work_days: { date: range })
       .where.not(departures: { status: "canceled" })
-      .includes(:compensation_lines, departure: :work_day).each do |assignment|
+      .includes(:driver, :compensation_lines, departure: :work_day).each do |assignment|
         next if snapshot_assignment_ids.include?(assignment.id)
 
         date = assignment.departure.work_day.date
+        next if assignment.status == "planned" && !(@week_open && date == @today)
+
         key = assignment.guide_id.present? ? :guide_cents : :driver_cents
-        totals[date][key] += assignment.compensation_lines.sum(&:amount_cents)
+        amount_cents = assignment.compensation_lines.sum(&:amount_cents)
+        totals[date][key] += amount_cents
+        if assignment.driver_id.present?
+          @operation_payment_details << { date: date, kind: "Chofer",
+            recipient_id: assignment.driver_id, recipient: assignment.driver.name,
+            concept: assignment.departure.label,
+            amount_cents: amount_cents }
+        end
       end
 
+    BusAssignment.joins(:work_day)
+      .where(work_days: { date: range }).includes(:work_day, :bus, :driver).each do |assignment|
+        date = assignment.work_day.date
+        totals[date][:transport_cents] += assignment.cost_cents
+        next if assignment.internal_fleet_snapshot?
+
+        @operation_payment_details << { date: date, kind: "Empresa",
+          recipient_id: assignment.transport_company_snapshot_id,
+          recipient: assignment.transport_company_name_snapshot,
+          concept: [assignment.location, assignment.bus.alias,
+            ("Chofer: #{assignment.driver.name}" if assignment.driver)].compact.join(" · "),
+          amount_cents: assignment.cost_cents }
+      end
+
+    @driver_adjustments_cents = 0
+    settlements.select { |settlement| settlement.driver_id.present? }.each do |settlement|
+      settlement.compensation_adjustments.each do |adjustment|
+        @driver_adjustments_cents += adjustment.amount_cents
+        @operation_payment_details << { date: nil, kind: "Chofer",
+          recipient_id: settlement.driver_id, recipient: settlement.driver.name,
+          concept: "Ajuste de período anterior: #{adjustment.reason}",
+          amount_cents: adjustment.amount_cents }
+      end
+    end
+    @operation_payment_details.sort_by! do |detail|
+      [detail[:date] || @week_end + 1.day, detail[:kind], detail[:recipient]]
+    end
+    @payment_totals_by_recipient = @operation_payment_details
+      .group_by { |detail| [detail[:kind], detail[:recipient_id]] }
+      .map do |(kind, _id), details|
+        { kind: kind, recipient: details.first[:recipient],
+          amount_cents: details.sum { |detail| detail[:amount_cents] } }
+      end.sort_by { |row| [row[:kind], row[:recipient]] }
+
     @operation_days = totals.map do |date, amounts|
-      amounts.merge(date: date, total_cents: amounts[:guide_cents] + amounts[:driver_cents])
+      amounts.merge(date: date, total_cents: amounts[:guide_cents] +
+        amounts[:driver_cents] + amounts[:transport_cents])
     end
     @operation_adjustments_cents = settlements.sum do |settlement|
       settlement.compensation_adjustments.sum(&:amount_cents)
     end
     @operation_weekly_total_cents = @operation_days.sum { |day| day[:total_cents] } +
       @operation_adjustments_cents
+    @driver_weekly_total_cents = @operation_days.sum { |day| day[:driver_cents] } +
+      @driver_adjustments_cents
+    @company_weekly_total_cents = @operation_days.sum { |day| day[:transport_cents] }
   end
 
   def load_earnings_chart

@@ -11,10 +11,11 @@
 <details class="day-sidebar-disclosure" open><summary class="day-sidebar-toggle">Menú de acciones</summary>
 <div class="day-menu-content"><span class="work-day-eyebrow">EN ESTE DÍA</span>
     <nav class="work-day-nav" aria-label="Secciones del día">
-      <a href="#day-overview">Resumen</a><a href="#day-transport">Transporte</a>
+      <a href="#day-overview">Resumen</a>
+      <% unless @work_day.published? %><a href="#day-transport">Transporte</a><% end %>
       <% if @work_day.draft? %><a href="#day-availability">Disponibilidad</a><% end %>
       <% if @work_day.generated? %><a href="#day-roles">Roles</a><% end %>
-      <% if @work_day.published? %><a href="#day-assigned">Equipo asignado</a><% end %>
+      <% if @work_day.published? %><a href="#day-assigned">Equipo y transporte</a><% end %>
       <a href="#day-fairness">Equidad</a>
     </nav>
 <span class="work-day-eyebrow">GESTIONAR OPERACIÓN</span>        <div class="work-day-actions d-flex align-items-center gap-2 flex-wrap">
@@ -443,9 +444,9 @@
 
     <!-- PUBLISHED VIEW -->
     <% if @work_day.published? %>
-    <h2 id="day-assigned">Equipo asignado</h2>
+    <h2 id="day-assigned">Equipo y transporte por salida</h2>
 
-    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered w-auto">
+    <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered w-100">
         <thead>
             <tr>
                 <th>#</th>
@@ -467,10 +468,10 @@
           ]
 
           location_order = {
-            "Sara-3&4" => 1,
-            "Balsa" => 2,
-            "Privado" => 3,
-            "PM" => 4
+            "Balsa" => 1,
+            "Sara-3&4" => 2,
+            "PM" => 3,
+            "Privado" => 4
           }
 
           published_worked_guides =
@@ -504,10 +505,22 @@
                   guide_day.guide.name.to_s
                 ]
               end
+          published_sections = Departure::OPERATING_SECTIONS.map do |section, locations|
+            [section, published_worked_guides.select { |guide_day| locations.include?(guide_day.location) }]
+          end
+          other_guides = published_worked_guides.reject do |guide_day|
+            Departure::OPERATING_SECTIONS.values.flatten.include?(guide_day.location)
+          end
+          published_sections << ["Otros lugares", other_guides] if other_guides.any?
         %>
 
             <!-- WORKED GUIDES -->
-            <% published_worked_guides.each do |guide_day| %>
+            <% published_sections.each do |section, section_guides| %>
+            <tr data-location-section="<%= section %>" class="table-light"><th colspan="6"><%= section == "Sara-3&4" ? "Sarapiquí 3 y 4" : section %></th></tr>
+            <% if Departure::OPERATING_SECTIONS.key?(section) && @work_day.passengers_for(section).positive? && section_guides.none? { |guide_day| guide_day.role_primary == "River Guide" } %>
+            <tr data-guide-warning="<%= section %>" class="table-warning"><td colspan="6">Hay <%= @work_day.passengers_for(section) %> pasajeros y ningún guía de río asignado a esta salida. Revise la operación.</td></tr>
+            <% end %>
+            <% section_guides.each do |guide_day| %>
             <tr class="<%= guide_day.location_css_class %>">
                 <td>
                     <%
@@ -546,8 +559,15 @@
                 </td>
             </tr>
             <% end %>
+            <% if Departure::OPERATING_SECTIONS.key?(section) %>
+            <tr data-transport-location="<%= section %>"><td colspan="6" class="p-2">
+              <%= render "buses", work_day: @work_day, location: section, embedded: true %>
+            </td></tr>
+            <% end %>
+            <% end %>
 
             <!-- STANDBY -->
+            <tr class="table-light"><th colspan="6">En espera y otras disponibilidades</th></tr>
             <% @work_day.standby_guides_for_published_roll.each do |guide_day| %>
             <tr>
                 <td></td>
@@ -957,6 +977,7 @@
         </div>
 
         <!-- TRANSPORTATION -->
+        <% unless @work_day.published? %>
         <div class="container mt-4">
             <h2 class="mt-4" id="day-transport">Transporte</h2>
 
@@ -970,6 +991,7 @@
                 <% end %>
             </div>
         </div>
+        <% end %>
 
 </main>
 <aside class="day-sidebar day-sidebar-right" aria-label="Resumen operativo">
