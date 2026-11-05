@@ -1,9 +1,11 @@
 class BusAssignment < ApplicationRecord
   belongs_to :bus
+  belongs_to :transport_company_snapshot, class_name: "TransportCompany"
   belongs_to :work_day
   belongs_to :driver, optional: true
   belongs_to :compensation_assignment, optional: true
 
+  validates :transport_company_name_snapshot, presence: true
   validates :location, presence: true
   validates :location, inclusion: { in: TransportRate::LOCATIONS }, on: :create
   validates :seats_assigned, numericality: { greater_than_or_equal_to: 0 }
@@ -13,6 +15,7 @@ class BusAssignment < ApplicationRecord
   validate :vehicle_and_driver_available, if: :transport_identity_changed?
   validate :driver_belongs_to_bus_company, if: :transport_identity_changed?
   validate :sara_variant_for_four_by_four, if: :transport_identity_changed?
+  before_validation :snapshot_transport_company, on: :create
   before_validation :snapshot_fleet_type, on: :create
   before_validation :apply_transport_rate, on: :create
   after_create :sync_driver_payment
@@ -40,6 +43,13 @@ class BusAssignment < ApplicationRecord
     new_record? || %w[bus_id work_day_id driver_id location outing_variant].any? do |attribute|
       will_save_change_to_attribute?(attribute)
     end
+  end
+
+  def snapshot_transport_company
+    return unless bus
+
+    self.transport_company_snapshot = bus.transport_company
+    self.transport_company_name_snapshot = bus.transport_company.name
   end
 
   def snapshot_fleet_type

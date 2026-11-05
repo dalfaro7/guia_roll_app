@@ -3,6 +3,8 @@ class Bus < ApplicationRecord
   has_many :bus_assignments, dependent: :restrict_with_error
   has_many :location_slots, through: :bus_assignments
 
+  attr_accessor :company_reassignment_authorized
+
   before_validation :derive_size_category
   before_validation :sync_legacy_company
 
@@ -40,8 +42,11 @@ class Bus < ApplicationRecord
 
   def preserve_assigned_vehicle_identity
     return unless persisted? && bus_assignments.exists?
-    if will_save_change_to_vehicle_kind? || will_save_change_to_transport_company_id?
-      errors.add(:base, "No puede cambiar el tipo o la empresa de un vehículo ya asignado")
+    if will_save_change_to_vehicle_kind?
+      errors.add(:base, "No puede cambiar el tipo de un vehículo ya asignado")
+    end
+    if will_save_change_to_transport_company_id? && !company_reassignment_authorized
+      errors.add(:base, "Use la reasignación de empresa para conservar los viajes anteriores")
     end
   end
 

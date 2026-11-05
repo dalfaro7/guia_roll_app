@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_04_000011) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_05_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -37,12 +37,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000011) do
     t.string "location", null: false
     t.string "outing_variant"
     t.integer "seats_assigned"
+    t.string "transport_company_name_snapshot", null: false
+    t.bigint "transport_company_snapshot_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "work_day_id", null: false
     t.index ["bus_id", "work_day_id", "location"], name: "one_bus_per_day_and_outing", unique: true
     t.index ["bus_id"], name: "index_bus_assignments_on_bus_id"
     t.index ["compensation_assignment_id"], name: "one_transport_per_driver_payment", unique: true
     t.index ["driver_id"], name: "index_bus_assignments_on_driver_id"
+    t.index ["transport_company_snapshot_id"], name: "index_bus_assignments_on_transport_company_snapshot_id"
     t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
     t.check_constraint "cost_cents >= 0", name: "bus_assignment_cost_nonnegative"
   end
@@ -774,6 +777,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_04_000011) do
   add_foreign_key "bus_assignments", "buses"
   add_foreign_key "bus_assignments", "compensation_assignments"
   add_foreign_key "bus_assignments", "drivers"
+  add_foreign_key "bus_assignments", "transport_companies", column: "transport_company_snapshot_id"
   add_foreign_key "bus_assignments", "work_days"
   add_foreign_key "buses", "transport_companies"
   add_foreign_key "compensation_adjustments", "compensation_assignments", column: "source_assignment_id"

@@ -42,11 +42,26 @@ class BusesController < ApplicationController
   end
 
   def update
-    if @bus.update(bus_params)
+    if bus_params[:transport_company_id].present? &&
+        @bus.transport_company_id != bus_params[:transport_company_id].to_i
+      Bus.transaction do
+        result = BusCompanyReassignment.call(bus: @bus, attributes: bus_params)
+        audit!(action: "reassign_bus_company", auditable: @bus,
+          metadata: result)
+      end
+      redirect_to buses_path, notice: "Empresa actualizada. Los viajes anteriores conservan sus datos; los futuros usan la nueva tarifa."
+    elsif @bus.update(bus_params)
       redirect_to buses_path, notice: "Bus actualizado correctamente."
     else
       render :edit
     end
+  rescue BusCompanyReassignment::Conflict => e
+    @bus.reload
+    flash.now[:alert] = e.message
+    render :edit, status: :unprocessable_entity
+  rescue ActiveRecord::RecordInvalid => e
+    @bus.errors.add(:base, e.record.errors.full_messages.to_sentence) unless e.record == @bus
+    render :edit, status: :unprocessable_entity
   end
 
   def destroy
