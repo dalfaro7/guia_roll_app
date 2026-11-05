@@ -17,6 +17,11 @@
         <div class="col-md-1"><%= f.label :active, "Activo", class: "form-label" %><%= f.check_box :active, class: "form-check-input d-block" %></div>
         <div class="col-md-2"><%= f.submit "Guardar", class: "btn btn-outline-primary w-100" %></div>
       <% end %>
+      <div class="mt-2 text-end">
+        <%= button_to "Eliminar chofer", driver_path(driver), method: :delete,
+          class: "btn btn-sm btn-outline-danger",
+          form: { data: { turbo_confirm: "¿Estás seguro de eliminar a #{driver.name}? Esta acción no se puede deshacer. Si tiene viajes o pagos registrados, no se eliminará." } } %>
+      </div>
     </div></div>
   <% end %>
   <div class="card mt-4"><div class="card-body"><h2 class="h5">Nuevo chofer</h2>

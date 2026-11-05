@@ -25,6 +25,25 @@ class DriversController < ApplicationController
     redirect_to drivers_path, alert: e.record.errors.full_messages.to_sentence
   end
 
+  def destroy
+    driver = Driver.find(params[:id])
+    if driver.bus_assignments.exists? || driver.compensation_assignments.exists? ||
+        driver.compensation_settlements.exists?
+      redirect_to drivers_path,
+        alert: "No se puede eliminar a #{driver.name}: tiene viajes o pagos registrados. Puedes desactivarlo."
+      return
+    end
+
+    if driver.destroy
+      audit!(action: "destroy_driver", auditable: driver,
+        metadata: { name: driver.name, transport_company_id: driver.transport_company_id })
+      redirect_to drivers_path, notice: "Chofer eliminado."
+    else
+      redirect_to drivers_path,
+        alert: "No se pudo eliminar a #{driver.name}. Revisa sus asignaciones y pagos."
+    end
+  end
+
   private
 
   def driver_params
