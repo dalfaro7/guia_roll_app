@@ -3,9 +3,9 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
     <div>
       <h1>Valoración del <%= l(@work_day.date, format: :long) %></h1>
-      <p class="text-muted mb-0">Importes de las cuatro salidas de la operación. La programación logística permanece en su vista habitual.</p>
+      <p class="text-muted mb-0">Consulta los importes y confirma cancelaciones. Edita funciones y tareas desde Operación.</p>
     </div>
-    <%= link_to "Volver a la programación", work_day_path(@work_day), class: "btn btn-outline-secondary" %>
+    <%= link_to "Ir a Operación", work_day_path(@work_day), class: "btn btn-outline-secondary" %>
   </div>
 
   <section class="card mb-4">
@@ -24,7 +24,7 @@
                 <td>
                   <% if section_departures.any? %>
                     <% section_departures.each do |departure| %>
-                      <%= link_to(section_departures.one? ? (@can_edit ? "Editar" : "Ver detalle") : "#{@can_edit ? "Editar" : "Ver"} #{departure.label}", "#departure-#{departure.id}", class: "btn btn-sm btn-outline-primary me-1") %>
+                      <%= link_to(section_departures.one? ? "Ver detalle" : "Ver #{departure.label}", "#departure-#{departure.id}", class: "btn btn-sm btn-outline-primary me-1") %>
                     <% end %>
                   <% end %>
                 </td>
@@ -81,7 +81,7 @@
 
         <div class="table-responsive">
           <table class="table table-sm table-striped align-middle">
-            <thead><tr><th>Persona</th><th>Función y tareas</th><th>Estado</th><th>Desglose</th><th class="text-end">Total</th><% if @can_edit %><th>Editar</th><% end %></tr></thead>
+            <thead><tr><th>Persona</th><th>Función y tareas</th><th>Estado</th><th>Desglose</th><th class="text-end">Total</th><% if @can_edit %><th>Cancelar</th><% end %></tr></thead>
             <tbody>
               <% assignments.each do |assignment| %>
                 <tr>
@@ -97,11 +97,15 @@
                   <td class="text-end fw-bold"><%= usd(assignment.total_cents) %></td>
                   <% if @can_edit %>
                     <td>
-                      <% if @work_day.generated? && assignment.guide_day_id.present? %>
-                        <%= link_to "Editar en roles del equipo", work_day_path(@work_day, anchor: "day-roles"), class: "btn btn-sm btn-outline-primary" %>
-                      <% else %>
-                        <details><summary>Ajuste excepcional</summary>
-                          <%= render "compensation_assignments/form", work_day: @work_day, assignment: assignment, return_to: nil %>
+                      <% unless %w[canceled no_show].include?(assignment.status) %>
+                        <details><summary>Cancelar asignación</summary>
+                          <%= form_with url: work_day_compensation_assignment_path(@work_day, assignment), method: :patch, local: true, class: "d-grid gap-2 mt-2" do %>
+                            <%= hidden_field_tag :status_action, "change" %>
+                            <%= hidden_field_tag "compensation_assignment[status]", "canceled" %>
+                            <label><%= check_box_tag :confirm_status_change, "1", false, required: true %> Confirmo cancelar la asignación de <%= assignment.person.name %></label>
+                            <% if compensation_correction_required?(@work_day) %><%= text_field_tag :correction_reason, nil, class: "form-control form-control-sm", placeholder: "Motivo de corrección", required: true %><% end %>
+                            <%= submit_tag "Cancelar asignación", class: "btn btn-outline-danger btn-sm" %>
+                          <% end %>
                         </details>
                       <% end %>
                     </td>
@@ -112,22 +116,6 @@
           </table>
         </div>
 
-        <% if @can_edit %>
-          <details class="mt-3"><summary>Agregar persona a esta salida</summary>
-            <%= form_with url: work_day_compensation_assignments_path(@work_day), method: :post, local: true, class: "row g-2 mt-2" do %>
-              <%= hidden_field_tag "compensation_assignment[departure_id]", departure.id %>
-              <div class="col-md-4"><%= label_tag "new_guide_#{departure.id}", "Guía" %><%= select_tag "compensation_assignment[guide_id]", options_from_collection_for_select(@guides, :id, :name), include_blank: "Seleccionar si es guía", id: "new_guide_#{departure.id}", class: "form-select" %></div>
-              <div class="col-md-4"><%= label_tag "new_driver_#{departure.id}", "Chofer" %><%= select_tag "compensation_assignment[driver_id]", options_from_collection_for_select(@drivers, :id, :name), include_blank: "Seleccionar si es chofer", id: "new_driver_#{departure.id}", class: "form-select" %></div>
-              <div class="col-md-4"><%= label_tag "new_role_#{departure.id}", "Función" %><%= select_tag "compensation_assignment[role_code]", options_for_select((compensation_guide_roles_for(departure) + CompensationAssignment::DRIVER_ROLES).map { |code| [compensation_label(code), code] }), id: "new_role_#{departure.id}", class: "form-select" %></div>
-              <% photo_options = [["Sin tarea", "none"], ["Toma y envía", "take_and_send"]] %>
-              <% photo_options << ["Solo envía", "send_only"] if CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(departure.location) %>
-              <div class="col-md-4"><%= label_tag "new_photo_#{departure.id}", "Fotos" %><%= select_tag "compensation_assignment[photo_task]", options_for_select(photo_options), id: "new_photo_#{departure.id}", class: "form-select" %></div>
-              <div class="col-md-4"><label class="d-block"><%= check_box_tag "compensation_assignment[also_drives]", "1" %> También conduce</label><label><%= check_box_tag "compensation_assignment[bus_guide]", "1" %> Guía de bus</label></div>
-              <% if compensation_correction_required?(@work_day) %><div class="col-md-4"><%= text_field_tag :correction_reason, nil, class: "form-control", placeholder: "Motivo de corrección", required: true %></div><% end %>
-              <div class="col-12"><%= submit_tag "Agregar asignación", class: "btn btn-primary" %></div>
-            <% end %>
-          </details>
-        <% end %>
       </div>
     </section>
   <% end %>

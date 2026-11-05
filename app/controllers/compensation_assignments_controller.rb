@@ -4,7 +4,12 @@ class CompensationAssignmentsController < ApplicationController
   before_action :require_open_window
 
   def create
+    if @work_day.published?
+      return redirect_to assignment_return_path,
+        alert: "Use Editar operación antes de agregar personas a una programación publicada."
+    end
     departure = @work_day.departures.find(assignment_params[:departure_id])
+    raise "No se puede agregar personal a una salida cancelada." if departure.status == "canceled"
     assignment = departure.compensation_assignments.new(assignment_params.except(:departure_id))
     assignment.updated_by = current_user
     assignment.principal_photographer = true if assignment.role_code == "photographer" &&
@@ -18,14 +23,19 @@ class CompensationAssignmentsController < ApplicationController
           work_day: @work_day, metadata: { reason: params[:correction_reason] })
       end
     end
-    redirect_to work_day_compensation_path(@work_day), notice: "Asignación guardada."
+    redirect_to assignment_return_path, notice: "Asignación guardada."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, RuntimeError => e
-    redirect_to work_day_compensation_path(@work_day), alert: e.message
+    redirect_to assignment_return_path, alert: e.message
   end
 
   def update
     assignment = assignment_for_day
+    raise "No se puede editar una salida cancelada." if assignment.departure.status == "canceled"
     status_change = params[:status_action] == "change"
+    if @work_day.published? && (!status_change || assignment_params[:status] != "canceled")
+      return redirect_to assignment_return_path,
+        alert: "Use Editar operación antes de cambiar funciones o resultados de una programación publicada."
+    end
     if status_change && (!CompensationAssignment::STATUSES.include?(assignment_params[:status]) ||
         params[:confirm_status_change] != "1")
       return redirect_to assignment_return_path,

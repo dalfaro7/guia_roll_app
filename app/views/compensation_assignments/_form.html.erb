@@ -16,14 +16,3 @@
   <% if compensation_correction_required?(work_day) %><%= text_field_tag :correction_reason, nil, class: "form-control form-control-sm", placeholder: "Motivo de corrección", required: true %><% end %>
   <%= submit_tag "Guardar función y tareas", class: "btn btn-primary btn-sm" %>
 <% end %>
-
-<%= form_with url: work_day_compensation_assignment_path(work_day, assignment), method: :patch, local: true, class: "d-grid gap-2 mt-3 border-top pt-3" do %>
-  <%= hidden_field_tag :return_to, return_to if return_to.present? %>
-  <%= hidden_field_tag :status_action, "change" %>
-  <strong>Cambiar estado</strong>
-  <span>Estado actual: <%= compensation_status_label(assignment.status) %></span>
-  <%= select_tag "compensation_assignment[status]", options_for_select([["Programada", "planned"], ["Realizada", "performed"], ["Cancelada", "canceled"], ["No se presentó", "no_show"]]), include_blank: "Seleccionar nuevo estado", required: true, class: "form-select form-select-sm", aria: { label: "Nuevo estado de #{assignment.person.name}" } %>
-  <label><%= check_box_tag :confirm_status_change, "1", false, required: true %> Confirmo el cambio de estado de <%= assignment.person.name %></label>
-  <% if compensation_correction_required?(work_day) %><%= text_field_tag :correction_reason, nil, class: "form-control form-control-sm", placeholder: "Motivo de corrección", required: true %><% end %>
-  <%= submit_tag "Aplicar cambio de estado", class: "btn btn-outline-warning btn-sm" %>
-<% end %>

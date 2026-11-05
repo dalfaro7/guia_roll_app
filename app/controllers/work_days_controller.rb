@@ -50,6 +50,12 @@ class WorkDaysController < ApplicationController
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
+    if @work_day.generated? && Compensation::EditWindow.applicable?(@work_day) &&
+        Compensation::EditWindow.allowed?(user: current_user, work_day: @work_day)
+      @operation_departures = @work_day.departures.chronological
+        .includes(compensation_assignments: [:guide, :driver, :guide_day]).to_a
+      @operation_guides = Guide.active.order(:name)
+    end
     @location_counts =
       @work_day
         .location_slots
@@ -273,6 +279,10 @@ class WorkDaysController < ApplicationController
 
   def update_roles
     @work_day = WorkDay.find(params[:id])
+    unless @work_day.generated?
+      return redirect_to(@work_day,
+        alert: "Use Editar operación antes de cambiar roles de una programación publicada.")
+    end
 
     return redirect_to(@work_day) unless params[:roles]
 
@@ -368,7 +378,7 @@ class WorkDaysController < ApplicationController
 
       redirect_to(
         @work_day,
-        notice: "Programación reabierta correctamente."
+        notice: "Operación abierta para editar. Publique nuevamente cuando termine; se reenviará la programación actualizada."
       )
     else
       redirect_to(

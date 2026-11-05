@@ -164,11 +164,53 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     end
     assert_response :success
     assert_select "tr[data-operating-section]", 4
-    assert_select "tr[data-operating-section='Balsa'] a[href='#departure-#{@day.departures.first.id}']", text: "Editar"
+    assert_select "tr[data-operating-section='Balsa'] a[href='#departure-#{@day.departures.first.id}']", text: "Ver detalle"
+    assert_select "select[name='compensation_assignment[role_code]']", 0
+    assert_select "summary", text: "Agregar persona a esta salida", count: 0
     assert_select "input[type='time']", 0
     assert_select "a[href='#{confirm_cancel_work_day_departure_path(@day, @day.departures.first)}']", text: "Cancelar salida"
     assert_select "form[action='#{work_day_departure_path(@day, @day.departures.first)}']", 0
     assert_no_match(/Crear otra salida|Configurar horario/, response.body)
+  end
+
+  test "published schedule reopens for operational edits while valuation keeps cancellations" do
+    guide = Guide.create!(name: "Reopened guide", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    guide_day = GuideDay.create!(guide: guide, work_day: @day,
+      status: :worked, location: "Balsa", role_primary: "River Guide")
+    @day.update!(status: :published)
+    sign_in user(:operador)
+
+    get work_day_path(@day)
+    assert_select "form[action='#{unpublish_work_day_path(@day)}'] input[value='Editar operación']"
+    assert_select "#day-operation-edits", count: 0
+
+    get work_day_compensation_path(@day)
+    assert_select "select[name='compensation_assignment[role_code]']", count: 0
+    assert_select "summary", text: "Agregar persona a esta salida", count: 0
+    assert_select "a[href='#{confirm_cancel_work_day_departure_path(@day, @day.departures.first)}']", text: "Cancelar salida"
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "Photographer", location: "Balsa" } }
+    }
+    assert_equal "River Guide", guide_day.reload.role_primary
+    patch work_day_compensation_assignment_path(@day,
+      CompensationAssignment.find_by!(guide_day: guide_day)), params: {
+      compensation_assignment: { role_code: "photographer" }
+    }
+    assert_equal "river_guide", CompensationAssignment.find_by!(guide_day: guide_day).role_code
+
+    post unpublish_work_day_path(@day)
+    assert_redirected_to work_day_path(@day)
+    assert @day.reload.generated?
+    get work_day_path(@day)
+    assert_select "#team-roles-form"
+    assert_select "#day-operation-edits"
+    patch update_roles_work_day_path(@day), params: {
+      roles: { guide_day.id.to_s => { role_primary: "River Guide",
+        role_secondary: "Tour Leader", location: "Balsa" } }
+    }
+    assert_equal "tl_balsa", CompensationAssignment.find_by!(guide_day: guide_day).role_code
   end
 
   test "Tour Leader in the team schedule creates the matching TL valuation" do
@@ -217,16 +259,19 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_select "#day-compensation", count: 0
 
     get work_day_compensation_path(@day)
-    assert_select "a[href='#{work_day_path(@day, anchor: "day-roles")}']", text: /Editar en roles/
+    assert_select "select[name='compensation_assignment[role_code]']", 0
 
     @day.update!(status: :published)
     pm_assignment.update_columns(role_code: "hg_balsa")
-    get work_day_compensation_path(@day)
-    assert_select "form[action='#{work_day_compensation_assignment_path(@day, pm_assignment)}'] option[value='hg_balsa'][selected]", text: /Revisar/
-    assert_select "#departure-#{private_departure.id} option[value='hg_sara']", count: 0
-    assert_select "#departure-#{private_departure.id} option[value='hg_balsa']", count: 0
-    assert_select "#departure-#{private_departure.id} option[value='tl_sara']", count: 0
-    assert_select "#departure-#{private_departure.id} option[value='tl_balsa']", count: 0
+    post unpublish_work_day_path(@day)
+    assert_redirected_to work_day_path(@day)
+    get work_day_path(@day)
+    assert_select "#day-operation-edits"
+    assert_select "#team-roles-form select[name='roles[#{pm_guide_day.id}][role_secondary]'] option[value='Head Guide']"
+    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='hg_sara']", count: 0
+    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='hg_balsa']", count: 0
+    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='tl_sara']", count: 0
+    assert_select "#day-operation-edits #new_role_#{private_departure.id} option[value='tl_balsa']", count: 0
 
     private_assignment = private_departure.compensation_assignments.build(
       guide: Guide.create!(name: "Private guide", priority: 3,
@@ -247,8 +292,9 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       guide: guide, role_code: "hg_balsa")
     sign_in user(:operador)
 
-    get work_day_compensation_path(@day)
-    assert_select "form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
+    @day.update!(status: :generated)
+    get work_day_path(@day)
+    assert_select "#day-operation-edits form[action='#{work_day_compensation_assignment_path(@day, assignment)}']" do
       assert_select "option[value='hg_balsa']"
       assert_select "option[value='tl_balsa']"
       assert_select "option[value='hg_sara']", count: 0
@@ -312,7 +358,8 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       driver: driver, role_code: "driver_la_fortuna", status: "canceled", source: "automatic")
     sign_in user(:operador)
 
-    get work_day_compensation_path(@day)
+    @day.update!(status: :generated)
+    get work_day_path(@day)
     [guide_assignment, driver_assignment].each do |assignment|
       selector = "form[action='#{work_day_compensation_assignment_path(@day, assignment)}']"
       forms = css_select(selector)
@@ -405,7 +452,9 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
 
     get work_day_compensation_path(@day)
     assert_select "td", text: /TL Balsa/
-    assert_select "a[href='#{work_day_path(@day, anchor: "day-roles")}']", text: /Editar en roles/
+    assert_select "select[name='compensation_assignment[role_code]']", 0
+    get work_day_path(@day)
+    assert_select "#team-roles-form"
   end
 
   test "team roles also set the bus guide and photo task without another form" do
