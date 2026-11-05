@@ -128,20 +128,17 @@ class WorkDay < ApplicationRecord
   end
 
   def publish!
-    raise "Only generated days can be published" unless generated?
+    with_lock do
+      raise "Only generated days can be published" unless generated?
 
-    previous_status = status
-
-    update!(
-      status: :published,
-      published_at: Time.current
-    )
-
-    log_event(
-      "publish",
-      previous_status,
-      "published"
-    )
+      bus_assignments.order(:id).lock.each(&:refresh_rate_for_publication!)
+      previous_status = status
+      update!(
+        status: :published,
+        published_at: Time.current
+      )
+      log_event("publish", previous_status, "published")
+    end
   end
 
   def unpublish!

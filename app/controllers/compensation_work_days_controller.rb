@@ -3,6 +3,9 @@ class CompensationWorkDaysController < ApplicationController
 
   def show
     @work_day = WorkDay.find(params[:work_day_id])
+    @transport_assignments = @work_day.bus_assignments
+      .includes(:bus, :transport_company_snapshot).order(:location, :id).to_a
+    @transport_by_location = @transport_assignments.group_by(&:location)
     @departures = @work_day.departures.chronological
       .includes(compensation_assignments: [:guide, :driver, :compensation_lines]).to_a
     @departures.sort_by! do |departure|

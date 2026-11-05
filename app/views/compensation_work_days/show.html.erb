@@ -13,14 +13,18 @@
       <h2 class="h5">Salidas de la operación</h2>
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
-          <thead><tr><th>Salida</th><th>Actividad</th><th class="text-end">Total</th><th>Detalle</th></tr></thead>
+          <thead><tr><th>Salida</th><th>Actividad</th><th class="text-end">Personal</th><th class="text-end">Transporte</th><th class="text-end">Total</th><th>Detalle</th></tr></thead>
           <tbody>
             <% @operating_sections.each do |location, section_departures| %>
               <% section_assignments = section_departures.flat_map(&:compensation_assignments) %>
+              <% personnel_cents = section_assignments.sum(&:total_cents) %>
+              <% transport_cents = @transport_by_location.fetch(location, []).sum(&:cost_cents) %>
               <tr data-operating-section="<%= location %>">
                 <th scope="row"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
                 <td><%= section_departures.any? ? (section_assignments.one? ? "1 asignación" : "#{section_assignments.size} asignaciones") : "Sin actividad registrada" %></td>
-                <td class="text-end"><%= usd(section_assignments.sum(&:total_cents)) %></td>
+                <td class="text-end"><%= usd(personnel_cents) %></td>
+                <td class="text-end"><%= usd(transport_cents) %></td>
+                <td class="text-end"><%= usd(personnel_cents + transport_cents) %></td>
                 <td>
                   <% if section_departures.any? %>
                     <% section_departures.each do |departure| %>
@@ -31,8 +35,39 @@
               </tr>
             <% end %>
           </tbody>
+          <tfoot>
+            <% personnel_total = @departures.flat_map(&:compensation_assignments).sum(&:total_cents) %>
+            <% transport_total = @transport_assignments.sum(&:cost_cents) %>
+            <tr><th colspan="2">Total de la operación</th><th class="text-end"><%= usd(personnel_total) %></th><th class="text-end"><%= usd(transport_total) %></th><th class="text-end"><%= usd(personnel_total + transport_total) %></th><th></th></tr>
+          </tfoot>
         </table>
       </div>
+    </div>
+  </section>
+
+  <section class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5">Tarifas de transporte asignado</h2>
+      <% if @transport_assignments.empty? %>
+        <p class="text-muted mb-0">No hay vehículos asignados a esta fecha.</p>
+      <% else %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Salida</th><th>Empresa y vehículo</th><th class="text-end">Tarifa base</th><th class="text-end">Ajuste</th><th class="text-end">Costo acordado</th></tr></thead>
+            <tbody>
+              <% @transport_assignments.each do |assignment| %>
+                <tr>
+                  <td><%= assignment.location == "Sara-3&4" ? "Sarapiquí 3 y 4" : assignment.location %></td>
+                  <td><%= assignment.transport_company_name_snapshot %> · <%= assignment.bus.alias %><% if assignment.discount_reason.present? %><div class="small text-muted">Acuerdo: <%= assignment.discount_reason %></div><% end %></td>
+                  <td class="text-end"><%= usd(assignment.base_cost_cents) %></td>
+                  <td class="text-end"><%= usd(assignment.discount_cents) %></td>
+                  <td class="text-end fw-semibold"><%= usd(assignment.cost_cents) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
     </div>
   </section>
 

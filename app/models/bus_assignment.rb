@@ -51,6 +51,24 @@ class BusAssignment < ApplicationRecord
     compensation_assignment&.total_cents.to_i
   end
 
+  def refresh_rate_for_publication!
+    return if internal_fleet_snapshot?
+
+    rate = TransportRate.find_by(
+      transport_company_id: transport_company_snapshot_id,
+      location: location, vehicle_kind: bus.vehicle_kind,
+      size_category: bus.size_category
+    )
+    unless rate
+      errors.add(:base, "No hay tarifa de transporte para #{transport_company_name_snapshot}, #{location} y #{bus.size_category_label}")
+      raise ActiveRecord::RecordInvalid.new(self)
+    end
+    return if base_cost_cents == rate.amount_cents
+
+    update!(base_cost_cents: rate.amount_cents,
+      cost_cents: rate.amount_cents - discount_cents)
+  end
+
   private
 
   def parse_usd_cents(value)

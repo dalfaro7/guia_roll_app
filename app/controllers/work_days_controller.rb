@@ -364,6 +364,9 @@ class WorkDaysController < ApplicationController
       @work_day,
       notice: "Programación publicada correctamente."
     )
+  rescue ActiveRecord::RecordInvalid => error
+    redirect_to @work_day,
+      alert: "No se pudo publicar: #{error.record.errors.full_messages.to_sentence}"
   end
 
   def unpublish

@@ -91,6 +91,63 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_select "td", text: /Balsa/
   end
 
+  test "republishing applies the current transport tariff and shows it in valuation" do
+    company = TransportCompany.create!(name: "Proveedor de revisión")
+    bus = Bus.create!(transport_company: company, alias: "Bus revisión",
+      plate: "REV-101", capacity: 20)
+    assignment = BusAssignment.create!(bus: bus, work_day: @day,
+      location: "Balsa", seats_assigned: 10)
+    assignment.update!(discount_usd: "10.00", discount_reason: "Acuerdo por baja demanda")
+    @day.update!(status: :generated)
+    @day.publish!
+
+    rate = company.transport_rates.find_by!(location: "Balsa",
+      vehicle_kind: "bus", size_category: "large")
+    rate.update!(amount_cents: 15_000)
+    assert_equal 12_000, assignment.reload.base_cost_cents
+
+    @day.unpublish!
+    @day.publish!
+    assert_equal 15_000, assignment.reload.base_cost_cents
+    assert_equal 1_000, assignment.discount_cents
+    assert_equal 14_000, assignment.cost_cents
+
+    sign_in user(:admin)
+    get work_day_compensation_path(@day)
+    assert_response :success
+    assert_select "h2", "Tarifas de transporte asignado"
+    assert_select "tr[data-operating-section='Balsa']", text: /\$140\.00/
+    assert_select "td", text: /Acuerdo por baja demanda/
+    assert_select "td", text: "$150.00"
+    assert_select "td", text: "$10.00"
+    assert_select "td", text: "$140.00"
+  end
+
+  test "republishing rejects a tariff below the agreed transport adjustment" do
+    company = TransportCompany.create!(name: "Proveedor con descuento")
+    bus = Bus.create!(transport_company: company, alias: "Bus descuento",
+      plate: "REV-102", capacity: 20)
+    assignment = BusAssignment.create!(bus: bus, work_day: @day,
+      location: "Balsa", seats_assigned: 10)
+    assignment.update!(discount_usd: "110.00", discount_reason: "Acuerdo previo")
+    @day.update!(status: :generated)
+    @day.publish!
+    @day.unpublish!
+    company.transport_rates.find_by!(location: "Balsa",
+      vehicle_kind: "bus", size_category: "large").update!(amount_cents: 10_000)
+
+    assert_raises(ActiveRecord::RecordInvalid) { @day.publish! }
+    assert @day.reload.generated?
+    assert_equal 12_000, assignment.reload.base_cost_cents
+    assert_equal 1_000, assignment.cost_cents
+
+    sign_in user(:admin)
+    post publish_work_day_path(@day)
+    assert_redirected_to work_day_path(@day)
+    assert_match(/No se pudo publicar.*tarifa base/, flash[:alert])
+    assert @day.reload.generated?
+  end
+
   test "accounting sees valuation but cannot change a departure" do
     sign_in user(:contabilidad)
     get work_day_compensation_path(@day)
