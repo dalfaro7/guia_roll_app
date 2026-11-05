@@ -27,6 +27,7 @@ class BusAssignmentsController < ApplicationController
   def update
     assignment = BusAssignment.find(params[:id])
     work_day = assignment.work_day
+    return unless unpublished_transport?(work_day)
     unless Compensation::EditWindow.allowed?(user: current_user, work_day: work_day)
       return redirect_to work_day_path(work_day),
         alert: "La edición de costos de esta fecha ya cerró."
@@ -77,6 +78,8 @@ class BusAssignmentsController < ApplicationController
   private
 
   def editable_transport?(work_day)
+    return false unless unpublished_transport?(work_day)
+
     return true if Compensation::EditWindow.allowed?(user: current_user,
       work_day: work_day) &&
       (!Compensation::EditWindow.closed?(work_day) ||
@@ -84,6 +87,14 @@ class BusAssignmentsController < ApplicationController
 
     redirect_to work_day_path(work_day),
       alert: "La edición de esta fecha cerró. Un administrador debe indicar el motivo."
+    false
+  end
+
+  def unpublished_transport?(work_day)
+    return true unless work_day.published?
+
+    redirect_to work_day_path(work_day),
+      alert: "Use Editar operación antes de cambiar transportes de una programación publicada."
     false
   end
 

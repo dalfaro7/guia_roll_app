@@ -21,14 +21,16 @@
           <div><strong><%= assignment.bus.alias %></strong> · <%= assignment.bus.four_by_four? ? "4x4" : "Bus" %> · <%= assignment.transport_company_name_snapshot %><% if assignment.outing_variant.present? %> · <%= assignment.outing_variant %><% end %><br>
             <span class="small text-muted"><%= assignment.seats_assigned %> <%= assignment.bus.four_by_four? ? "guías" : "pasajeros" %> · Chofer asignado: <%= assignment.driver&.name || "Sin asignar" %></span>
           </div>
-          <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este vehículo de la salida?" } } %>
+          <% unless work_day.published? %>
+            <%= button_to "Quitar", bus_assignment_path(assignment), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "¿Quitar este vehículo de la salida?" } } %>
+          <% end %>
         </div>
         <% if current_user.admin? || current_user.operador? || current_user.contabilidad? %>
           <details class="mt-2 small">
             <summary>Ver costo y pago del chofer</summary>
             <p class="mt-2 mb-1">Tarifa base: <strong><%= usd(assignment.base_cost_cents) %></strong> · Ajuste: <strong><%= usd(assignment.discount_cents) %></strong> · Costo acordado: <strong><%= usd(assignment.cost_cents) %></strong> · Pago directo al chofer: <strong><%= usd(assignment.driver_payment_cents) %></strong><% if assignment.driver && assignment.internal_fleet_snapshot == false %> (lo cubre la empresa externa)<% end %></p>
             <% if assignment.discount_reason.present? %><p class="mb-1">Motivo del ajuste: <%= assignment.discount_reason %></p><% end %>
-            <% if !assignment.internal_fleet_snapshot? && Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
+            <% if !work_day.published? && !assignment.internal_fleet_snapshot? && Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
               <%= form_with model: assignment, class: "row g-2 align-items-end" do |f| %>
                 <div class="col-12 col-md-4"><%= f.label :discount_usd, "Ajuste acordado (USD)", class: "form-label small" %><%= f.number_field :discount_usd, min: 0, max: assignment.base_cost_cents / 100.0, step: 0.01, class: "form-control form-control-sm", required: true %></div>
                 <div class="col-12 col-md-8"><%= f.label :discount_reason, "Motivo y acuerdo con el proveedor", class: "form-label small" %><%= f.text_field :discount_reason, class: "form-control form-control-sm", placeholder: "Requerido cuando el ajuste supera $0" %></div>
@@ -43,6 +45,7 @@
         <% end %>
       </div>
     <% end %>
+    <% unless work_day.published? %>
     <% available_buses = VehicleAvailability.for(work_day: work_day, location: location) %>
     <% if available_buses.any? %>
       <%= form_with model: BusAssignment.new, class: "row g-2 align-items-end", data: { controller: "bus-driver", available_buses_url: available_buses_work_day_path(work_day), driver_quote_url: driver_payment_quote_work_day_path(work_day) } do |f| %>
@@ -67,6 +70,7 @@
       <% end %>
     <% else %>
       <p class="text-muted mb-0">No quedan vehículos disponibles para esta salida.</p>
+    <% end %>
     <% end %>
   </div>
 </section>

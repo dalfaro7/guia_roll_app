@@ -176,6 +176,39 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[discount_reason]']"
   end
 
+  test "published operation shows transport as read only until reopened" do
+    @work_day.update!(status: :published)
+    second_bus = Bus.create!(transport_company: @company, capacity: 20,
+      plate: "TEST-UNPUBLISHED", alias: "Bus disponible")
+
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "[data-transport-location='Balsa']", text: /Bus Test/
+    assert_select "[data-transport-location='Balsa'] form", count: 0
+    assert_select "form[data-controller='bus-driver']", count: 0
+    assert_select "details summary", text: "Ver costo y pago del chofer"
+
+    assert_no_difference "BusAssignment.count" do
+      post bus_assignments_path, params: { bus_assignment: {
+        bus_id: second_bus.id, work_day_id: @work_day.id,
+        location: "Sara-3&4", seats_assigned: 10
+      } }
+    end
+    assert_redirected_to work_day_path(@work_day)
+    assert_match(/Editar operación/, flash[:alert])
+
+    patch bus_assignment_path(@assignment), params: { bus_assignment: {
+      discount_usd: "10", discount_reason: "Cambio de prueba"
+    } }
+    assert_redirected_to work_day_path(@work_day)
+    assert_equal 0, @assignment.reload.discount_cents
+
+    assert_no_difference "BusAssignment.count" do
+      delete bus_assignment_path(@assignment)
+    end
+    assert_redirected_to work_day_path(@work_day)
+  end
+
   test "accounting can see but not edit bus cost" do
     @user.update!(role: :contabilidad)
     get work_day_path(@work_day)
