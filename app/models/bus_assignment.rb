@@ -10,6 +10,10 @@ class BusAssignment < ApplicationRecord
   validates :location, inclusion: { in: TransportRate::LOCATIONS }, on: :create
   validates :seats_assigned, numericality: { greater_than_or_equal_to: 0 }
   validates :cost_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :base_cost_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :discount_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validate :discount_within_base
+  validate :discount_reason_present
   validates :outing_variant, inclusion: { in: %w[Sara-3 Sara-4] }, allow_nil: true
   validate :cannot_exceed_bus_capacity
   validate :vehicle_and_driver_available, if: :transport_identity_changed?
@@ -18,6 +22,7 @@ class BusAssignment < ApplicationRecord
   before_validation :snapshot_transport_company, on: :create
   before_validation :snapshot_fleet_type, on: :create
   before_validation :apply_transport_rate, on: :create
+  before_validation :normalize_discount_reason
   after_create :sync_driver_payment
   before_destroy :prevent_removing_first_leg
   after_destroy :cancel_driver_payment
@@ -28,9 +33,18 @@ class BusAssignment < ApplicationRecord
   end
 
   def cost_usd=(value)
-    text = value.to_s.strip
-    self.cost_cents = text.match?(/\A\d+(?:\.\d{1,2})?\z/) ?
-      (BigDecimal(text) * 100).to_i : nil
+    self.cost_cents = parse_usd_cents(value)
+    self.discount_cents = base_cost_cents - cost_cents if base_cost_cents && cost_cents
+  end
+
+  def discount_usd
+    dollars, cents = discount_cents.to_i.divmod(100)
+    format("%d.%02d", dollars, cents)
+  end
+
+  def discount_usd=(value)
+    self.discount_cents = parse_usd_cents(value)
+    self.cost_cents = base_cost_cents - discount_cents if base_cost_cents && discount_cents
   end
 
   def driver_payment_cents
@@ -38,6 +52,33 @@ class BusAssignment < ApplicationRecord
   end
 
   private
+
+  def parse_usd_cents(value)
+    text = value.to_s.strip
+    return nil unless text.match?(/\A\d+(?:\.\d{1,2})?\z/)
+
+    (BigDecimal(text) * 100).to_i
+  end
+
+  def discount_within_base
+    return unless base_cost_cents && discount_cents && cost_cents
+
+    if discount_cents > base_cost_cents
+      errors.add(:base, "El ajuste no puede superar la tarifa base")
+    elsif cost_cents != base_cost_cents - discount_cents
+      errors.add(:base, "El costo acordado debe ser la tarifa base menos el ajuste")
+    end
+  end
+
+  def normalize_discount_reason
+    self.discount_reason = discount_cents.to_i.zero? ? nil : discount_reason.to_s.strip.presence
+  end
+
+  def discount_reason_present
+    if discount_cents.to_i.positive? && discount_reason.blank?
+      errors.add(:base, "Indique el motivo y el acuerdo con el proveedor")
+    end
+  end
 
   def transport_identity_changed?
     new_record? || %w[bus_id work_day_id driver_id location outing_variant].any? do |attribute|
@@ -60,12 +101,16 @@ class BusAssignment < ApplicationRecord
     return unless bus && location.present?
 
     if internal_fleet_snapshot?
+      self.base_cost_cents = 0
+      self.discount_cents = 0
       self.cost_cents = 0
     else
       rate = TransportRate.find_by(transport_company_id: bus.transport_company_id,
         location: location, vehicle_kind: bus.vehicle_kind,
         size_category: bus.size_category)
       if rate
+        self.base_cost_cents = rate.amount_cents
+        self.discount_cents = 0
         self.cost_cents = rate.amount_cents
       elsif TransportRate::LOCATIONS.include?(location)
         errors.add(:base, "No hay tarifa de transporte para esta empresa, salida y categoría")

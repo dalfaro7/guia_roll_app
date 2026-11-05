@@ -36,14 +36,22 @@ class BusAssignmentsController < ApplicationController
       return redirect_to work_day_path(work_day), alert: "Indique el motivo de la corrección."
     end
 
-    before_cents = assignment.cost_cents
+    adjustment = params.require(:bus_assignment).permit(:discount_usd, :discount_reason)
     BusAssignment.transaction do
-      assignment.update!(cost_usd: params.require(:bus_assignment).fetch(:cost_usd, nil))
+      assignment.lock!
+      before_cents = assignment.cost_cents
+      before_discount_cents = assignment.discount_cents
+      assignment.update!(discount_usd: adjustment[:discount_usd],
+        discount_reason: adjustment[:discount_reason].to_s.strip.presence)
       audit!(action: "update_bus_cost", auditable: assignment, work_day: work_day,
-        metadata: { before_cents: before_cents, after_cents: assignment.cost_cents,
-          reason: reason.presence })
+        metadata: { base_cost_cents: assignment.base_cost_cents,
+          before_discount_cents: before_discount_cents,
+          after_discount_cents: assignment.discount_cents,
+          before_cents: before_cents, after_cents: assignment.cost_cents,
+          discount_reason: assignment.discount_reason,
+          correction_reason: reason.presence })
     end
-    redirect_to work_day_path(work_day), notice: "Costo del transporte actualizado."
+    redirect_to work_day_path(work_day), notice: "Ajuste de transporte actualizado."
   rescue ActiveRecord::RecordInvalid => e
     redirect_to work_day_path(work_day), alert: e.record.errors.full_messages.to_sentence
   end

@@ -26,14 +26,17 @@
         <% if current_user.admin? || current_user.operador? || current_user.contabilidad? %>
           <details class="mt-2 small">
             <summary>Ver costo y pago del chofer</summary>
-            <p class="mt-2 mb-1">Transporte: <strong><%= usd(assignment.cost_cents) %></strong> · Pago directo al chofer: <strong><%= usd(assignment.driver_payment_cents) %></strong><% if assignment.driver && assignment.internal_fleet_snapshot == false %> (lo cubre la empresa externa)<% end %></p>
-            <% if Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
+            <p class="mt-2 mb-1">Tarifa base: <strong><%= usd(assignment.base_cost_cents) %></strong> · Ajuste: <strong><%= usd(assignment.discount_cents) %></strong> · Costo acordado: <strong><%= usd(assignment.cost_cents) %></strong> · Pago directo al chofer: <strong><%= usd(assignment.driver_payment_cents) %></strong><% if assignment.driver && assignment.internal_fleet_snapshot == false %> (lo cubre la empresa externa)<% end %></p>
+            <% if assignment.discount_reason.present? %><p class="mb-1">Motivo del ajuste: <%= assignment.discount_reason %></p><% end %>
+            <% if !assignment.internal_fleet_snapshot? && Compensation::EditWindow.allowed?(user: current_user, work_day: work_day) && (current_user.admin? || current_user.operador?) %>
               <%= form_with model: assignment, class: "row g-2 align-items-end" do |f| %>
-                <div class="col-12"><%= f.label :cost_usd, "Costo USD", class: "form-label small" %><%= f.number_field :cost_usd, min: 0, step: 0.01, class: "form-control form-control-sm", required: true %></div>
+                <div class="col-12 col-md-4"><%= f.label :discount_usd, "Ajuste acordado (USD)", class: "form-label small" %><%= f.number_field :discount_usd, min: 0, max: assignment.base_cost_cents / 100.0, step: 0.01, class: "form-control form-control-sm", required: true %></div>
+                <div class="col-12 col-md-8"><%= f.label :discount_reason, "Motivo y acuerdo con el proveedor", class: "form-label small" %><%= f.text_field :discount_reason, class: "form-control form-control-sm", placeholder: "Requerido cuando el ajuste supera $0" %></div>
+                <div class="col-12 small text-muted">El ajuste no puede superar la tarifa base. El costo acordado será la tarifa base menos el ajuste.</div>
                 <% if current_user.admin? && Compensation::EditWindow.closed?(work_day) %>
                   <div class="col-12"><%= label_tag "correction_reason_#{assignment.id}", "Motivo de corrección", class: "form-label small" %><%= text_field_tag :correction_reason, nil, id: "correction_reason_#{assignment.id}", class: "form-control form-control-sm", required: true %></div>
                 <% end %>
-                <div class="col-12"><%= f.submit "Guardar costo", class: "btn btn-sm btn-outline-primary" %></div>
+                <div class="col-12"><%= f.submit "Aplicar ajuste", class: "btn btn-sm btn-outline-primary" %></div>
               <% end %>
             <% end %>
           </details>

@@ -31,7 +31,9 @@ class BusCompanyReassignment
       updates.each do |assignment, cost_cents|
         assignment.update!(transport_company_snapshot: new_company,
           transport_company_name_snapshot: new_company.name,
-          internal_fleet_snapshot: new_company.internal_fleet?, cost_cents: cost_cents)
+          internal_fleet_snapshot: new_company.internal_fleet?,
+          base_cost_cents: cost_cents, discount_cents: 0,
+          discount_reason: nil, cost_cents: cost_cents)
       end
       { old_company_id: old_company.id, new_company_id: new_company.id,
         future_assignment_ids: updates.map { |assignment, _| assignment.id } }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_05_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_05_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,10 +28,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_05_000002) do
   end
 
   create_table "bus_assignments", force: :cascade do |t|
+    t.integer "base_cost_cents", default: 0, null: false
     t.bigint "bus_id", null: false
     t.bigint "compensation_assignment_id"
     t.integer "cost_cents", default: 12000, null: false
     t.datetime "created_at", null: false
+    t.integer "discount_cents", default: 0, null: false
+    t.text "discount_reason"
     t.bigint "driver_id"
     t.boolean "internal_fleet_snapshot"
     t.string "location", null: false
@@ -47,7 +50,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_05_000002) do
     t.index ["driver_id"], name: "index_bus_assignments_on_driver_id"
     t.index ["transport_company_snapshot_id"], name: "index_bus_assignments_on_transport_company_snapshot_id"
     t.index ["work_day_id"], name: "index_bus_assignments_on_work_day_id"
+    t.check_constraint "base_cost_cents >= 0", name: "bus_assignment_base_cost_nonnegative"
+    t.check_constraint "cost_cents = (base_cost_cents - discount_cents)", name: "bus_assignment_cost_matches_discount"
     t.check_constraint "cost_cents >= 0", name: "bus_assignment_cost_nonnegative"
+    t.check_constraint "discount_cents >= 0 AND discount_cents <= base_cost_cents", name: "bus_assignment_discount_within_base"
   end
 
   create_table "buses", force: :cascade do |t|

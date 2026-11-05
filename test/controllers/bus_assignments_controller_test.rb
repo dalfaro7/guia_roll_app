@@ -120,21 +120,60 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "select[name='bus_assignment[bus_id]'] option[value='#{vehicle.id}'][data-required-driver-id='#{driver.id}']"
   end
 
-  test "operator can manually edit a bus cost without changing other assignments" do
+  test "operator can apply a negotiated adjustment without changing the tariff" do
     @work_day.update_columns(date: Date.current + 2.days)
-    assert_equal 12_000, @assignment.cost_cents
+    rate = @company.transport_rates.find_by!(location: "Balsa", vehicle_kind: "bus",
+      size_category: "large")
+    assert_equal 12_000, @assignment.base_cost_cents
+    assert_difference "AuditLog.where(action: 'update_bus_cost').count", 1 do
+      patch bus_assignment_path(@assignment), params: {
+        bus_assignment: { discount_usd: "25.75", discount_reason: "Bajo margen, acordado con proveedor" }
+      }
+    end
+    assert_redirected_to work_day_path(@work_day)
+    assert_equal 12_000, @assignment.reload.base_cost_cents
+    assert_equal 2_575, @assignment.discount_cents
+    assert_equal 9_425, @assignment.cost_cents
+    assert_equal 12_000, rate.reload.amount_cents
+    log = AuditLog.where(action: "update_bus_cost", auditable_id: @assignment.id).last
+    assert_equal 12_000, log.metadata.fetch("base_cost_cents")
+    assert_equal 2_575, log.metadata.fetch("after_discount_cents")
+    assert_equal "Bajo margen, acordado con proveedor", log.metadata.fetch("discount_reason")
+    get work_day_path(@work_day)
+    assert_response :success
+    assert_select "details", text: /Costo acordado:.*\$94\.25/
+  end
+
+  test "operator cannot adjust more than the base tariff or omit the agreement reason" do
+    @work_day.update_columns(date: Date.current + 2.days)
+    assert_no_difference "AuditLog.where(action: 'update_bus_cost').count" do
+      patch bus_assignment_path(@assignment), params: {
+        bus_assignment: { discount_usd: "120.01", discount_reason: "Solicitado" }
+      }
+    end
+    assert_redirected_to work_day_path(@work_day)
+    assert_equal 12_000, @assignment.reload.cost_cents
+    assert_equal 0, @assignment.discount_cents
+
     patch bus_assignment_path(@assignment), params: {
-      bus_assignment: { cost_usd: "145.75" }
+      bus_assignment: { discount_usd: "20.00", discount_reason: "" }
     }
     assert_redirected_to work_day_path(@work_day)
-    assert_equal 14_575, @assignment.reload.cost_cents
+    assert_equal 12_000, @assignment.reload.cost_cents
+
+    patch bus_assignment_path(@assignment), params: {
+      bus_assignment: { cost_usd: "200.00", discount_reason: "Intento sin ajuste" }
+    }
+    assert_redirected_to work_day_path(@work_day)
+    assert_equal 12_000, @assignment.reload.cost_cents
   end
 
   test "cost details stay behind a disclosure on the operation screen" do
     get work_day_path(@work_day)
     assert_response :success
     assert_select "details summary", text: "Ver costo y pago del chofer"
-    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']"
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[discount_usd]'][max='120.0']"
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[discount_reason]']"
   end
 
   test "accounting can see but not edit bus cost" do
@@ -142,8 +181,9 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
     get work_day_path(@work_day)
     assert_response :success
     assert_select "details summary", text: "Ver costo y pago del chofer"
-    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[cost_usd]']", count: 0
-    patch bus_assignment_path(@assignment), params: { bus_assignment: { cost_usd: "155.00" } }
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[discount_usd]']", count: 0
+    assert_select "form[action='#{bus_assignment_path(@assignment)}'] input[name='bus_assignment[discount_reason]']", count: 0
+    patch bus_assignment_path(@assignment), params: { bus_assignment: { discount_usd: "15.00", discount_reason: "Test" } }
     assert_redirected_to root_path
     assert_equal 12_000, @assignment.reload.cost_cents
   end

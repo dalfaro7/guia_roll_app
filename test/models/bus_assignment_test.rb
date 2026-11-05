@@ -51,14 +51,37 @@ class BusAssignmentTest < ActiveSupport::TestCase
     assert assignment.valid?
   end
 
-  test "bus cost starts at 120 dollars and accepts exact USD edits" do
+  test "negotiated adjustment cannot exceed the frozen base tariff" do
     assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
       location: "Balsa", seats_assigned: 10)
+    assert_equal 12_000, assignment.base_cost_cents
     assert_equal 12_000, assignment.cost_cents
-    assignment.update!(cost_usd: "135.50")
-    assert_equal 13_550, assignment.reload.cost_cents
-    assignment.cost_usd = "10.999"
+    assignment.update!(discount_usd: "25.50", discount_reason: "Operación de bajo margen")
+    assert_equal 2_550, assignment.reload.discount_cents
+    assert_equal 9_450, assignment.cost_cents
+
+    assignment.discount_usd = "120.01"
     assert_not assignment.valid?
+    assert_includes assignment.errors.full_messages.join(" "), "tarifa base"
+    assignment.reload
+    assignment.discount_usd = "10.999"
+    assert_not assignment.valid?
+    assignment.reload
+    assignment.cost_usd = "135.50"
+    assert_not assignment.valid?
+  end
+
+  test "adjustment needs a reason and can equal the full base tariff" do
+    assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
+      location: "Balsa", seats_assigned: 10)
+    assert_not assignment.update(discount_usd: "10.00")
+    assert_equal 12_000, assignment.reload.cost_cents
+    assignment.update!(discount_usd: "120.00", discount_reason: "Acordado con proveedor")
+    assert_equal 0, assignment.reload.cost_cents
+    assert_equal 12_000, assignment.discount_cents
+    assignment.update!(discount_usd: "0.00", discount_reason: "Acordado con proveedor")
+    assert_equal 12_000, assignment.reload.cost_cents
+    assert_nil assignment.discount_reason
   end
 
   test "new assignment copies the matching tariff and keeps its snapshot" do
@@ -66,9 +89,11 @@ class BusAssignmentTest < ActiveSupport::TestCase
     rate.update!(amount_cents: 15_000)
     assignment = BusAssignment.create!(bus: @bus, work_day: @work_day,
       location: "Balsa", seats_assigned: 10)
+    assert_equal 15_000, assignment.base_cost_cents
     assert_equal 15_000, assignment.cost_cents
     rate.update!(amount_cents: 17_000)
-    assert_equal 15_000, assignment.reload.cost_cents
+    assert_equal 15_000, assignment.reload.base_cost_cents
+    assert_equal 15_000, assignment.cost_cents
   end
 
   test "tariff lookup distinguishes bus category and departure" do

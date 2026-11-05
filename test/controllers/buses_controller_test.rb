@@ -87,6 +87,7 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
       location: "Balsa", seats_assigned: 10)
     future_trip = BusAssignment.create!(bus: @bus, work_day: future,
       location: "Balsa", seats_assigned: 10)
+    future_trip.update!(discount_usd: "20.00", discount_reason: "Acuerdo anterior")
 
     patch bus_url(@bus), params: { bus: { transport_company_id: replacement.id } }
 
@@ -99,6 +100,9 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
     end
     assert_equal replacement.id, future_trip.reload.transport_company_snapshot_id
     assert_equal replacement.name, future_trip.transport_company_name_snapshot
+    assert_equal 17_000, future_trip.base_cost_cents
+    assert_equal 0, future_trip.discount_cents
+    assert_nil future_trip.discount_reason
     assert_equal 17_000, future_trip.cost_cents
     assert AuditLog.exists?(action: "reassign_bus_company", auditable_id: @bus.id)
 
