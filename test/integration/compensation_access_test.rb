@@ -301,6 +301,82 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: assignment.id)
   end
 
+  test "saving guide or driver functions without a choice does not change status or source" do
+    departure = @day.departures.first
+    guide = Guide.create!(name: "Unchanged guide", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    driver = Driver.create!(name: "Unchanged driver")
+    guide_assignment = departure.compensation_assignments.create!(
+      guide: guide, role_code: "river_guide", source: "automatic")
+    driver_assignment = departure.compensation_assignments.create!(
+      driver: driver, role_code: "driver_la_fortuna", status: "canceled", source: "automatic")
+    sign_in user(:operador)
+
+    get work_day_compensation_path(@day)
+    [guide_assignment, driver_assignment].each do |assignment|
+      selector = "form[action='#{work_day_compensation_assignment_path(@day, assignment)}']"
+      forms = css_select(selector)
+      assert_equal 2, forms.size
+      assert_empty forms.first.css("select[name='compensation_assignment[status]']")
+      assert_select "#{selector} input[name='status_action'][value='change']", count: 1
+      assert_select "#{selector} select[name='compensation_assignment[status]'] option[value='']", count: 1
+      assert_select "#{selector} select[name='compensation_assignment[status]'] option[selected]", count: 0
+    end
+
+    assert_no_difference "AuditLog.count" do
+      patch work_day_compensation_assignment_path(@day, guide_assignment), params: {
+        compensation_assignment: { role_code: "river_guide", photo_task: "none",
+          also_drives: "0", bus_guide: "0", principal_photographer: "0" }
+      }
+    end
+    assert_equal "planned", guide_assignment.reload.status
+    assert_equal "automatic", guide_assignment.source
+
+    assert_no_difference "AuditLog.count" do
+      patch work_day_compensation_assignment_path(@day, driver_assignment), params: {
+        compensation_assignment: { role_code: "driver_la_fortuna" }
+      }
+    end
+    assert_equal "canceled", driver_assignment.reload.status
+    assert_equal "automatic", driver_assignment.source
+
+    patch work_day_compensation_assignment_path(@day, guide_assignment), params: {
+      compensation_assignment: { role_code: "safety_kayak", photo_task: "none",
+        status: "canceled", also_drives: "0", bus_guide: "0",
+        principal_photographer: "0" }
+    }
+    assert_equal "safety_kayak", guide_assignment.reload.role_code
+    assert_equal "planned", guide_assignment.status
+  end
+
+  test "changing an assignment status requires a separate confirmed selection" do
+    driver = Driver.create!(name: "Status driver")
+    assignment = @day.departures.first.compensation_assignments.create!(
+      driver: driver, role_code: "driver_la_fortuna")
+    sign_in user(:operador)
+
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      status_action: "change", compensation_assignment: { status: "canceled" }
+    }
+    assert_equal "planned", assignment.reload.status
+
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      status_action: "change", confirm_status_change: "1",
+      compensation_assignment: { status: "", role_code: "driver_per_trip" }
+    }
+    assert_equal "planned", assignment.reload.status
+    assert_equal "driver_la_fortuna", assignment.role_code
+
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      status_action: "change", confirm_status_change: "1",
+      compensation_assignment: { status: "canceled", role_code: "driver_per_trip" }
+    }
+    assert_equal "canceled", assignment.reload.status
+    assert_equal "driver_la_fortuna", assignment.role_code
+    assert AuditLog.exists?(action: "change_compensation_assignment_status",
+      auditable_id: assignment.id)
+  end
+
   test "operator chooses TL in the single team roles form" do
     guide = Guide.create!(name: "Scheduled TL", priority: 3,
       active: true, pay_category: "freelance_regular")

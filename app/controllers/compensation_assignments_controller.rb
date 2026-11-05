@@ -25,13 +25,25 @@ class CompensationAssignmentsController < ApplicationController
 
   def update
     assignment = assignment_for_day
+    status_change = params[:status_action] == "change"
+    if status_change && (!CompensationAssignment::STATUSES.include?(assignment_params[:status]) ||
+        params[:confirm_status_change] != "1")
+      return redirect_to assignment_return_path,
+        alert: "Seleccione un estado y confirme el cambio antes de guardarlo."
+    end
+    requested_changes = if status_change
+      { status: assignment_params[:status] }
+    else
+      assignment_params.except(:departure_id, :guide_id, :driver_id, :status)
+    end
     before = assignment.attributes.slice("role_code", "photo_task", "also_drives",
       "bus_guide", "principal_photographer", "status")
+    assignment.assign_attributes(requested_changes)
+    return redirect_to assignment_return_path, notice: "No hubo cambios." unless assignment.changed?
 
     Compensation::Current.set(actor: current_user, reason: params[:correction_reason]) do
       CompensationAssignment.transaction do
-        changes = assignment_params.except(:departure_id, :guide_id, :driver_id)
-          .merge(updated_by: current_user, source: "manual")
+        changes = requested_changes.merge(updated_by: current_user, source: "manual")
         if ActiveModel::Type::Boolean.new.cast(changes[:principal_photographer]) &&
             changes[:role_code] == "photographer"
           previous_principals = assignment.departure.compensation_assignments.active
@@ -49,16 +61,18 @@ class CompensationAssignmentsController < ApplicationController
           end
         end
         assignment.update!(changes)
-        sync_guide_day_role!(assignment)
+        sync_guide_day_role!(assignment) unless status_change
         ensure_principal_photographer!(assignment.departure)
         Compensation::RepriceDay.call(@work_day)
-        audit!(action: "update_compensation_assignment", auditable: assignment,
+        audit!(action: status_change ? "change_compensation_assignment_status" :
+          "update_compensation_assignment", auditable: assignment,
           work_day: @work_day,
           metadata: { before: before, after: assignment.attributes.slice(*before.keys),
             reason: params[:correction_reason] })
       end
     end
-    redirect_to assignment_return_path, notice: "Asignación actualizada."
+    redirect_to assignment_return_path, notice: status_change ? "Estado actualizado." :
+      "Función y tareas actualizadas."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, RuntimeError => e
     redirect_to assignment_return_path, alert: e.message
   end

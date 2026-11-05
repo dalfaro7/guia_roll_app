@@ -87,7 +87,7 @@
                 <tr>
                   <td><%= assignment.person&.name %></td>
                   <td><%= compensation_label(assignment.role_code) %><% if assignment.principal_photographer? %> · Fotógrafo principal<% end %></td>
-                  <td><%= assignment.status %></td>
+                  <td><%= compensation_status_label(assignment.status) %></td>
                   <td>
                     <% if assignment.pricing_error.present? %><span class="text-danger"><%= assignment.pricing_error %></span><% end %>
                     <% assignment.compensation_lines.each do |line| %>

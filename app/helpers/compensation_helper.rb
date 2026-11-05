@@ -33,6 +33,13 @@ module CompensationHelper
     LABELS.fetch(code.to_s, code.to_s.humanize)
   end
 
+  def compensation_status_label(status)
+    {
+      "planned" => "Programada", "performed" => "Realizada",
+      "canceled" => "Cancelada", "no_show" => "No se presentó"
+    }.fetch(status.to_s, status.to_s)
+  end
+
   def compensation_guide_roles_for(departure)
     suffix = Departure.leader_rate_suffix_for(departure.location)
     CompensationAssignment::GUIDE_ROLES.reject do |code|
