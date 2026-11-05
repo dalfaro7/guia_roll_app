@@ -161,7 +161,9 @@ Rails.application.routes.draw do
        to: "day_off_report#remove_day_off"
 
   resources :buses
-  resources :transport_rates, only: [:index, :update]
+  resources :transport_rates, only: [:index] do
+    collection { patch :bulk_update }
+  end
 
   resources :bus_assignments,
             only: [:create, :update, :destroy]

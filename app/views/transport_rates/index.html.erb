@@ -5,46 +5,33 @@
       <h1 class="mb-1">Tarifario de transporte</h1>
       <p class="text-muted mb-0">Cada empresa tiene sus propios importes por tipo de vehículo y salida, expresados en USD.</p>
     </div>
-    <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
+    <div class="d-flex flex-wrap gap-2">
+      <% if @can_edit && @companies.any? %>
+        <%= link_to(@editing ? "Cancelar edición" : "Editar todas las tarifas",
+          @editing ? transport_rates_path : transport_rates_path(edit: 1),
+          class: @editing ? "btn btn-outline-secondary" : "btn btn-primary") %>
+      <% end %>
+      <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
+    </div>
   </div>
 
   <div class="alert alert-info" role="note">
     Las tarifas de cada empresa comienzan en $120. Se copian al asignar un vehículo; un cambio posterior no modifica las asignaciones existentes. El costo de una asignación también se puede ajustar en su operación.
   </div>
 
-  <% @companies.each do |company| %>
-    <% rates = company.transport_rates.index_by { |rate| [rate.location, rate.vehicle_kind, rate.size_category] } %>
-    <section class="mb-4" aria-labelledby="company-<%= company.id %>" id="transport-company-<%= company.id %>">
-      <h2 class="h4 mb-3" id="company-<%= company.id %>"><%= company.name %></h2>
-      <div class="table-responsive card shadow-sm border-0">
-        <table class="table table-striped align-middle mb-0">
-          <thead class="table-light"><tr><th scope="col" class="ps-3">Salida</th><th scope="col">Categoría</th><th scope="col">Tarifa USD</th><th scope="col">Última actualización</th><th scope="col" class="pe-3">Acción</th></tr></thead>
-          <tbody>
-            <% TransportRate::LOCATIONS.each do |location| %>
-              <% TransportRate::RATE_TYPES.each do |kind, category| %>
-                <% rate = rates[[location, kind, category]] %>
-                <tr>
-                  <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>
-                  <td><%= rate&.category_label || kind %></td>
-                  <td><strong><%= rate ? usd(rate.amount_cents) : "Sin tarifa" %></strong></td>
-                  <td class="small text-muted"><%= rate&.updated_at&.in_time_zone("America/Costa_Rica")&.strftime("%d/%m/%Y %H:%M") || "—" %></td>
-                  <td class="pe-3">
-                    <% if rate && (current_user.admin? || current_user.operador?) %>
-                      <%= form_with model: rate, url: transport_rate_path(rate), method: :patch, class: "d-flex gap-2 align-items-center" do |f| %>
-                        <%= f.label :amount_usd, "USD", class: "visually-hidden" %>
-                        <%= f.number_field :amount_usd, min: 0, step: 0.01, required: true, class: "form-control form-control-sm", style: "max-width: 8rem" %>
-                        <%= f.submit "Guardar", class: "btn btn-sm btn-outline-primary" %>
-                      <% end %>
-                    <% else %><span class="text-muted">—</span><% end %>
-                  </td>
-                </tr>
-              <% end %>
-            <% end %>
-          </tbody>
-        </table>
+  <% if @editing %>
+    <p class="text-muted">Edita los importes necesarios y guarda una sola vez. Si alguno no es válido, no se modificará ninguna tarifa.</p>
+    <%= form_with url: bulk_update_transport_rates_path, method: :patch, local: true do %>
+      <%= render "rate_tables" %>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <%= submit_tag "Guardar todas las tarifas", class: "btn btn-success" %>
+        <%= link_to "Cancelar", transport_rates_path, class: "btn btn-outline-secondary" %>
       </div>
-    </section>
+    <% end %>
+  <% else %>
+    <%= render "rate_tables" %>
   <% end %>
+
   <% if @companies.empty? %>
     <p class="text-muted">Primero registra una empresa de transporte para definir sus tarifas.</p>
   <% end %>
