@@ -5,27 +5,42 @@
       <h1 class="mb-1">Tarifario de transporte</h1>
       <p class="text-muted mb-0">Cada empresa tiene sus propios importes por categoría de vehículo y salida, expresados en USD. Las categorías se administran en Empresas.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-      <% if @can_edit && @companies.any? %>
-        <%= link_to(@editing ? "Cancelar edición" : "Editar todas las tarifas",
-          @editing ? transport_rates_path : transport_rates_path(edit: 1),
-          class: @editing ? "btn btn-outline-secondary" : "btn btn-primary") %>
-      <% end %>
-      <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
-    </div>
+    <%= link_to "Volver a buses", buses_path, class: "btn btn-outline-secondary" %>
   </div>
+
+  <div class="card shadow-sm border-0 mb-4"><div class="card-body">
+    <%= form_with url: transport_rates_path, method: :get, local: true, class: "row g-2 align-items-end" do %>
+      <div class="col-12 col-md-6">
+        <%= label_tag :transport_company_id, "Empresa de transporte", class: "form-label fw-semibold" %>
+        <%= select_tag :transport_company_id,
+          options_for_select([["Todas las empresas", ""]] + @all_companies.map { |company| [company.name, company.id] }, @company&.id),
+          class: "form-select" %>
+      </div>
+      <div class="col-12 col-md-auto"><%= submit_tag "Filtrar", class: "btn btn-outline-primary w-100" %></div>
+    <% end %>
+  </div></div>
 
   <div class="alert alert-info" role="note">
     Las tarifas de cada empresa comienzan en $120. Se copian al asignar un vehículo; un cambio posterior no modifica las asignaciones existentes. El costo de una asignación también se puede ajustar en su operación.
   </div>
 
+  <% if @company && @can_edit %>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <p class="mb-0 text-muted">Actualización masiva de las tarifas de <strong><%= @company.name %></strong>.</p>
+      <%= link_to(@editing ? "Cancelar edición" : "Editar tarifas de esta empresa",
+        @editing ? transport_rates_path(transport_company_id: @company.id) : transport_rates_path(transport_company_id: @company.id, edit: 1),
+        class: @editing ? "btn btn-outline-secondary" : "btn btn-primary") %>
+    </div>
+  <% end %>
+
   <% if @editing %>
-    <p class="text-muted">Edita los importes necesarios y guarda una sola vez. Si alguno no es válido, no se modificará ninguna tarifa.</p>
+    <p class="text-muted">Edita los importes necesarios y guarda una sola vez. Si alguno no es válido, no se modificará ninguna tarifa de esta empresa.</p>
     <%= form_with url: bulk_update_transport_rates_path, method: :patch, local: true do %>
+      <%= hidden_field_tag :transport_company_id, @company.id %>
       <%= render "rate_tables" %>
       <div class="d-flex flex-wrap gap-2 mb-4">
-        <%= submit_tag "Guardar todas las tarifas", class: "btn btn-success" %>
-        <%= link_to "Cancelar", transport_rates_path, class: "btn btn-outline-secondary" %>
+        <%= submit_tag "Actualizar tarifas de #{@company.name}", class: "btn btn-success" %>
+        <%= link_to "Cancelar", transport_rates_path(transport_company_id: @company.id), class: "btn btn-outline-secondary" %>
       </div>
     <% end %>
   <% else %>
