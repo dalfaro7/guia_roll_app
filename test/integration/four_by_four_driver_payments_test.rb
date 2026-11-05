@@ -16,8 +16,11 @@ class FourByFourDriverPaymentsTest < ActiveSupport::TestCase
         updated_at: Time.current })
     end
     @day = WorkDay.create!(date: Date.current + 5.days, guides_requested: 0)
-    @arc = TransportCompany.create!(name: "ARC", internal_fleet: true)
-    @external = TransportCompany.create!(name: "Viajes del Arenal")
+    categories = %w[bus_small bus_large four_by_four]
+    @arc = TransportCompany.create!(name: "ARC", internal_fleet: true,
+      vehicle_categories: categories)
+    @external = TransportCompany.create!(name: "Viajes del Arenal",
+      vehicle_categories: categories)
     @arc_4x4 = Bus.create!(alias: "ARC 4x4", plate: "ARC-4X4",
       capacity: 4, transport_company: @arc, vehicle_kind: "four_by_four")
     @external_4x4 = Bus.create!(alias: "Externo 4x4", plate: "EXT-4X4",

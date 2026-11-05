@@ -16,7 +16,9 @@ class TransportRatesController < ApplicationController
     expected_ids = @companies.flat_map do |company|
       company.transport_rates.filter_map do |rate|
         rate.id.to_s if TransportRate::LOCATIONS.include?(rate.location) &&
-          TransportRate::RATE_TYPES.include?([rate.vehicle_kind, rate.size_category])
+          TransportRate::RATE_TYPES.include?([rate.vehicle_kind, rate.size_category]) &&
+          company.offers_vehicle_category?(vehicle_kind: rate.vehicle_kind,
+            size_category: rate.size_category)
       end
     end
     unless @submitted_rates.keys.sort == expected_ids.sort

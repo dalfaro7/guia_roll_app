@@ -25,6 +25,8 @@
       variant.disabled = !variant.required;
       if (!variant.required) variant.value = '';
     }
+    const seatsLabel = form.querySelector('[data-bus-driver-seats-label]');
+    if (seatsLabel) seatsLabel.textContent = selected && selected.dataset.kind === 'four_by_four' ? 'Guías' : 'Pasajeros';
   };
 
   const refreshAvailability = async (form) => {

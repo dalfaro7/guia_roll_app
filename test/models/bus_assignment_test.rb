@@ -17,6 +17,28 @@ class BusAssignmentTest < ActiveSupport::TestCase
     assert_not_includes Bus.available_on(@work_day), @bus
   end
 
+  test "a disabled vehicle category blocks new trips but preserves existing ones" do
+    four_by_four = Bus.new(alias: "4x4 de prueba", plate: "ABC-4X4", capacity: 4,
+      vehicle_kind: "four_by_four", transport_company: @company)
+    assert_not four_by_four.valid?
+    assert_match(/no ofrece esta categoría/, four_by_four.errors.full_messages.join(" "))
+
+    @company.update!(vehicle_categories: @company.vehicle_categories + ["four_by_four"])
+    four_by_four.save!
+    first_trip = BusAssignment.create!(bus: four_by_four, work_day: @work_day,
+      location: "Balsa", seats_assigned: 2)
+
+    @company.update!(vehicle_categories: %w[bus_small bus_large])
+    later_day = WorkDay.create!(date: @work_day.date + 1.day, guides_requested: 0)
+    assert_not VehicleAvailability.available?(bus: four_by_four,
+      work_day: later_day, location: "Balsa")
+    assert_raises(ActiveRecord::RecordInvalid) do
+      BusAssignment.create!(bus: four_by_four, work_day: later_day,
+        location: "Balsa", seats_assigned: 2)
+    end
+    assert_equal four_by_four, first_trip.reload.bus
+  end
+
   test "driver is optional but must belong to the bus company" do
     assignment = BusAssignment.new(bus: @bus, work_day: @work_day,
       location: "Balsa", seats_assigned: 10)

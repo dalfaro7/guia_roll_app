@@ -10,8 +10,10 @@ class TransportRatesControllerTest < ActionDispatch::IntegrationTest
   end
 
   def all_rate_values
-    TransportRate.order(:id).index_by { |rate| rate.id.to_s }
-      .transform_values(&:amount_usd)
+    TransportRate.includes(:transport_company).order(:id)
+      .select { |rate| rate.transport_company.offers_vehicle_category?(
+        vehicle_kind: rate.vehicle_kind, size_category: rate.size_category) }
+      .index_by { |rate| rate.id.to_s }.transform_values(&:amount_usd)
   end
 
   test "one button opens bulk edit and one form saves rates for different companies" do
@@ -19,14 +21,14 @@ class TransportRatesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "h1", "Tarifario de transporte"
     assert_select "section h2", count: 2
-    assert_select "tbody tr", count: 24
+    assert_select "tbody tr", count: 16
     assert_select "a[href='#{transport_rates_path(edit: 1)}']", text: "Editar todas las tarifas"
     assert_select "form[action^='/transport_rates/']", count: 0
 
     get transport_rates_path(edit: 1)
     assert_response :success
     assert_select "form[action='#{bulk_update_transport_rates_path}']", count: 1
-    assert_select "input[name^='rates[']", count: 24
+    assert_select "input[name^='rates[']", count: 16
     assert_select "input[type='submit'][value='Guardar todas las tarifas']", count: 1
 
     first = @company.transport_rates.find_by!(location: "Balsa", size_category: "small", vehicle_kind: "bus")

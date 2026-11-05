@@ -25,7 +25,7 @@ class TransportRate < ApplicationRecord
   end
 
   def category_label
-    return "4x4 (hasta 15 pasajeros)" if vehicle_kind == "four_by_four"
+    return "4x4 (hasta 15 espacios para guías)" if vehicle_kind == "four_by_four"
 
     size_category == "large" ? "Bus grande (20 o más pasajeros)" :
       "Bus pequeño (hasta 15 pasajeros)"

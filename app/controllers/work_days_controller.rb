@@ -72,7 +72,7 @@ class WorkDaysController < ApplicationController
       previous = @work_day.bus_assignments.find_by(bus_id: bus.id)
       {
         id: bus.id,
-        label: "#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} pax)",
+        label: "#{bus.transport_company.name} · #{bus.alias} (#{bus.capacity} #{bus.four_by_four? ? 'espacios para guías, 4x4' : 'pax, bus'})",
         company_id: bus.transport_company_id,
         kind: bus.vehicle_kind,
         internal_fleet: bus.transport_company.internal_fleet?,

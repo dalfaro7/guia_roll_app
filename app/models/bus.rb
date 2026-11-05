@@ -13,6 +13,7 @@ class Bus < ApplicationRecord
   validates :size_category, inclusion: { in: %w[small large] }
   validates :vehicle_kind, inclusion: { in: %w[bus four_by_four] }
   validate :capacity_matches_category
+  validate :company_offers_vehicle_category, if: :vehicle_category_changed?
   validate :preserve_assigned_vehicle_identity
 
   scope :available_on, ->(work_day) {
@@ -20,6 +21,8 @@ class Bus < ApplicationRecord
   }
 
   def size_category_label
+    return "4x4 para guías" if four_by_four?
+
     size_category == "large" ? "Grande (20 o más pasajeros)" :
       "Pequeño (hasta 15 pasajeros)"
   end
@@ -40,6 +43,19 @@ class Bus < ApplicationRecord
     end
   end
 
+  def vehicle_category_changed?
+    new_record? || will_save_change_to_transport_company_id? ||
+      will_save_change_to_vehicle_kind? || will_save_change_to_capacity?
+  end
+
+  def company_offers_vehicle_category
+    return unless transport_company && vehicle_kind.present? && size_category.present?
+    return if transport_company.offers_vehicle_category?(
+      vehicle_kind: vehicle_kind, size_category: size_category)
+
+    errors.add(:transport_company, "no ofrece esta categoría de vehículo")
+  end
+
   def preserve_assigned_vehicle_identity
     return unless persisted? && bus_assignments.exists?
     if will_save_change_to_vehicle_kind?
@@ -53,7 +69,7 @@ class Bus < ApplicationRecord
   def capacity_matches_category
     return if capacity.blank?
     if four_by_four? && capacity.to_i > 15
-      errors.add(:capacity, "de un 4x4 no puede superar 15 pasajeros")
+      errors.add(:capacity, "de un 4x4 no puede superar 15 espacios para guías")
     end
     return if (size_category == "small" && capacity.to_i.between?(1, 15)) ||
       (size_category == "large" && capacity.to_i >= 20)

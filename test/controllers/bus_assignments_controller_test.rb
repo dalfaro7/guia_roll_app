@@ -99,6 +99,7 @@ class BusAssignmentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "four by four used in Sara four is offered for PM with its same driver" do
+    @company.update!(vehicle_categories: @company.vehicle_categories + ["four_by_four"])
     vehicle = Bus.create!(transport_company: @company, capacity: 4,
       plate: "4X4-1", alias: "4x4", vehicle_kind: "four_by_four")
     driver = Driver.create!(name: "Chofer freelance")

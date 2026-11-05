@@ -18,6 +18,26 @@ class TransportCompaniesControllerTest < ActionDispatch::IntegrationTest
     assert_select "h1", "Empresas de transporte"
   end
 
+  test "admin can enable or remove vehicle categories for a provider" do
+    company = TransportCompany.create!(name: "Transportes Memo Test")
+    assert_equal %w[bus_small bus_large], company.vehicle_categories
+    assert_not company.offers_vehicle_category?(vehicle_kind: "four_by_four",
+      size_category: "small")
+
+    patch transport_company_url(company), params: { transport_company: {
+      name: company.name, internal_fleet: "0",
+      vehicle_categories: %w[bus_large four_by_four]
+    } }
+    assert_redirected_to transport_companies_url
+    assert_equal %w[bus_large four_by_four], company.reload.vehicle_categories
+
+    patch transport_company_url(company), params: { transport_company: {
+      name: company.name, internal_fleet: "0", vehicle_categories: ["bus_large"]
+    } }
+    assert_redirected_to transport_companies_url
+    assert_equal ["bus_large"], company.reload.vehicle_categories
+  end
+
   test "admin can register a company driver or freelance with phone pending" do
     company = TransportCompany.create!(name: "ARC Test")
     get drivers_url

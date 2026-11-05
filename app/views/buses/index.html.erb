@@ -32,7 +32,7 @@
     <div class="card shadow-sm border-0 d-none d-md-block">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <caption class="visually-hidden">Buses registrados</caption>
+          <caption class="visually-hidden">Vehículos registrados</caption>
           <thead class="table-light">
             <tr>
               <th scope="col" class="ps-3">Vehículo</th>
@@ -86,9 +86,9 @@
   <% else %>
     <div class="card shadow-sm border-0">
       <div class="card-body text-center py-5">
-        <h3 class="h5"><%= @query.present? ? "No se encontraron buses" : "Todavía no hay buses registrados" %></h3>
+        <h3 class="h5"><%= @query.present? ? "No se encontraron vehículos" : "Todavía no hay vehículos registrados" %></h3>
         <p class="text-muted"><%= @query.present? ? "Prueba con otro alias, empresa, placa o teléfono." : "Agrega el primer vehículo para tener sus datos a mano." %></p>
-        <%= link_to @query.present? ? "Ver todos los buses" : "Agregar bus", @query.present? ? buses_path : new_bus_path, class: "btn btn-primary" %>
+        <%= link_to @query.present? ? "Ver todos los vehículos" : "Agregar bus", @query.present? ? buses_path : new_bus_path, class: "btn btn-primary" %>
       </div>
     </div>
   <% end %>

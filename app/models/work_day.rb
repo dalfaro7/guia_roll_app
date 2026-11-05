@@ -57,9 +57,22 @@ class WorkDay < ApplicationRecord
   end
 
   def bus_capacity_for(location)
-    buses_for(location)
-      .joins(:bus)
+    buses_for(location).joins(:bus)
+      .where(buses: { vehicle_kind: "bus" })
       .sum("buses.capacity")
+  end
+
+  def four_by_four_guide_capacity_for(location)
+    buses_for(location).joins(:bus)
+      .where(buses: { vehicle_kind: "four_by_four" })
+      .sum("buses.capacity")
+  end
+
+  def four_by_four_guide_spaces_remaining_for(location)
+    four_by_four_guide_capacity_for(location) -
+      buses_for(location).joins(:bus)
+        .where(buses: { vehicle_kind: "four_by_four" })
+        .sum(:seats_assigned)
   end
 
   def seats_remaining_for(location)

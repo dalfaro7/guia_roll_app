@@ -22,9 +22,9 @@
       <div class="form-text">Al cambiar la empresa, los viajes de hoy y anteriores conservan su empresa y costo. Los viajes de fechas futuras toman la nueva tarifa. <% if current_user.admin? %><%= link_to "Administrar empresas", transport_companies_path %><% end %></div>
     </div>
     <div class="col-12 col-md-6">
-      <%= f.label :capacity, "Capacidad de pasajeros", class: "form-label fw-semibold" %>
+      <%= f.label :capacity, "Capacidad de pasajeros o guías", class: "form-label fw-semibold" %>
       <%= f.number_field :capacity, class: "form-control", required: true, min: 1, step: 1, inputmode: "numeric" %>
-      <div class="form-text">Pequeño: hasta 15 pasajeros. Grande: desde 20. Se asigna automáticamente.</div>
+      <div class="form-text">En buses, cuenta pasajeros; en 4x4, espacios para guías. Buses pequeños: hasta 15; grandes: desde 20.</div>
     </div>
     <div class="col-12 col-md-6">
       <%= f.label :vehicle_kind, "Tipo de vehículo", class: "form-label fw-semibold" %>

@@ -8,6 +8,7 @@
         <tbody>
           <% TransportRate::LOCATIONS.each do |location| %>
             <% TransportRate::RATE_TYPES.each do |kind, category| %>
+              <% next unless company.offers_vehicle_category?(vehicle_kind: kind, size_category: category) %>
               <% rate = rates[[location, kind, category]] %>
               <tr>
                 <th scope="row" class="ps-3"><%= location == "Sara-3&4" ? "Sarapiquí 3 y 4" : location %></th>

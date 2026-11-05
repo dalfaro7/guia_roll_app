@@ -38,7 +38,7 @@ class BusesControllerTest < ActionDispatch::IntegrationTest
 
     get buses_url, params: { q: "unlisted" }
     assert_response :success
-    assert_select "h3", "No se encontraron buses"
+    assert_select "h3", "No se encontraron vehículos"
   end
 
   test "should get show" do

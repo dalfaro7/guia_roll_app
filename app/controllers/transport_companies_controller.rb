@@ -16,7 +16,7 @@ class TransportCompaniesController < ApplicationController
 
   def update
     company = TransportCompany.find(params[:id])
-    before = company.attributes.slice("name", "internal_fleet")
+    before = company.attributes.slice("name", "internal_fleet", "vehicle_categories")
     if company.update(company_params)
       company.buses.update_all(company: company.name)
       audit!(action: "update_transport_company", auditable: company,
@@ -30,6 +30,6 @@ class TransportCompaniesController < ApplicationController
   private
 
   def company_params
-    params.require(:transport_company).permit(:name, :internal_fleet)
+    params.require(:transport_company).permit(:name, :internal_fleet, vehicle_categories: [])
   end
 end

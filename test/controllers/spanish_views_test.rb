@@ -24,7 +24,7 @@ class SpanishViewsTest < ActionDispatch::IntegrationTest
       assert_not_includes response.body, "Translation missing"
     end
     get new_bus_path
-    assert_select 'label', text: "Capacidad de pasajeros"
+    assert_select 'label', text: "Capacidad de pasajeros o guías"
     get dashboard_path
     assert_select 'h1', text: "Panel de equidad"
     assert_select 'th', text: "Diferencia vs. promedio"
