@@ -1,20 +1,26 @@
 .distribution-page{max-width:1320px;color:#1e2b35}
 .distribution-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:5px 0 24px}
-.distribution-heading h1{font-size:clamp(1.7rem,3vw,2.5rem);font-weight:700;margin:0 0 7px}
-.distribution-eyebrow{font-size:.74rem;letter-spacing:.12em;font-weight:700;color:#527065;margin:0 0 6px}
-.distribution-date{margin:0;color:#5c6872;text-transform:capitalize}
+.distribution-heading h1{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:700;margin:0 0 4px}
+.distribution-eyebrow{font-size:11px;letter-spacing:.08em;font-weight:700;color:#527065;margin:0 0 4px}
+.distribution-date{margin:0;color:#5c6872;text-transform:capitalize;font-size:13px}
 .distribution-scroll{overflow-x:auto;border:1px solid #d8e0e5;border-radius:12px;background:white;box-shadow:0 5px 20px #173d4b0a}
 .distribution-scroll:focus-visible{outline:3px solid #2374bd;outline-offset:3px}
-.distribution-page table{min-width:760px;margin:0}
-.distribution-page thead th{background:#eaf0f3;color:#20323d;padding:12px 13px;white-space:nowrap}
-.distribution-page tbody td,.distribution-page tbody th{padding:10px 13px;vertical-align:middle}
-.distribution-page tbody td:first-child,.distribution-page thead th:first-child{width:48px;text-align:center}
-.distribution-group th{font-weight:700;border-top:2px solid #cbd8de!important}
-.distribution-group-location th{background:#edf3f5}
-.distribution-group-status th{background:#f1f3f4}
+.distribution-page table{min-width:620px;margin:0;font-size:13px;line-height:1.25}
+.distribution-page thead th{background:#eaf0f3;color:#20323d;padding:7px 8px;white-space:nowrap;font-size:12px;line-height:1.15;font-weight:700}
+.distribution-page tbody td,.distribution-page tbody th{padding:6px 8px;vertical-align:middle}
+.distribution-page thead th:first-child{width:42px;text-align:center}
+.distribution-page thead th:nth-child(2){width:32px;text-align:center}
+.distribution-page .distribution-section-cell{width:42px;min-width:42px;max-width:42px;padding:6px 3px!important;text-align:center;vertical-align:middle;font-size:12px;font-weight:700;border-top:2px solid #cbd8de!important;background:#edf3f5}
+.distribution-section-cell span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;letter-spacing:.02em}
+.distribution-page .distribution-section-cell.location-balsa{background:#c9e8d0}
+.distribution-page .distribution-section-cell.location-sara{background:#c7d6ec}
+.distribution-page .distribution-section-cell.location-pm{background:#f1e6bc}
+.distribution-page .distribution-section-cell.location-privado{background:#a5ead5}
+.distribution-page .distribution-status-cell{background:#e6eaec}
+.distribution-page .distribution-number{width:32px;text-align:center;padding-left:3px;padding-right:3px}
 .distribution-availability td{background:#fafbfc}
 .distribution-empty td{color:#6d7b83;font-style:italic;background:#fcfdfd}
-.distribution-person-type,.distribution-note{display:block;font-size:.8rem;color:#485e66;line-height:1.4}
-.distribution-person-type{font-weight:700;margin-top:2px}
-.distribution-note{margin-top:3px}
+.distribution-person-type,.distribution-note{display:block;font-size:11px;color:#485e66;line-height:1.25}
+.distribution-person-type{font-weight:700;margin-top:1px}
+.distribution-note{margin-top:2px}
 @media(max-width:600px){.distribution-heading{align-items:start}.distribution-heading .btn{width:100%}}
