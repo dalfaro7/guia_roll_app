@@ -39,14 +39,25 @@ module Compensation
       if assignment&.source == "manual"
         if !@guide_day.worked? &&
             !%w[canceled no_show].include?(assignment.status)
-          assignment.update!(status: "canceled")
+          assignment.update!(status: "canceled", canceled_by_schedule: true)
           Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
           promote_principal_photographer(assignment.departure)
-        elsif @guide_day.worked? &&
-            (@guide_day.saved_change_to_role_primary? ||
+        elsif @guide_day.worked?
+          restored = assignment.canceled_by_schedule? &&
+            assignment.departure.status != "canceled"
+          if restored
+            assignment.update!(status: assignment.departure.closed? ? "performed" : "planned",
+              canceled_by_schedule: false)
+          end
+          if @guide_day.saved_change_to_role_primary? ||
               @guide_day.saved_change_to_role_secondary? ||
-              @guide_day.saved_change_to_location?)
-          sync_manual_role(assignment)
+              @guide_day.saved_change_to_location?
+            sync_manual_role(assignment)
+          end
+          if restored
+            promote_principal_photographer(assignment.departure)
+            Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
+          end
         end
         return
       end

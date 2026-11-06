@@ -464,6 +464,31 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
       auditable_id: assignment.id)
   end
 
+  test "confirming cancellation keeps a schedule-canceled assignment canceled" do
+    guide = Guide.create!(name: "Confirmed cancellation", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    guide_day = @day.guide_days.create!(guide: guide, status: "standby")
+    guide_day.update!(status: "worked", role_primary: "River Guide", location: "Balsa")
+    assignment = CompensationAssignment.find_by!(guide_day: guide_day)
+    assignment.update!(source: "manual")
+    guide_day.update!(status: "standby")
+    assert assignment.reload.canceled_by_schedule?
+
+    sign_in user(:operador)
+    patch work_day_compensation_assignment_path(@day, assignment), params: {
+      status_action: "change", confirm_status_change: "1",
+      compensation_assignment: { status: "canceled" }
+    }
+    assert_response :redirect
+    assert_equal "canceled", assignment.reload.status
+    assert_not assignment.canceled_by_schedule?
+    assert AuditLog.exists?(action: "change_compensation_assignment_status",
+      auditable_id: assignment.id)
+
+    guide_day.update!(status: "worked", role_primary: "River Guide", location: "Balsa")
+    assert_equal "canceled", assignment.reload.status
+  end
+
   test "operator chooses TL in the single team roles form" do
     guide = Guide.create!(name: "Scheduled TL", priority: 3,
       active: true, pay_category: "freelance_regular")

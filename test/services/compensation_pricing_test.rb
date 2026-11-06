@@ -374,6 +374,59 @@ class CompensationPricingTest < ActiveSupport::TestCase
     guide_day.update!(status: "standby")
 
     assert_equal "canceled", record.reload.status
+    assert record.canceled_by_schedule?
+    assert_equal 0, record.total_cents
+
+    guide_day.update!(status: "worked", role_primary: "River Guide", location: "Balsa")
+
+    assert_equal "planned", record.reload.status
+    assert_not record.canceled_by_schedule?
+    assert_equal 5_000, record.total_cents
+  end
+
+  test "a schedule-canceled principal photographer is restored with its photo extra" do
+    actor = User.create!(name: "Compensation operator", email: "compensation-operator@example.com",
+      password: "password123")
+    person = guide("Restored photographer")
+    guide_day = @work_day.guide_days.create!(guide: person, status: "standby")
+    guide_day.update!(status: "worked", role_primary: "Photographer",
+      location: "Balsa")
+    record = CompensationAssignment.find_by!(guide_day: guide_day)
+    record.update!(source: "manual")
+
+    guide_day.update!(status: "standby", role_primary: nil, location: nil)
+    assert_equal "canceled", record.reload.status
+
+    Compensation::Current.set(actor: actor) do
+      guide_day.update!(status: "worked", role_primary: "River Guide",
+        location: "Balsa")
+    end
+    assert_equal "planned", record.reload.status
+    assert_equal "river_guide", record.role_code
+
+    Compensation::Current.set(actor: actor) do
+      guide_day.update!(role_primary: "Photographer")
+    end
+
+    assert_equal "photographer", record.reload.role_code
+    assert record.principal_photographer?
+    assert_equal 7_000, record.total_cents
+  end
+
+  test "an intentional cancellation stays canceled when the guide returns to work" do
+    person = guide("Intentionally canceled guide")
+    guide_day = @work_day.guide_days.create!(guide: person, status: "standby")
+    guide_day.update!(status: "worked", role_primary: "River Guide",
+      location: "Balsa")
+    record = CompensationAssignment.find_by!(guide_day: guide_day)
+    record.update!(status: "canceled", source: "manual")
+    Compensation::RepriceDay.call(@work_day)
+
+    guide_day.update!(status: "standby")
+    guide_day.update!(status: "worked", role_primary: "River Guide", location: "Balsa")
+
+    assert_equal "canceled", record.reload.status
+    assert_not record.canceled_by_schedule?
     assert_equal 0, record.total_cents
   end
 

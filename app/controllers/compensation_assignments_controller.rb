@@ -49,11 +49,13 @@ class CompensationAssignmentsController < ApplicationController
     before = assignment.attributes.slice("role_code", "photo_task", "also_drives",
       "bus_guide", "principal_photographer", "status")
     assignment.assign_attributes(requested_changes)
-    return redirect_to assignment_return_path, notice: "No hubo cambios." unless assignment.changed?
+    return redirect_to assignment_return_path, notice: "No hubo cambios." unless
+      assignment.changed? || (status_change && assignment.canceled_by_schedule?)
 
     Compensation::Current.set(actor: current_user, reason: params[:correction_reason]) do
       CompensationAssignment.transaction do
         changes = requested_changes.merge(updated_by: current_user, source: "manual")
+        changes[:canceled_by_schedule] = false if status_change
         if ActiveModel::Type::Boolean.new.cast(changes[:principal_photographer]) &&
             changes[:role_code] == "photographer"
           previous_principals = assignment.departure.compensation_assignments.active
@@ -91,7 +93,8 @@ class CompensationAssignmentsController < ApplicationController
     assignment = assignment_for_day
     Compensation::Current.set(actor: current_user, reason: params[:correction_reason]) do
       CompensationAssignment.transaction do
-        assignment.update!(status: "canceled", updated_by: current_user, source: "manual")
+        assignment.update!(status: "canceled", updated_by: current_user,
+          source: "manual", canceled_by_schedule: false)
         ensure_principal_photographer!(assignment.departure)
         Compensation::RepriceDay.call(@work_day)
         audit!(action: "remove_compensation_assignment", auditable: assignment,
