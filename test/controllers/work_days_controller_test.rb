@@ -118,11 +118,14 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
       location: "Balsa", seats_assigned: 6)
 
     get work_day_path(day)
-    assert_select "a[href='#{distribution_work_day_path(day)}']", text: "Distribución de guías y choferes"
+    public_link = css_select("a").find { |link| link.text == "Distribución de guías y choferes" }
+    assert public_link
+    assert_match %r{\A/programacion/[^/]+/distribucion\z}, public_link["href"]
 
     get distribution_work_day_path(day)
     assert_response :success
     assert_select "h1", "Distribución de guías y choferes"
+    assert_select "button[data-copy-distribution]", text: "Copiar enlace", count: 1
     assert_equal ["Salida", "#", "Guía o chofer", "Principal", "Secundario", "Estado"],
       css_select("#distribution-table thead th").map(&:text)
     assert_equal ["Balsa", "Sara-3&4"],
@@ -140,5 +143,32 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr[data-status-section='En espera']", text: /Waiting guide/
     assert_select "tr[data-status-section='Libres']", text: /Free guide/
     assert_select "tr[data-status-section='Penalizados']", text: /Penalized guide.*Falta/
+
+    sign_out user
+    get public_link["href"]
+    assert_response :success
+    assert_select "h1", "Distribución de guías y choferes"
+    assert_select "tr[data-section='Balsa'][data-person-kind='driver']", text: /Distribution driver/
+    assert_select "button[data-copy-distribution]", text: "Copiar enlace", count: 1
+    assert_select "nav.roll-header__nav", count: 0
+    assert_select "a[href='#{work_day_path(day)}']", count: 0
+    assert_match(/no-store/, response.headers["Cache-Control"])
+    assert_equal "noindex, nofollow", response.headers["X-Robots-Tag"]
+    assert_equal "no-referrer", response.headers["Referrer-Policy"]
+
+    get public_work_day_distribution_path(token: "invalid")
+    assert_response :not_found
+
+    travel 8.days do
+      get public_link["href"]
+      assert_response :not_found
+    end
+
+    day.update_columns(status: WorkDay.statuses.fetch("generated"))
+    get public_link["href"]
+    assert_response :not_found
+
+    get distribution_work_day_path(day)
+    assert_redirected_to new_user_session_path
   end
 end

@@ -1,5 +1,5 @@
 <% content_for :title, "Distribución de guías y choferes · #{l(@work_day.date, format: :long)}" %>
-<% content_for :head do %><link rel="stylesheet" href="/work-day-distribution.css?v=2"><% end %>
+<% content_for :head do %><link rel="stylesheet" href="/work-day-distribution.css?v=3"><script src="/work-day-distribution.js?v=1" defer></script><% end %>
 
 <main class="container py-4 distribution-page">
   <header class="distribution-heading">
@@ -8,9 +8,15 @@
       <h1>Distribución de guías y choferes</h1>
       <p class="distribution-date"><%= l(@work_day.date, format: :long) %></p>
     </div>
-    <%= link_to "Volver a la operación", work_day_path(@work_day), class: "btn btn-outline-primary" %>
+    <div class="distribution-header-actions">
+      <% unless @public_view %><%= link_to "Volver a la operación", work_day_path(@work_day), class: "btn btn-outline-primary" %><% end %>
+      <% share_token = @public_view ? params[:token] : @work_day.signed_id(purpose: :public_distribution, expires_in: 7.days) %>
+      <button type="button" class="btn btn-primary" data-copy-distribution="<%= public_work_day_distribution_url(token: share_token) %>">Copiar enlace</button>
+      <span class="distribution-copy-status" role="status" aria-live="polite"></span>
+    </div>
   </header>
 
+  <p class="distribution-scroll-hint">Desliza horizontalmente para ver todas las columnas.</p>
   <div class="distribution-scroll" role="region" aria-label="Distribución del personal" tabindex="0">
     <table id="distribution-table" class="table table-bordered align-middle">
       <thead>

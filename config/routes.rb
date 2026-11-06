@@ -92,6 +92,10 @@ Rails.application.routes.draw do
 
   resources :roll_notes, only: [:index, :create, :destroy]
 
+  get "programacion/:token/distribucion",
+      to: "work_days#public_distribution",
+      as: :public_work_day_distribution
+
   resources :work_days do
     resource :compensation, only: [:show], controller: :compensation_work_days
     resources :departures, only: [:update] do

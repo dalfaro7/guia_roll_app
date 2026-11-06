@@ -1,4 +1,5 @@
 class WorkDaysController < ApplicationController
+  skip_before_action :authenticate_user!, only: :public_distribution
   before_action :set_work_day, only: [
     :show,
     :distribution,
@@ -71,6 +72,18 @@ class WorkDaysController < ApplicationController
     end
 
     @distribution = WorkDayDistribution.new(@work_day)
+  end
+
+  def public_distribution
+    @work_day = WorkDay.find_signed(params[:token], purpose: :public_distribution)
+    raise ActiveRecord::RecordNotFound unless @work_day&.published?
+
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    @distribution = WorkDayDistribution.new(@work_day)
+    @public_view = true
+    render :distribution, layout: "public_distribution"
   end
 
   def available_buses

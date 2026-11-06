@@ -80,7 +80,11 @@
 
             <% if @work_day.published? %>
             <%= link_to "Distribución de guías y choferes",
-                        distribution_work_day_path(@work_day),
+                        public_work_day_distribution_path(
+                          token: @work_day.signed_id(
+                            purpose: :public_distribution, expires_in: 7.days
+                          )
+                        ),
                         class: "btn btn-outline-primary" %>
             <%= link_to "Reportes del río Balsa",
                         weather_reports_path,

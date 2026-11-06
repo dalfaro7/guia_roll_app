@@ -1,9 +1,11 @@
 .distribution-page{max-width:1320px;color:#1e2b35}
 .distribution-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:5px 0 24px}
+.distribution-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.distribution-copy-status{min-width:90px;color:#126145;font-size:12px;font-weight:700}
 .distribution-heading h1{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:700;margin:0 0 4px}
 .distribution-eyebrow{font-size:11px;letter-spacing:.08em;font-weight:700;color:#527065;margin:0 0 4px}
 .distribution-date{margin:0;color:#5c6872;text-transform:capitalize;font-size:13px}
-.distribution-scroll{overflow-x:auto;border:1px solid #d8e0e5;border-radius:12px;background:white;box-shadow:0 5px 20px #173d4b0a}
+.distribution-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border:1px solid #d8e0e5;border-radius:12px;background:white;box-shadow:0 5px 20px #173d4b0a}
 .distribution-scroll:focus-visible{outline:3px solid #2374bd;outline-offset:3px}
 .distribution-page table{min-width:620px;margin:0;font-size:13px;line-height:1.25}
 .distribution-page thead th{background:#eaf0f3;color:#20323d;padding:7px 8px;white-space:nowrap;font-size:12px;line-height:1.15;font-weight:700}
@@ -18,9 +20,26 @@
 .distribution-page .distribution-section-cell.location-privado{background:#a5ead5}
 .distribution-page .distribution-status-cell{background:#e6eaec}
 .distribution-page .distribution-number{width:32px;text-align:center;padding-left:3px;padding-right:3px}
+.distribution-page tr.location-balsa td{background-color:#e1f3e5!important}
+.distribution-page tr.location-sara td{background-color:#dae3f4!important}
+.distribution-page tr.location-pm td{background-color:#fbf2d5!important}
+.distribution-page tr.location-privado td{background-color:#bbfaea!important}
 .distribution-availability td{background:#fafbfc}
 .distribution-empty td{color:#6d7b83;font-style:italic;background:#fcfdfd}
 .distribution-person-type,.distribution-note{display:block;font-size:11px;color:#485e66;line-height:1.25}
 .distribution-person-type{font-weight:700;margin-top:1px}
 .distribution-note{margin-top:2px}
-@media(max-width:600px){.distribution-heading{align-items:start}.distribution-heading .btn{width:100%}}
+.distribution-scroll-hint{display:none}
+.distribution-public{background:#f7faf9}
+@media(max-width:640px){
+  .distribution-page{padding:16px 12px!important}
+  .distribution-heading{align-items:start;margin-bottom:14px}
+  .distribution-heading h1{font-size:20px}
+  .distribution-heading .btn{width:100%}
+  .distribution-header-actions{width:100%;justify-content:stretch}
+  .distribution-copy-status{width:100%;min-height:16px}
+  .distribution-scroll-hint{display:block;margin:0 0 8px;color:#53646c;font-size:12px}
+  .distribution-page table{min-width:650px}
+  .distribution-page thead th:first-child{position:sticky;left:0;z-index:3}
+  .distribution-page .distribution-section-cell{position:sticky;left:0;z-index:2;box-shadow:2px 0 4px #20323d18}
+}
