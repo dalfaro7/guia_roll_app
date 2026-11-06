@@ -63,6 +63,26 @@ class FourByFourDriverPaymentsTest < ActiveSupport::TestCase
     assert_equal 1, CompensationAssignment.where(driver: asdrubal).active.count
   end
 
+  test "reassigning a PM driver after removing transport reuses the canceled valuation" do
+    luis = Driver.create!(name: "Luis", transport_company: @arc,
+      payment_mode: "round_trip")
+    foton = Bus.create!(alias: "Foton", plate: "FOTON-TEST",
+      capacity: 15, transport_company: @arc)
+    first = assign(bus: foton, driver: luis, location: "PM")
+    payment = first.compensation_assignment
+    assert_equal 4_000, payment.total_cents
+
+    first.destroy!
+    assert_equal "canceled", payment.reload.status
+
+    replacement = assign(bus: foton, driver: luis, location: "PM")
+    assert_equal payment.id, replacement.compensation_assignment_id
+    assert_equal "planned", payment.reload.status
+    assert_equal 4_000, replacement.driver_payment_cents
+    assert_equal 1, CompensationAssignment.where(departure: payment.departure,
+      driver: luis).count
+  end
+
   test "Mario receives forty dollars for ARC but zero direct payment for an external company" do
     mario = Driver.create!(name: "Mario", payment_mode: "round_trip")
     own = assign(bus: @arc_4x4, driver: mario, location: "Balsa")
