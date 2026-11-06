@@ -1,6 +1,7 @@
 class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
+    :distribution,
     :available_buses,
     :driver_payment_quote,
     :update,
@@ -61,6 +62,15 @@ class WorkDaysController < ApplicationController
         .location_slots
         .group(:location)
         .maximum(:passengers)
+  end
+
+  def distribution
+    unless @work_day.published?
+      redirect_to @work_day, alert: "La distribución está disponible cuando la programación está publicada."
+      return
+    end
+
+    @distribution = WorkDayDistribution.new(@work_day)
   end
 
   def available_buses

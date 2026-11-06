@@ -1,0 +1,66 @@
+<% content_for :title, "Distribución de guías y choferes · #{l(@work_day.date, format: :long)}" %>
+<% content_for :head do %><link rel="stylesheet" href="/work-day-distribution.css?v=1"><% end %>
+
+<main class="container py-4 distribution-page">
+  <header class="distribution-heading">
+    <div>
+      <p class="distribution-eyebrow">PROGRAMACIÓN PUBLICADA</p>
+      <h1>Distribución de guías y choferes</h1>
+      <p class="distribution-date"><%= l(@work_day.date, format: :long) %></p>
+    </div>
+    <%= link_to "Volver a la operación", work_day_path(@work_day), class: "btn btn-outline-primary" %>
+  </header>
+
+  <div class="distribution-scroll" role="region" aria-label="Distribución del personal" tabindex="0">
+    <table id="distribution-table" class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Guía o chofer</th>
+          <th scope="col">Ubicación</th>
+          <th scope="col">Rol principal</th>
+          <th scope="col">Rol secundario</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @distribution.operating_sections.each do |section| %>
+          <tr data-location-section="<%= section[:label] %>" class="distribution-group distribution-group-location">
+            <th colspan="6" scope="rowgroup"><%= section[:label] == "Sara-3&4" ? "Sarapiquí 3 y 4" : section[:label] %></th>
+          </tr>
+          <% guide_number = 0 %>
+          <% section[:rows].each do |row| %>
+            <tr data-section="<%= section[:label] %>" data-person-kind="<%= row[:kind] %>" class="<%= row[:color] %>">
+              <td><% if row[:kind] == :guide && !(section[:label] == "Balsa" && ["Photographer", "Safety Kayaker"].include?(row[:primary])) %><%= guide_number += 1 %><% end %></td>
+              <td><%= row[:name] %><% if row[:kind] == :driver %><small class="distribution-person-type">Chofer</small><% end %></td>
+              <td><%= row[:location].presence || "—" %></td>
+              <td><%= roll_role_label(row[:primary]) %></td>
+              <td><%= roll_role_label(row[:secondary]) %></td>
+              <td><%= row[:status] %><% if row[:note].present? %><small class="distribution-note"><%= row[:note] %></small><% end %></td>
+            </tr>
+          <% end %>
+          <% if section[:rows].empty? %>
+            <tr class="distribution-empty"><td colspan="6">Sin personal asignado.</td></tr>
+          <% end %>
+        <% end %>
+
+        <% @distribution.availability_sections.each do |section| %>
+          <tr data-status-group="<%= section[:label] %>" class="distribution-group distribution-group-status">
+            <th colspan="6" scope="rowgroup"><%= section[:label] %></th>
+          </tr>
+          <% section[:rows].each do |row| %>
+            <tr data-status-section="<%= section[:label] %>" class="distribution-availability">
+              <td><%= "×" if section[:label] == "Penalizados" %></td>
+              <td><%= row[:name] %></td>
+              <td>—</td><td>—</td><td>—</td>
+              <td><%= row[:status] %><% if row[:note].present? %><small class="distribution-note"><%= row[:note] %></small><% end %></td>
+            </tr>
+          <% end %>
+          <% if section[:rows].empty? %>
+            <tr class="distribution-empty"><td colspan="6">Sin personas en este estado.</td></tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</main>

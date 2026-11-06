@@ -90,4 +90,45 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "tr[data-guide-warning='Sara-3&4']", text: /14 pasajeros y ningún guía de río/
     assert_select "h2#day-transport", count: 0
   end
+
+  test "published distribution keeps the old roll table and groups guides and drivers by outing" do
+    user = User.create!(name: "Distribution admin", email: "distribution-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    guides = ["Balsa guide", "Task guide", "Waiting guide", "Free guide", "Penalized guide"].map do |name|
+      Guide.create!(name: name, priority: 3, active: true)
+    end
+    day = WorkDay.create!(date: Date.current + 2.days, status: :published)
+    statuses = %w[worked assigned_task standby day_off penalized]
+    guides.zip(statuses).each do |guide, status|
+      attrs = { status: GuideDay.statuses.fetch(status) }
+      attrs.merge!(location: "Balsa", role_primary: "River Guide", role_secondary: "Head Guide") if status == "worked"
+      attrs[:status_note] = "Host" if status == "assigned_task"
+      attrs[:status_note] = "Falta" if status == "penalized"
+      day.guide_days.find_by!(guide: guide).update_columns(attrs)
+    end
+    company = TransportCompany.create!(name: "Distribution transport")
+    driver = Driver.create!(name: "Distribution driver", transport_company: company)
+    bus = Bus.create!(transport_company: company, alias: "Bus Balsa",
+      plate: "DB-101", capacity: 20)
+    BusAssignment.create!(bus: bus, driver: driver, work_day: day,
+      location: "Balsa", seats_assigned: 6)
+
+    get work_day_path(day)
+    assert_select "a[href='#{distribution_work_day_path(day)}']", text: "Distribución de guías y choferes"
+
+    get distribution_work_day_path(day)
+    assert_response :success
+    assert_select "h1", "Distribución de guías y choferes"
+    assert_equal %w[Balsa Sara-3&4 PM Privado],
+      css_select("tr[data-location-section]").map { |row| row["data-location-section"] }
+    assert_equal ["Tarea asignada", "En espera", "Libres", "Penalizados"],
+      css_select("tr[data-status-group]").map { |row| row["data-status-group"] }
+    assert_select "tr[data-section='Balsa'][data-person-kind='guide']", text: /Balsa guide.*Guía de río.*HG.*Trabaja/
+    assert_select "tr[data-section='Balsa'][data-person-kind='driver']", text: /Distribution driver.*Chofer.*Bus Balsa/
+    assert_select "tr[data-status-section='Tarea asignada']", text: /Task guide.*Host/
+    assert_select "tr[data-status-section='En espera']", text: /Waiting guide/
+    assert_select "tr[data-status-section='Libres']", text: /Free guide/
+    assert_select "tr[data-status-section='Penalizados']", text: /Penalized guide.*Falta/
+  end
 end

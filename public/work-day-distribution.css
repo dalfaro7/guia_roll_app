@@ -1,0 +1,20 @@
+.distribution-page{max-width:1320px;color:#1e2b35}
+.distribution-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:5px 0 24px}
+.distribution-heading h1{font-size:clamp(1.7rem,3vw,2.5rem);font-weight:700;margin:0 0 7px}
+.distribution-eyebrow{font-size:.74rem;letter-spacing:.12em;font-weight:700;color:#527065;margin:0 0 6px}
+.distribution-date{margin:0;color:#5c6872;text-transform:capitalize}
+.distribution-scroll{overflow-x:auto;border:1px solid #d8e0e5;border-radius:12px;background:white;box-shadow:0 5px 20px #173d4b0a}
+.distribution-scroll:focus-visible{outline:3px solid #2374bd;outline-offset:3px}
+.distribution-page table{min-width:760px;margin:0}
+.distribution-page thead th{background:#eaf0f3;color:#20323d;padding:12px 13px;white-space:nowrap}
+.distribution-page tbody td,.distribution-page tbody th{padding:10px 13px;vertical-align:middle}
+.distribution-page tbody td:first-child,.distribution-page thead th:first-child{width:48px;text-align:center}
+.distribution-group th{font-weight:700;border-top:2px solid #cbd8de!important}
+.distribution-group-location th{background:#edf3f5}
+.distribution-group-status th{background:#f1f3f4}
+.distribution-availability td{background:#fafbfc}
+.distribution-empty td{color:#6d7b83;font-style:italic;background:#fcfdfd}
+.distribution-person-type,.distribution-note{display:block;font-size:.8rem;color:#485e66;line-height:1.4}
+.distribution-person-type{font-weight:700;margin-top:2px}
+.distribution-note{margin-top:3px}
+@media(max-width:600px){.distribution-heading{align-items:start}.distribution-heading .btn{width:100%}}

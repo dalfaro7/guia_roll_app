@@ -99,6 +99,7 @@ Rails.application.routes.draw do
     end
     resources :compensation_assignments, only: [:create, :update, :destroy]
     member do
+      get :distribution
       patch :generate_roles
 
       post :publish
