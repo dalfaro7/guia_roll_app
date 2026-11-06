@@ -19,7 +19,7 @@
     <div class="col-12 col-md-6">
       <%= f.label :transport_company_id, "Empresa", class: "form-label fw-semibold" %>
       <%= f.collection_select :transport_company_id, @companies, :id, :name, { prompt: "Seleccionar empresa" }, class: "form-select", required: true %>
-      <div class="form-text">Al cambiar la empresa, los viajes de hoy y anteriores conservan su empresa y costo. Los viajes de fechas futuras toman la nueva tarifa. <% if current_user.admin? %><%= link_to "Administrar empresas", transport_companies_path %><% end %></div>
+      <div class="form-text">Al cambiar la empresa, los viajes de hoy y anteriores conservan su empresa y costo. Los viajes de fechas futuras toman la nueva tarifa. <% if current_user.admin? || current_user.operador? %><%= link_to "Administrar empresas", transport_companies_path %><% end %></div>
     </div>
     <div class="col-12 col-md-6">
       <%= f.label :capacity, "Capacidad de pasajeros o guías", class: "form-label fw-semibold" %>

@@ -55,4 +55,45 @@ class TransportCompaniesControllerTest < ActionDispatch::IntegrationTest
     assert_nil Driver.order(:id).last.transport_company
     assert_equal "round_trip", Driver.order(:id).last.payment_mode
   end
+
+  test "operator can manage transport companies and reach related pages" do
+    operator = User.create!(name: "Transport operator", email: "transport-operator@example.test",
+      password: "password123", role: :operador)
+    sign_out @admin
+    sign_in operator
+
+    get buses_url
+    assert_response :success
+    assert_select "a[href='#{transport_companies_path}']", text: "Empresas"
+    assert_select "a[href='#{drivers_path}']", text: "Choferes"
+    get transport_companies_url
+    assert_response :success
+    get transport_rates_url
+    assert_response :success
+
+    assert_difference("TransportCompany.count", 1) do
+      post transport_companies_url, params: { transport_company: { name: "Empresa operadora" } }
+    end
+    company = TransportCompany.find_by!(name: "Empresa operadora")
+    patch transport_company_url(company), params: { transport_company: {
+      name: "Empresa operadora actualizada", vehicle_categories: %w[bus_large]
+    } }
+    assert_redirected_to transport_companies_url
+    assert_equal "Empresa operadora actualizada", company.reload.name
+    assert_equal ["bus_large"], company.vehicle_categories
+  end
+
+  test "accounting cannot manage transport companies" do
+    accounting = User.create!(name: "Transport accounting", email: "transport-accounting@example.test",
+      password: "password123", role: :contabilidad)
+    sign_out @admin
+    sign_in accounting
+
+    get transport_companies_url
+    assert_redirected_to root_path
+    assert_no_difference("TransportCompany.count") do
+      post transport_companies_url, params: { transport_company: { name: "No autorizada" } }
+    end
+    assert_redirected_to root_path
+  end
 end

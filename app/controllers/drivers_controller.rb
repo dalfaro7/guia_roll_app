@@ -1,5 +1,5 @@
 class DriversController < ApplicationController
-  before_action :require_admin!
+  before_action :require_compensation_operator!
 
   def index
     @drivers = Driver.includes(:transport_company).order(:name)

@@ -54,6 +54,9 @@
             <% if current_user&.admin? %>
               <%= link_to "Tarifas", compensation_rates_path, class: "roll-header__link" %>
               <%= link_to "Perfiles económicos", compensation_profiles_path, class: "roll-header__link" %>
+            <% end %>
+            <% if current_user&.admin? || current_user&.operador? %>
+              <%= link_to "Empresas de transporte", transport_companies_path, class: "roll-header__link" %>
               <%= link_to "Choferes", drivers_path, class: "roll-header__link" %>
             <% end %>
             <% if current_user&.admin? && current_user&.superadmin? %>

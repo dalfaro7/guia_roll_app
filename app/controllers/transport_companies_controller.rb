@@ -1,5 +1,5 @@
 class TransportCompaniesController < ApplicationController
-  before_action :require_admin!
+  before_action :require_compensation_operator!
 
   def index
     @companies = TransportCompany.includes(:buses, :drivers).order(:name)
