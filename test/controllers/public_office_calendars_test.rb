@@ -48,7 +48,8 @@ class PublicOfficeCalendarsTest < ActionDispatch::IntegrationTest
       assert_response :success
       imports = JSON.parse(Nokogiri::HTML(response.body).at_css('script[type="importmap"]').text).fetch("imports")
       assert_match(/@popperjs--core/, imports.fetch("@popperjs/core"))
-      assert imports.key?("controllers/copy_office_link_controller")
+      assert_select "script[src*=office_calendar_copy][defer]"
+      assert_select "button[data-office-share-copy]"
       assert_select "input#public-office-calendar-url[readonly]", count: 1
       assert_select "button", text: "Copiar enlace"
       assert_select "input[type=hidden][name=office_employee_id][value='#{@employee.id}']"

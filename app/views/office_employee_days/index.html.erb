@@ -1,3 +1,6 @@
+<% content_for :head do %>
+  <%= javascript_include_tag "office_calendar_copy", defer: true, "data-turbo-track": "reload" %>
+<% end %>
 <div class="container-fluid mt-4">
     <h1>Control de libres de oficina</h1>
 
@@ -128,17 +131,17 @@
     </div>
 
     <% if @public_calendar_url.present? %>
-    <section class="card mb-3" data-controller="copy-office-link" aria-label="Compartir días libres">
+    <section class="card mb-3" data-office-share aria-label="Compartir días libres">
       <div class="card-body">
         <h2 class="h5">Compartir días libres</h2>
         <p><%= @employees.first.name %> · <%= l(@month, format: "%B de %Y") %></p>
         <p class="text-muted">Cualquier persona con este enlace puede ver los días libres de este empleado en este mes, sin iniciar sesión.</p>
         <label for="public-office-calendar-url" class="form-label">Enlace de solo lectura</label>
         <div class="input-group">
-          <input id="public-office-calendar-url" type="text" class="form-control" readonly value="<%= @public_calendar_url %>" data-copy-office-link-target="url">
-          <button type="button" class="btn btn-primary" data-action="copy-office-link#copy">Copiar enlace</button>
+          <input id="public-office-calendar-url" type="text" class="form-control" readonly value="<%= @public_calendar_url %>" data-office-share-url>
+          <button type="button" class="btn btn-primary" data-office-share-copy>Copiar enlace</button>
         </div>
-        <p class="mt-2 mb-0" role="status" aria-live="polite" data-copy-office-link-target="status"></p>
+        <p class="mt-2 mb-0" role="status" aria-live="polite" data-office-share-status></p>
       </div>
     </section>
     <% end %>
