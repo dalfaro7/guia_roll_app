@@ -1,4 +1,10 @@
 module GuideAssignmentsHelper
+  def weekly_report_tab_path(type)
+    guide_assignments_path(report: type, week: @week_start.iso8601,
+      guide_id: params[:guide_id].presence, driver_id: params[:driver_id].presence,
+      company_id: params[:company_id].presence)
+  end
+
   def weekly_report_tasks(assignment)
     tasks = []
     tasks << "También conduce" if assignment.also_drives?

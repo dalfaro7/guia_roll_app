@@ -1,0 +1,160 @@
+<%= form_with url: guide_assignments_path, method: :get, local: true, class: "row g-2 align-items-end mb-4" do %>
+  <%= hidden_field_tag :report, "general" %>
+  <div class="col-md-5">
+    <%= label_tag :week, "Una fecha de la semana", class: "form-label" %>
+    <%= date_field_tag :week, @week_start.iso8601, max: @today.iso8601, class: "form-control" %>
+  </div>
+  <div class="col-md-3"><%= submit_tag "Consultar semana", class: "btn btn-primary w-100" %></div>
+<% end %>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="h4 mb-1">Toda la operación</h2>
+    <p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <%= link_to "Semana anterior", guide_assignments_path(report: "general", week: (@week_start - 7.days).iso8601), class: "btn btn-outline-secondary" %>
+    <% if @week_start < @current_week_start %>
+      <%= link_to "Semana siguiente", guide_assignments_path(report: "general", week: (@week_start + 7.days).iso8601), class: "btn btn-outline-secondary" %>
+    <% end %>
+  </div>
+</div>
+
+<div class="weekly-report-summary" aria-label="Resumen semanal de gastos">
+  <div><span>Guías</span><strong><%= usd(@guide_weekly_total_cents) %></strong></div>
+  <div><span>Choferes</span><strong><%= usd(@driver_weekly_total_cents) %></strong></div>
+  <div><span>Transporte</span><strong><%= usd(@company_weekly_total_cents) %></strong></div>
+  <div><span>Total operación</span><strong><%= usd(@operation_weekly_total_cents) %></strong></div>
+</div>
+
+  <section class="card mt-4" aria-labelledby="operation-expenses-title">
+    <div class="card-body">
+      <h2 class="h4 mb-1" id="operation-expenses-title">Gastos de toda la operación</h2>
+      <p class="text-muted mb-3">Guías, choferes y transporte del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %>. El día de hoy incluye salidas planificadas como importes provisionales; los pagos de personal de semanas cerradas conservan el importe del cierre.</p>
+      <div class="table-responsive">
+        <table id="operation-expenses-table" class="table table-striped align-middle mb-0">
+          <thead><tr><th>Día</th><th class="text-end">Guías</th><th class="text-end">Choferes</th><th class="text-end">Transporte</th><th class="text-end">Total diario</th></tr></thead>
+          <tbody>
+            <% @operation_days.each do |day| %>
+              <tr>
+                <th scope="row"><%= l(day[:date], format: "%A %d/%m") %><% if @week_open && day[:date] == @today %><small class="d-block text-muted">Provisional</small><% end %></th>
+                <td class="text-end"><%= usd(day[:guide_cents]) %></td>
+                <td class="text-end"><%= usd(day[:driver_cents]) %></td>
+                <td class="text-end"><%= usd(day[:transport_cents]) %></td>
+                <td class="text-end fw-semibold"><%= usd(day[:total_cents]) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot>
+            <% if @operation_adjustments_cents != 0 %>
+              <tr><th colspan="4">Ajustes de períodos anteriores</th><td class="text-end"><%= usd(@operation_adjustments_cents) %></td></tr>
+            <% end %>
+            <tr><th colspan="4"><%= @week_open ? "Total hasta hoy" : "Total semanal" %></th><td class="text-end fw-bold"><%= usd(@operation_weekly_total_cents) %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="text-muted small mb-0 mt-3">El transporte usa el costo acordado de cada vehículo asignado. No se incluyen otros gastos como combustible.</p>
+    </div>
+  </section>
+
+  <section class="card mt-4" aria-labelledby="guide-expenses-title">
+    <div class="card-body">
+      <h2 class="h4 mb-1" id="guide-expenses-title">Resumen de gastos por guías</h2>
+      <p class="text-muted mb-3">Importes de los guías incluidos en esta semana, con ajustes de períodos anteriores cuando correspondan.</p>
+      <% if @guide_totals_by_recipient.empty? %>
+        <p class="text-muted mb-0">No hay importes de guías en esta semana.</p>
+      <% else %>
+        <div class="table-responsive">
+          <table id="guide-expenses-table" class="table table-striped align-middle mb-0">
+            <thead><tr><th>Guía</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              <% @guide_totals_by_recipient.each do |row| %>
+                <tr><td><%= row[:recipient] %></td><td class="text-end"><%= usd(row[:amount_cents]) %></td></tr>
+              <% end %>
+            </tbody>
+            <tfoot><tr><th>Total de guías</th><th class="text-end"><%= usd(@guide_weekly_total_cents) %></th></tr></tfoot>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="card mt-4" aria-labelledby="driver-payments-title">
+    <div class="card-body">
+      <h2 class="h4 mb-1" id="driver-payments-title">Pagos de choferes</h2>
+      <p class="text-muted mb-3">Pagos directos a choferes. Los importes de hoy son provisionales hasta el cierre; esta tabla no confirma que ya se hayan pagado.</p>
+      <% if @driver_payment_details.empty? %>
+        <p class="text-muted mb-0">No hay pagos directos a choferes en esta semana.</p>
+      <% else %>
+        <div class="table-responsive">
+          <table id="driver-payments-table" class="table table-striped align-middle mb-0">
+            <thead><tr><th>Día</th><th>Chofer</th><th>Salida o concepto</th><th class="text-end">Importe</th></tr></thead>
+            <tbody>
+              <% @driver_payment_details.each do |payment| %>
+                <tr>
+                  <td><%= payment[:date] ? l(payment[:date], format: "%A %d/%m") : "Ajuste anterior" %></td>
+                  <td><%= payment[:recipient] %></td>
+                  <td><%= payment[:concept] %></td>
+                  <td class="text-end"><%= usd(payment[:amount_cents]) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+            <tfoot>
+              <tr><th colspan="3">Total de choferes</th><td class="text-end"><%= usd(@driver_weekly_total_cents) %></td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <h3 class="h6 mt-4"><%= @week_open ? "Total por chofer hasta hoy" : "Total semanal por chofer" %></h3>
+        <div class="table-responsive">
+          <table id="driver-recipient-totals-table" class="table table-sm align-middle mb-0">
+            <thead><tr><th>Chofer</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              <% @driver_totals_by_recipient.each do |recipient| %>
+                <tr><td><%= recipient[:recipient] %></td><td class="text-end"><%= usd(recipient[:amount_cents]) %></td></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="card mt-4" aria-labelledby="company-payments-title">
+    <div class="card-body">
+      <h2 class="h4 mb-1" id="company-payments-title">Pagos a empresas de transporte</h2>
+      <p class="text-muted mb-3">Costo acordado con cada proveedor por salida. Los importes de hoy son provisionales; esta tabla no confirma que ya se hayan pagado.</p>
+      <% if @company_payment_details.empty? %>
+        <p class="text-muted mb-0">No hay costos de empresas de transporte en esta semana.</p>
+      <% else %>
+        <div class="table-responsive">
+          <table id="company-payments-table" class="table table-striped align-middle mb-0">
+            <thead><tr><th>Día</th><th>Empresa</th><th>Salida, vehículo y chofer</th><th class="text-end">Importe</th></tr></thead>
+            <tbody>
+              <% @company_payment_details.each do |payment| %>
+                <tr>
+                  <td><%= l(payment[:date], format: "%A %d/%m") %></td>
+                  <td><%= payment[:recipient] %></td>
+                  <td><%= payment[:concept] %></td>
+                  <td class="text-end"><%= usd(payment[:amount_cents]) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+            <tfoot>
+              <tr><th colspan="3">Total de empresas de transporte</th><td class="text-end"><%= usd(@company_weekly_total_cents) %></td></tr>
+            </tfoot>
+          </table>
+        </div>
+        <h3 class="h6 mt-4"><%= @week_open ? "Total por empresa hasta hoy" : "Total semanal por empresa" %></h3>
+        <div class="table-responsive">
+          <table id="company-recipient-totals-table" class="table table-sm align-middle mb-0">
+            <thead><tr><th>Empresa</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+              <% @company_totals_by_recipient.each do |recipient| %>
+                <tr><td><%= recipient[:recipient] %></td><td class="text-end"><%= usd(recipient[:amount_cents]) %></td></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
+  </section>

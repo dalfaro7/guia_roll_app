@@ -18,7 +18,8 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "h1", "Reportes semanales"
       assert_select "h2", @guide.name
       assert_select "#guide-weekly-table tbody tr", count: 7
-      assert_select "#operation-expenses-table tbody tr", count: 7
+      assert_select "#operation-expenses-table", count: 0
+      assert_select ".weekly-report-nav__link", count: 4
       assert_select "p", text: /04\/11\/2026.*10\/11\/2026/
       assert_select "[data-bs-toggle='modal']", count: 7
       assert_select "button[data-controller='weekly-print']", text: "Imprimir en rollo", count: 1
@@ -83,13 +84,26 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       get guide_assignments_path, params: { guide_id: @guide.id, week: paid_date.iso8601 }
       assert_response :success
       assert_select "#guide-weekly-table tbody tr", count: 7
-      assert_select "#operation-expenses-table tbody tr", count: 7
+      assert_select "#operation-expenses-table", count: 0
+      get guide_assignments_path, params: { report: "general", week: paid_date.iso8601 }
+      assert_response :success
+      assert_select "#guide-expenses-table tbody tr", text: /A Guide.*110[,.]00/
       assert_select "#operation-expenses-table tbody tr", text: /#{paid_date.strftime("%d\/%m")}.*160[,.]00.*30[,.]00.*190[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total semanal.*190[,.]00/
       assert_select "#driver-payments-table tbody tr", text: /A Driver.*Balsa mañana.*30[,.]00/
       assert_select "#driver-payments-table tfoot", text: /Total de choferes.*30[,.]00/
       assert_select "#driver-recipient-totals-table tbody tr", text: /A Driver.*30[,.]00/
       assert_select "#company-payments-table", count: 0
+      get guide_assignments_path, params: { report: "driver", driver_id: driver.id, week: paid_date.iso8601 }
+      assert_response :success
+      assert_select "#driver-weekly-table tbody tr", text: /Balsa mañana.*30[,.]00/
+      assert_select "#driver-weekly-table tfoot", text: /Total semanal.*30[,.]00/
+      assert_select "#weekly-roll-receipt", text: /A Driver.*Balsa mañana.*30[,.]00/
+      assert_select "#weekly-roll-receipt", text: /110[,.]00/, count: 0
+      assert_select "#guide-weekly-table", count: 0
+      assert_select "#operation-expenses-table", count: 0
+      assert_select "button[data-controller='weekly-print']", count: 1
+      get guide_assignments_path, params: { guide_id: @guide.id, week: paid_date.iso8601 }
       assert_select "td", text: /Host/
       assert_select "td", text: /Balsa mañana.*Toma y envía fotos/
       modal_id = "#weekly-day-#{paid_date.strftime("%Y%m%d")}"
@@ -128,8 +142,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       get guide_assignments_path, params: { guide_id: @guide.id, week: "2026-11-13" }
       assert_response :success
       assert_select "#guide-weekly-table tbody tr", count: 3
-      assert_select "#operation-expenses-table tbody tr", count: 3
-      assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*50[,.]00/
+      assert_select "#operation-expenses-table", count: 0
       assert_select "#weekly-day-20261115", count: 0
       assert_select "#weekly-roll-receipt .roll-receipt__day", count: 3
       assert_select "#weekly-roll-receipt .roll-receipt__total", text: /Total hasta hoy.*50[,.]00/
@@ -140,6 +153,9 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "input#week[max='2026-11-13']", count: 1
       assert_select "span", text: /Quincena.*13\/11\/2026/
       assert_select "span", text: /Mes.*13\/11\/2026/
+      get guide_assignments_path, params: { report: "general", week: "2026-11-13" }
+      assert_select "#operation-expenses-table tbody tr", count: 3
+      assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*50[,.]00/
     end
   end
 
@@ -164,6 +180,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       get guide_assignments_path, params: { guide_id: @guide.id, week: day.date.iso8601 }
       assert_response :success
       assert_select "#guide-weekly-table tbody tr", text: /13\/11.*50[,.]00/
+      get guide_assignments_path, params: { report: "general", week: day.date.iso8601 }
       assert_select "#operation-expenses-table tbody tr", text: /13\/11.*Provisional.*50[,.]00.*0[,.]00.*120[,.]00.*170[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*170[,.]00/
       assert_select "#operation-expenses-table th", text: "Transporte"
@@ -171,6 +188,10 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#company-payments-table tfoot", text: /Total de empresas de transporte.*120[,.]00/
       assert_select "#company-recipient-totals-table tbody tr", text: /Transporte del día.*120[,.]00/
       assert_select "#driver-payments-table", count: 0
+      get guide_assignments_path, params: { report: "company", company_id: company.id, week: day.date.iso8601 }
+      assert_select "#company-weekly-table tbody tr", text: /13\/11.*Balsa.*Bus de hoy.*120[,.]00/
+      assert_select "#weekly-roll-receipt", text: /Transporte del día.*Bus de hoy.*120[,.]00/
+      assert_select "#weekly-roll-receipt", text: /Total hasta hoy.*120[,.]00/
     end
   end
 
@@ -196,10 +217,12 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
 
       get guide_assignments_path, params: { week: date.iso8601 }
       assert_response :success
-      assert_select "#operation-expenses-table tbody tr", text: /#{Regexp.escape(date.strftime("%d/%m"))}.*50[,.]00/
-      assert_select "#operation-expenses-table tfoot", text: /Total semanal.*50[,.]00/
       assert_select "#weekly-roll-receipt .roll-receipt__total", text: /Total semanal.*50[,.]00/
       assert_select "#weekly-roll-receipt .roll-receipt__line", text: /Guía regular.*50[,.]00/
+      get guide_assignments_path, params: { report: "general", week: date.iso8601 }
+      assert_select "#operation-expenses-table tbody tr", text: /#{Regexp.escape(date.strftime("%d/%m"))}.*50[,.]00/
+      assert_select "#operation-expenses-table tfoot", text: /Total semanal.*50[,.]00/
+      assert_select "#guide-expenses-table tbody tr", text: /A Guide.*50[,.]00/
     end
   end
 

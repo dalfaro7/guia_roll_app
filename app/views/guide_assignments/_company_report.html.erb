@@ -1,0 +1,19 @@
+<% if @company.nil? %>
+  <div class="alert alert-info">Todavía no hay empresas de transporte para consultar.</div>
+<% else %>
+  <%= form_with url: guide_assignments_path, method: :get, local: true, class: "row g-2 align-items-end mb-4" do %>
+    <%= hidden_field_tag :report, "company" %>
+    <div class="col-md-5"><%= label_tag :company_id, "Empresa de transporte", class: "form-label" %><%= select_tag :company_id, options_from_collection_for_select(@companies, :id, :name, @company.id), class: "form-select" %></div>
+    <div class="col-md-4"><%= label_tag :week, "Una fecha de la semana", class: "form-label" %><%= date_field_tag :week, @week_start.iso8601, max: @today.iso8601, class: "form-control" %></div>
+    <div class="col-md-3"><%= submit_tag "Consultar semana", class: "btn btn-primary w-100" %></div>
+  <% end %>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div><h2 class="h4 mb-1"><%= @company.name %></h2><p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></p><small class="text-muted"><%= @week_open ? "Semana en curso · hasta hoy" : "Semana completa" %></small></div>
+    <div class="d-flex gap-2 flex-wrap"><button type="button" class="btn btn-primary" data-controller="weekly-print" data-action="click->weekly-print#print">Imprimir en rollo</button><%= link_to "Semana anterior", guide_assignments_path(report: "company", company_id: @company.id, week: (@week_start - 7.days).iso8601), class: "btn btn-outline-secondary" %><% if @week_start < @current_week_start %><%= link_to "Semana siguiente", guide_assignments_path(report: "company", company_id: @company.id, week: (@week_start + 7.days).iso8601), class: "btn btn-outline-secondary" %><% end %></div>
+  </div>
+  <p class="weekly-report-explainer">Costos de los vehículos asignados a esta empresa. Los pagos directos a choferes se consultan por separado.</p>
+  <div class="table-responsive"><table id="company-weekly-table" class="table table-striped table-hover align-middle"><thead><tr><th>Día</th><th>Salida, vehículo y chofer</th><th class="text-end">Costo del día</th></tr></thead><tbody>
+    <% @company_days.each do |day| %><tr><td><%= l(day[:date], format: "%A %d/%m") %></td><td><% day[:buses].each do |bus_assignment| %><div><%= bus_assignment.location %> · <%= bus_assignment.bus.alias %><% if bus_assignment.driver %> · <%= bus_assignment.driver.name %><% end %> · <%= usd(bus_assignment.cost_cents) %></div><% end %><% if day[:buses].empty? %>—<% end %></td><td class="text-end fw-semibold"><%= usd(day[:total_cents]) %></td></tr><% end %>
+  </tbody><tfoot><tr><th colspan="2"><%= @week_open ? "Total hasta hoy" : "Total semanal" %></th><th class="text-end"><%= usd(@selected_company_total_cents) %></th></tr></tfoot></table></div>
+  <%= render "company_roll_receipt" %>
+<% end %>

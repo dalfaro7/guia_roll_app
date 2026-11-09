@@ -1,0 +1,142 @@
+  <% if @guide.nil? %>
+    <div class="alert alert-info">Todavía no hay guías para consultar.</div>
+  <% else %>
+    <%= form_with url: guide_assignments_path, method: :get, local: true, class: "row g-2 align-items-end mb-4" do %>
+      <%= hidden_field_tag :report, "guide" %>
+      <div class="col-md-5">
+        <%= label_tag :guide_id, "Guía", class: "form-label" %>
+        <%= select_tag :guide_id, options_from_collection_for_select(@guides, :id, :name, @guide.id), class: "form-select" %>
+      </div>
+      <div class="col-md-4">
+        <%= label_tag :week, "Una fecha de la semana", class: "form-label" %>
+        <%= date_field_tag :week, @week_start.iso8601, max: @today.iso8601, class: "form-control" %>
+      </div>
+      <div class="col-md-3"><%= submit_tag "Consultar semana", class: "btn btn-primary w-100" %></div>
+    <% end %>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h2 class="h4 mb-1"><%= @guide.name %></h2>
+        <p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></p>
+        <small class="text-muted"><%= @week_open ? "Semana en curso · hasta hoy" : (@settlement&.paid? ? "Pagado" : (@settlement&.closed_at ? "Cerrado, pendiente de pago" : "Sin cierre contable registrado")) %></small>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-primary" data-controller="weekly-print" data-action="click->weekly-print#print">Imprimir en rollo</button>
+        <%= link_to "Semana anterior", guide_assignments_path(guide_id: @guide.id, week: (@week_start - 7.days).iso8601), class: "btn btn-outline-secondary" %>
+        <% if @week_start < @current_week_start %>
+          <%= link_to "Semana siguiente", guide_assignments_path(guide_id: @guide.id, week: (@week_start + 7.days).iso8601), class: "btn btn-outline-secondary" %>
+        <% end %>
+      </div>
+    </div>
+
+    <p class="weekly-report-explainer">Ingresos del guía por sus salidas y tareas. El total corresponde únicamente al guía seleccionado.</p>
+    <div class="table-responsive">
+      <table id="guide-weekly-table" class="table table-striped table-hover align-middle">
+        <thead><tr><th>Día</th><th>Estado</th><th>Actividad</th><th class="text-end">Pago del día</th></tr></thead>
+        <tbody>
+          <% @days.each do |day| %>
+            <% guide_day = day[:guide_day] %>
+            <% modal_id = "weekly-day-#{day[:date].strftime("%Y%m%d")}" %>
+            <tr>
+              <td><button type="button" class="btn btn-link p-0 text-start" data-bs-toggle="modal" data-bs-target="#<%= modal_id %>" aria-label="Ver detalle del <%= day[:date].strftime("%d/%m/%Y") %>"><%= l(day[:date], format: "%A %d/%m") %></button></td>
+              <td><%= guide_day ? roll_status_label(guide_day.status) : "Sin registro" %></td>
+              <td>
+                <% if guide_day %>
+                  <span><%= guide_day.location.presence || "Sin ubicación" %></span>
+                  <% if guide_day.role_primary.present? %> · <%= roll_role_label(guide_day.role_primary) %><% end %>
+                  <% if guide_day.role_secondary.present? %> · <%= roll_role_label(guide_day.role_secondary) %><% end %>
+                  <% if guide_day.status_note.present? %> · <%= guide_day.status_note %><% end %>
+                <% end %>
+                <% day[:assignments].each do |assignment| %>
+                  <div class="small"><%= assignment.departure.label %>: <%= compensation_label(assignment.role_code) %><% weekly_report_tasks(assignment).each do |task| %> · <%= task %><% end %></div>
+                <% end %>
+                <% if guide_day.nil? && day[:assignments].empty? %>—<% end %>
+              </td>
+              <td class="text-end fw-semibold"><%= usd(day[:total_cents]) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <% if @adjustments.any? %>
+            <tr><th colspan="3">Ajustes de períodos anteriores</th><th class="text-end"><%= usd(@adjustments.sum(&:amount_cents)) %></th></tr>
+          <% end %>
+          <tr><th colspan="3"><%= @week_open ? "Total hasta hoy" : "Total semanal" %></th><th class="text-end"><%= usd(@weekly_total_cents) %></th></tr>
+        </tfoot>
+      </table>
+    </div>
+    <% if @settlement&.paid? %>
+      <p class="text-muted small">Los importes de esta semana conservan el cierre pagado. Las correcciones posteriores aparecen como ajustes en la semana correspondiente.</p>
+    <% end %>
+
+    <% @days.each do |day| %>
+      <% guide_day = day[:guide_day] %>
+      <div class="modal fade" id="weekly-day-<%= day[:date].strftime("%Y%m%d") %>" tabindex="-1" aria-labelledby="weekly-day-title-<%= day[:date].strftime("%Y%m%d") %>" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="weekly-day-title-<%= day[:date].strftime("%Y%m%d") %>"><%= @guide.name %> · <%= l(day[:date], format: "%A %d/%m/%Y") %></h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <% if guide_day %>
+              <h3 class="h6">Programación del día</h3>
+              <dl class="row mb-4">
+                <dt class="col-sm-4">Estado</dt><dd class="col-sm-8"><%= roll_status_label(guide_day.status) %></dd>
+                <dt class="col-sm-4">Ubicación</dt><dd class="col-sm-8"><%= guide_day.location.presence || "—" %></dd>
+                <dt class="col-sm-4">Rol principal</dt><dd class="col-sm-8"><%= roll_role_label(guide_day.role_primary) %></dd>
+                <dt class="col-sm-4">Rol secundario</dt><dd class="col-sm-8"><%= roll_role_label(guide_day.role_secondary) %></dd>
+                <% if guide_day.status_note.present? %><dt class="col-sm-4">Tarea o nota</dt><dd class="col-sm-8"><%= guide_day.status_note %></dd><% end %>
+              </dl>
+            <% else %>
+              <p class="text-muted">No hay programación logística registrada para este día.</p>
+            <% end %>
+
+            <% day[:assignments].each do |assignment| %>
+              <% lines = weekly_report_lines(day, assignment) %>
+              <% item = day[:items_by_assignment][assignment.id] %>
+              <div class="border-top pt-3 mb-3">
+                <h3 class="h6"><%= item ? item.details.fetch("departure") : assignment.departure.label %> · <%= compensation_label(item ? item.details.fetch("role_code") : assignment.role_code) %></h3>
+                <p class="mb-2">Ubicación: <%= assignment.departure.location %> · Hora: <%= assignment.departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %> · Estado: <%= assignment.status == "performed" ? "Realizada" : assignment.status == "no_show" ? "No se presentó" : assignment.status == "canceled" ? "Cancelada" : "Planificada" %></p>
+                <% if weekly_report_tasks(assignment).any? %><p class="mb-2">Tareas: <%= weekly_report_tasks(assignment).join(", ") %></p><% end %>
+                <% if lines.any? %>
+                  <ul class="list-group mb-2">
+                    <% lines.each do |line| %>
+                      <li class="list-group-item d-flex justify-content-between gap-3"><span><%= compensation_label(line.fetch("code")) %><% if line.fetch("discount_percent", 0).to_i.positive? %> · descuento <%= line.fetch("discount_percent") %>%<% end %></span><strong><%= usd(line.fetch("amount_cents")) %></strong></li>
+                    <% end %>
+                  </ul>
+                <% else %>
+                  <p class="text-muted mb-2"><%= assignment.pricing_error.presence || "Sin importe adicional para esta función." %></p>
+                <% end %>
+                <p class="text-end fw-semibold">Total de la salida: <%= usd(item ? item.amount_cents : (assignment.status == "performed" ? assignment.total_cents : 0)) %></p>
+              </div>
+            <% end %>
+            <% if day[:assignments].empty? %><p>Sin salidas registradas.</p><% end %>
+          </div>
+          <div class="modal-footer"><strong>Total del día: <%= usd(day[:total_cents]) %></strong></div>
+        </div></div>
+      </div>
+    <% end %>
+
+    <% if @adjustments.any? %>
+      <section class="mt-4" aria-labelledby="weekly-adjustments-title">
+        <h2 class="h5" id="weekly-adjustments-title">Ajustes incluidos en esta semana</h2>
+        <ul><% @adjustments.each do |adjustment| %><li><%= adjustment.source_assignment.departure.work_day.date.strftime("%d/%m/%Y") %> · <%= adjustment.source_assignment.departure.label %> · <%= adjustment.reason %>: <%= usd(adjustment.amount_cents) %></li><% end %></ul>
+      </section>
+    <% end %>
+
+    <section class="card mt-4" aria-labelledby="weekly-earnings-title">
+      <div class="card-body">
+        <h2 class="h5" id="weekly-earnings-title">Ingresos del guía por salidas realizadas</h2>
+        <p class="text-muted">Quincena y mes que contienen el último día mostrado. Estos totales no incluyen ajustes de períodos anteriores ni salidas posteriores a ese día.</p>
+        <div class="mb-3">
+          <div class="d-flex justify-content-between"><span>Quincena · <%= @fortnight_range.first.strftime("%d/%m") %> al <%= (@week_open ? @report_end : @fortnight_range.last).strftime("%d/%m/%Y") %></span><strong><%= usd(@fortnight_total_cents) %></strong></div>
+          <div class="progress" role="img" aria-label="Ganancias de la quincena: <%= usd(@fortnight_total_cents) %>"><div class="progress-bar" style="width: <%= (@fortnight_total_cents * 100.0 / @chart_max_cents).round %>%"></div></div>
+        </div>
+        <div>
+          <div class="d-flex justify-content-between"><span>Mes · <%= @month_range.first.strftime("%d/%m") %> al <%= (@week_open ? @report_end : @month_range.last).strftime("%d/%m/%Y") %></span><strong><%= usd(@month_total_cents) %></strong></div>
+          <div class="progress" role="img" aria-label="Ganancias del mes: <%= usd(@month_total_cents) %>"><div class="progress-bar bg-success" style="width: <%= (@month_total_cents * 100.0 / @chart_max_cents).round %>%"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <%= render "roll_receipt" %>
+  <% end %>

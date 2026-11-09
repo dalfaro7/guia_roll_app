@@ -2,8 +2,13 @@ class GuideAssignmentsController < ApplicationController
   before_action :require_compensation_view!
 
   def index
+    @report_type = params[:report].presence_in(%w[guide driver company general]) || "guide"
     @guides = Guide.order(:name).to_a
-    @guide = params[:guide_id].present? ? Guide.find(params[:guide_id]) : @guides.first
+    @drivers = Driver.order(:name).to_a
+    @companies = TransportCompany.order(:name).to_a
+    @guide = params[:guide_id].present? ? Guide.find(params[:guide_id]) : @guides.first if @report_type == "guide"
+    @driver = params[:driver_id].present? ? Driver.find(params[:driver_id]) : @drivers.first if @report_type == "driver"
+    @company = params[:company_id].present? ? TransportCompany.find(params[:company_id]) : @companies.first if @report_type == "company"
 
     local_now = Time.current.in_time_zone("America/Costa_Rica")
     @today = local_now.to_date
@@ -23,6 +28,18 @@ class GuideAssignmentsController < ApplicationController
     @report_end = [@week_end, @today].min
     range = @week_start..@report_end
     load_operation_expenses(range)
+    case @report_type
+    when "guide" then load_guide_report(range)
+    when "driver" then load_driver_report(range)
+    when "company" then load_company_report(range)
+    end
+  rescue Date::Error, ActiveRecord::RecordNotFound
+    redirect_to guide_assignments_path, alert: "Persona, empresa o semana inválida. Consulte una fecha hasta hoy."
+  end
+
+  private
+
+  def load_guide_report(range)
     return unless @guide
 
     guide_days = GuideDay.joins(:work_day)
@@ -65,18 +82,53 @@ class GuideAssignmentsController < ApplicationController
       @settlement&.amount_cents || @days.sum { |day| day[:total_cents] }
     end
     load_earnings_chart
-  rescue Date::Error, ActiveRecord::RecordNotFound
-    redirect_to guide_assignments_path, alert: "Guía o semana inválida. Consulte una fecha hasta hoy."
   end
 
-  private
+  def load_driver_report(range)
+    return unless @driver
+
+    @driver_settlement = CompensationSettlement.find_by(driver: @driver,
+      week_start: @week_start)
+    @selected_driver_payments = @driver_payment_details.select do |payment|
+      payment[:recipient_id] == @driver.id
+    end
+    assignments = BusAssignment.joins(:work_day)
+      .where(driver: @driver, work_days: { date: range })
+      .includes(:bus, :work_day).group_by { |assignment| assignment.work_day.date }
+    payments_by_day = @selected_driver_payments.select { |payment| payment[:date] }
+      .group_by { |payment| payment[:date] }
+    @driver_days = range.map do |date|
+      payments = payments_by_day.fetch(date, [])
+      { date: date, buses: assignments.fetch(date, []), payments: payments,
+        total_cents: payments.sum { |payment| payment[:amount_cents] } }
+    end
+    @driver_adjustments = @selected_driver_payments.reject { |payment| payment[:date] }
+    @selected_driver_total_cents = @selected_driver_payments.sum do |payment|
+      payment[:amount_cents]
+    end
+  end
+
+  def load_company_report(range)
+    return unless @company
+
+    assignments = BusAssignment.joins(:work_day)
+      .where(transport_company_snapshot_id: @company.id, work_days: { date: range })
+      .includes(:bus, :driver, :work_day)
+      .group_by { |assignment| assignment.work_day.date }
+    @company_days = range.map do |date|
+      buses = assignments.fetch(date, [])
+      { date: date, buses: buses, total_cents: buses.sum(&:cost_cents) }
+    end
+    @selected_company_total_cents = @company_days.sum { |day| day[:total_cents] }
+  end
 
   def load_operation_expenses(range)
     totals = range.index_with { { guide_cents: 0, driver_cents: 0,
       transport_cents: 0 } }
     @operation_payment_details = []
+    @guide_payment_details = []
     settlements = CompensationSettlement.where(week_start: @week_start)
-      .includes(:driver, :compensation_settlement_items,
+      .includes(:guide, :driver, :compensation_settlement_items,
         :compensation_adjustments).to_a
     snapshot_assignment_ids = []
 
@@ -94,6 +146,10 @@ class GuideAssignmentsController < ApplicationController
               recipient_id: settlement.driver_id, recipient: settlement.driver.name,
               concept: item.details.fetch("departure", "Salida"),
               amount_cents: item.amount_cents }
+          else
+            @guide_payment_details << { date: date,
+              recipient_id: settlement.guide_id, recipient: settlement.guide.name,
+              amount_cents: item.amount_cents }
           end
         end
       end
@@ -102,7 +158,7 @@ class GuideAssignmentsController < ApplicationController
     CompensationAssignment.joins(departure: :work_day)
       .where(status: %w[performed planned], work_days: { date: range })
       .where.not(departures: { status: "canceled" })
-      .includes(:driver, :compensation_lines, departure: :work_day).each do |assignment|
+      .includes(:guide, :driver, :compensation_lines, departure: :work_day).each do |assignment|
         next if snapshot_assignment_ids.include?(assignment.id)
 
         date = assignment.departure.work_day.date
@@ -115,6 +171,10 @@ class GuideAssignmentsController < ApplicationController
           @operation_payment_details << { date: date, kind: "Chofer",
             recipient_id: assignment.driver_id, recipient: assignment.driver.name,
             concept: assignment.departure.label,
+            amount_cents: amount_cents }
+        else
+          @guide_payment_details << { date: date,
+            recipient_id: assignment.guide_id, recipient: assignment.guide.name,
             amount_cents: amount_cents }
         end
       end
@@ -134,15 +194,29 @@ class GuideAssignmentsController < ApplicationController
       end
 
     @driver_adjustments_cents = 0
-    settlements.select { |settlement| settlement.driver_id.present? }.each do |settlement|
+    @guide_adjustments_cents = 0
+    settlements.each do |settlement|
       settlement.compensation_adjustments.each do |adjustment|
-        @driver_adjustments_cents += adjustment.amount_cents
-        @operation_payment_details << { date: nil, kind: "Chofer",
-          recipient_id: settlement.driver_id, recipient: settlement.driver.name,
-          concept: "Ajuste de período anterior: #{adjustment.reason}",
-          amount_cents: adjustment.amount_cents }
+        if settlement.driver_id.present?
+          @driver_adjustments_cents += adjustment.amount_cents
+          @operation_payment_details << { date: nil, kind: "Chofer",
+            recipient_id: settlement.driver_id, recipient: settlement.driver.name,
+            concept: "Ajuste de período anterior: #{adjustment.reason}",
+            amount_cents: adjustment.amount_cents }
+        else
+          @guide_adjustments_cents += adjustment.amount_cents
+          @guide_payment_details << { date: nil,
+            recipient_id: settlement.guide_id, recipient: settlement.guide.name,
+            amount_cents: adjustment.amount_cents }
+        end
       end
     end
+    @guide_totals_by_recipient = @guide_payment_details
+      .group_by { |payment| payment[:recipient_id] }
+      .map do |_id, payments|
+        { recipient: payments.first[:recipient],
+          amount_cents: payments.sum { |payment| payment[:amount_cents] } }
+      end.sort_by { |row| row[:recipient] }
     @operation_payment_details.sort_by! do |detail|
       [detail[:date] || @week_end + 1.day, detail[:kind], detail[:recipient]]
     end
@@ -166,6 +240,8 @@ class GuideAssignmentsController < ApplicationController
     end
     @operation_weekly_total_cents = @operation_days.sum { |day| day[:total_cents] } +
       @operation_adjustments_cents
+    @guide_weekly_total_cents = @operation_days.sum { |day| day[:guide_cents] } +
+      @guide_adjustments_cents
     @driver_weekly_total_cents = @operation_days.sum { |day| day[:driver_cents] } +
       @driver_adjustments_cents
     @company_weekly_total_cents = @company_payment_details.sum { |detail| detail[:amount_cents] }
