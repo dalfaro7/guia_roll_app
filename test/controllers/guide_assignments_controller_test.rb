@@ -22,7 +22,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select ".weekly-report-nav__link", count: 4
       assert_select "p", text: /04\/11\/2026.*10\/11\/2026/
       assert_select "[data-bs-toggle='modal']", count: 7
-      assert_select "button[data-controller='weekly-print']", text: "Imprimir en rollo", count: 1
+      assert_select "button[onclick='window.print()']", text: "Imprimir en rollo", count: 1
       assert_select "#weekly-roll-receipt .roll-receipt__day", count: 7
     end
   end
@@ -102,7 +102,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#weekly-roll-receipt", text: /110[,.]00/, count: 0
       assert_select "#guide-weekly-table", count: 0
       assert_select "#operation-expenses-table", count: 0
-      assert_select "button[data-controller='weekly-print']", count: 1
+      assert_select "button[onclick='window.print()']", count: 1
       get guide_assignments_path, params: { guide_id: @guide.id, week: paid_date.iso8601 }
       assert_select "td", text: /Host/
       assert_select "td", text: /Balsa mañana.*Toma y envía fotos/
