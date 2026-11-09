@@ -8,6 +8,7 @@
                   method: :get,
                   local: true do %>
 
+        <%= hidden_field_tag :office_employee_id, @selected_employee_id if @selected_employee_id.present? %>
         <%= month_field_tag(
             :month,
             @month.strftime("%Y-%m"),
@@ -125,6 +126,22 @@
 
         </div>
     </div>
+
+    <% if @public_calendar_url.present? %>
+    <section class="card mb-3" data-controller="copy-office-link" aria-label="Compartir días libres">
+      <div class="card-body">
+        <h2 class="h5">Compartir días libres</h2>
+        <p><%= @employees.first.name %> · <%= l(@month, format: "%B de %Y") %></p>
+        <p class="text-muted">Cualquier persona con este enlace puede ver los días libres de este empleado en este mes, sin iniciar sesión.</p>
+        <label for="public-office-calendar-url" class="form-label">Enlace de solo lectura</label>
+        <div class="input-group">
+          <input id="public-office-calendar-url" type="text" class="form-control" readonly value="<%= @public_calendar_url %>" data-copy-office-link-target="url">
+          <button type="button" class="btn btn-primary" data-action="copy-office-link#copy">Copiar enlace</button>
+        </div>
+        <p class="mt-2 mb-0" role="status" aria-live="polite" data-copy-office-link-target="status"></p>
+      </div>
+    </section>
+    <% end %>
 
     <div class="table-responsive">
         <table class="table table-bordered align-middle">

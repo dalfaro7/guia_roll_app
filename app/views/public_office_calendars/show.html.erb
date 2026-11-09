@@ -1,0 +1,20 @@
+<p class="muted">Arenal Rafting · Solo lectura</p>
+<h1>Días libres de <%= @employee.name %></h1>
+<p><%= l(@month, format: "%B de %Y").capitalize %></p>
+<table class="calendar" aria-label="Calendario de días libres">
+  <thead><tr><% %w[Lun Mar Mié Jue Vie Sáb Dom].each do |name| %><th scope="col"><%= name %></th><% end %></tr></thead>
+  <tbody><% @weeks.each do |week| %><tr>
+    <% week.each do |date| %>
+      <% if date.month == @month.month %>
+        <td class="<%= 'free' if @days.include?(date) %>"><%= date.day %><% if @days.include?(date) %><span>Libre</span><% end %></td>
+      <% else %><td></td><% end %>
+    <% end %>
+  </tr><% end %></tbody>
+</table>
+<% if @days.empty? %>
+  <p>No hay días libres registrados para este mes.</p>
+<% else %>
+  <p><strong><%= @days.size %> días libres registrados</strong></p>
+  <ul><% @days.each do |date| %><li><%= l(date, format: "%A %d de %B").capitalize %></li><% end %></ul>
+<% end %>
+<p class="muted">Esta vista refleja los días libres registrados actualmente. Las fechas sin marca no indican un turno de trabajo.</p>

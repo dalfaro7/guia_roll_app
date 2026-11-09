@@ -179,6 +179,8 @@ Rails.application.routes.draw do
   resources :office_holidays
   resources :office_overtimes
 
+  get "libres-oficina/:token", to: "public_office_calendars#show", as: :public_office_calendar
+
   resources :office_employee_days do
     collection do
       post :generate_month

@@ -74,6 +74,11 @@ class OfficeEmployeeDaysController < ApplicationController
   # Si existe un empleado seleccionado, limitamos la consulta
   # únicamente a ese empleado.
   # ==========================================================
+  if @selected_employee_id.present? && @employees.one?
+    token = OfficeDays::PublicCalendarLink.generate(employee: @employees.first, month: @month)
+    @public_calendar_url = public_office_calendar_url(token: token)
+  end
+
   employee_days_scope =
     OfficeEmployeeDay
       .includes(
