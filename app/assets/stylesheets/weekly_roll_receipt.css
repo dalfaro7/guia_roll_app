@@ -1,0 +1,54 @@
+#weekly-roll-receipt { display: none; }
+
+@media print {
+  @page { margin: 0; }
+
+  html, body {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body > :not(#weekly-report-page),
+  #weekly-report-page > :not(#weekly-roll-receipt) {
+    display: none !important;
+  }
+
+  #weekly-report-page {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #weekly-roll-receipt {
+    display: block !important;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 74mm;
+    margin: 0 auto;
+    padding: 3mm;
+    background: #fff;
+    color: #000;
+    font: 9pt/1.35 Arial, sans-serif;
+    overflow-wrap: anywhere;
+  }
+
+  #weekly-roll-receipt * { box-sizing: border-box; }
+  .roll-receipt__header { padding-bottom: 2mm; border-bottom: 1px solid #000; }
+  .roll-receipt__header h2 { margin: 0 0 1mm; font-size: 11pt; font-weight: 700; }
+  .roll-receipt__guide { display: block; font-size: 10pt; }
+  .roll-receipt__day { padding: 2mm 0; border-bottom: 1px dashed #777; break-inside: avoid; page-break-inside: avoid; }
+  .roll-receipt__row { display: flex; justify-content: space-between; align-items: baseline; gap: 2mm; }
+  .roll-receipt__row > :first-child { min-width: 0; }
+  .roll-receipt__row > :last-child { flex: 0 0 auto; text-align: right; white-space: nowrap; }
+  .roll-receipt__day-heading { margin-bottom: 1mm; }
+  .roll-receipt__activity, .roll-receipt__assignment { margin-top: 1mm; }
+  .roll-receipt__assignment { padding-left: 2mm; }
+  .roll-receipt__line { margin-top: .5mm; font-size: 8pt; }
+  .roll-receipt__adjustment { padding: 1mm 0; border-bottom: 1px dashed #777; }
+  .roll-receipt__total { margin-top: 2mm; padding-top: 2mm; border-top: 2px solid #000; font-size: 10pt; }
+  .roll-receipt__note { margin: 2mm 0 0; font-size: 8pt; }
+}

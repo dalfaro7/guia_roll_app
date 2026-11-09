@@ -21,6 +21,8 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#operation-expenses-table tbody tr", count: 7
       assert_select "p", text: /04\/11\/2026.*10\/11\/2026/
       assert_select "[data-bs-toggle='modal']", count: 7
+      assert_select "button[data-controller='weekly-print']", text: "Imprimir en rollo", count: 1
+      assert_select "#weekly-roll-receipt .roll-receipt__day", count: 7
     end
   end
 
@@ -129,6 +131,10 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
       assert_select "#operation-expenses-table tbody tr", count: 3
       assert_select "#operation-expenses-table tfoot", text: /Total hasta hoy.*50[,.]00/
       assert_select "#weekly-day-20261115", count: 0
+      assert_select "#weekly-roll-receipt .roll-receipt__day", count: 3
+      assert_select "#weekly-roll-receipt .roll-receipt__total", text: /Total hasta hoy.*50[,.]00/
+      assert_select "#weekly-roll-receipt .roll-receipt__line", text: /Guía regular.*50[,.]00/
+      assert_select "#weekly-roll-receipt", text: /Los importes planificados de hoy son provisionales/
       assert_select "p", text: /11\/11\/2026.*13\/11\/2026/
       assert_select "tfoot", text: /Total hasta hoy.*50[,.]00/
       assert_select "input#week[max='2026-11-13']", count: 1
@@ -169,28 +175,31 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "paid operation expenses keep the settled amount" do
-    date = Date.new(2026, 11, 5)
+    date = Date.current + 1.day
+    report_date = Compensation::SettlementService.week_start(date) + 7.days
     CompensationRate.create!(code: "guide_regular", amount_cents: 5_000,
       effective_at: Time.utc(2020, 1, 1))
     work_day = WorkDay.create!(date: date, guides_requested: 0)
     departure = work_day.departures.create!(label: "Balsa", location: "Balsa",
-      starts_at: @zone.local(2026, 11, 5, 6), status: "completed")
+      starts_at: @zone.local(date.year, date.month, date.day, 6), status: "completed")
     assignment = departure.compensation_assignments.create!(guide: @guide,
       role_code: "river_guide", status: "performed")
     Compensation::RepriceDay.call(work_day)
 
-    travel_to @zone.local(2026, 11, 11, 12) do
+    travel_to @zone.local(report_date.year, report_date.month, report_date.day, 12) do
       CompensationCloseDueDaysJob.perform_now
       settlement = CompensationSettlement.find_by!(guide: @guide,
-        week_start: Date.new(2026, 11, 4))
+        week_start: Compensation::SettlementService.week_start(date))
       settlement.mark_paid!(@admin)
       assignment.compensation_lines.find_by!(code: "guide_regular")
         .update_columns(amount_cents: 9_000)
 
       get guide_assignments_path, params: { week: date.iso8601 }
       assert_response :success
-      assert_select "#operation-expenses-table tbody tr", text: /05\/11.*50[,.]00/
+      assert_select "#operation-expenses-table tbody tr", text: /#{Regexp.escape(date.strftime("%d/%m"))}.*50[,.]00/
       assert_select "#operation-expenses-table tfoot", text: /Total semanal.*50[,.]00/
+      assert_select "#weekly-roll-receipt .roll-receipt__total", text: /Total semanal.*50[,.]00/
+      assert_select "#weekly-roll-receipt .roll-receipt__line", text: /Guía regular.*50[,.]00/
     end
   end
 

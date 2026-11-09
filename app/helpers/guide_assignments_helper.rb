@@ -8,10 +8,11 @@ module GuideAssignmentsHelper
     tasks
   end
 
-  def weekly_report_lines(day, assignment)
+  def weekly_report_lines(day, assignment, include_planned: false)
     item = day[:items_by_assignment][assignment.id]
     return item.details.fetch("lines") if item
-    return [] unless assignment.status == "performed"
+    return [] unless assignment.status == "performed" ||
+      (include_planned && assignment.status == "planned")
 
     assignment.compensation_lines.map do |line|
       { "code" => line.code, "amount_cents" => line.amount_cents,

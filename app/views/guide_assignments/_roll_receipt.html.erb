@@ -1,0 +1,55 @@
+<section id="weekly-roll-receipt" aria-label="Comprobante semanal de <%= @guide.name %>">
+  <header class="roll-receipt__header">
+    <h2>Reporte semanal</h2>
+    <strong class="roll-receipt__guide"><%= @guide.name %></strong>
+    <div>Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></div>
+    <div><%= @week_open ? "Semana en curso · hasta hoy" : (@settlement&.paid? ? "Pagado" : (@settlement&.closed_at ? "Cerrado, pendiente de pago" : "Sin cierre contable registrado")) %></div>
+  </header>
+
+  <% @days.each do |day| %>
+    <% guide_day = day[:guide_day] %>
+    <article class="roll-receipt__day">
+      <div class="roll-receipt__row roll-receipt__day-heading">
+        <strong><%= l(day[:date], format: "%A %d/%m") %></strong>
+        <strong><%= usd(day[:total_cents]) %></strong>
+      </div>
+      <div>Estado: <%= guide_day ? roll_status_label(guide_day.status) : "Sin registro" %></div>
+      <% if guide_day %>
+        <div class="roll-receipt__activity">
+          <%= guide_day.location.presence || "Sin ubicación" %>
+          <% if guide_day.role_primary.present? %> · <%= roll_role_label(guide_day.role_primary) %><% end %>
+          <% if guide_day.role_secondary.present? %> · <%= roll_role_label(guide_day.role_secondary) %><% end %>
+          <% if guide_day.status_note.present? %> · <%= guide_day.status_note %><% end %>
+        </div>
+      <% end %>
+      <% day[:assignments].each do |assignment| %>
+        <% item = day[:items_by_assignment][assignment.id] %>
+        <% include_planned = @week_open && day[:date] == @today %>
+        <% lines = weekly_report_lines(day, assignment, include_planned: include_planned) %>
+        <div class="roll-receipt__assignment">
+          <strong><%= item ? item.details.fetch("departure", assignment.departure.label) : assignment.departure.label %> · <%= compensation_label(item ? item.details.fetch("role_code", assignment.role_code) : assignment.role_code) %></strong>
+          <% if assignment.status == "planned" %><span> (planificada)</span><% elsif assignment.status == "canceled" %><span> (cancelada)</span><% elsif assignment.status == "no_show" %><span> (no se presentó)</span><% end %>
+          <% weekly_report_tasks(assignment).each do |task| %><div>· <%= task %></div><% end %>
+          <% lines.each do |line| %>
+            <div class="roll-receipt__row roll-receipt__line">
+              <span><%= compensation_label(line.fetch("code")) %><% if line.fetch("discount_percent", 0).to_i.positive? %> · descuento <%= line.fetch("discount_percent") %>%<% end %></span>
+              <span><%= usd(line.fetch("amount_cents")) %></span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </article>
+  <% end %>
+
+  <% @adjustments.each do |adjustment| %>
+    <div class="roll-receipt__row roll-receipt__adjustment">
+      <span>Ajuste <%= adjustment.source_assignment.departure.work_day.date.strftime("%d/%m") %> · <%= adjustment.reason %></span>
+      <strong><%= usd(adjustment.amount_cents) %></strong>
+    </div>
+  <% end %>
+  <footer class="roll-receipt__row roll-receipt__total">
+    <strong><%= @week_open ? "Total hasta hoy" : "Total semanal" %></strong>
+    <strong><%= usd(@weekly_total_cents) %></strong>
+  </footer>
+  <% if @week_open %><p class="roll-receipt__note">Los importes planificados de hoy son provisionales.</p><% end %>
+</section>

@@ -1,4 +1,8 @@
-<div class="container py-4">
+<% content_for :head do %>
+  <%= stylesheet_link_tag "weekly_roll_receipt", "data-turbo-track": "reload" %>
+<% end %>
+
+<div id="weekly-report-page" class="container py-4">
   <h1>Reportes semanales</h1>
   <p class="text-muted">Actividad y valoración de cada guía, por semanas de miércoles a martes. La semana en curso muestra hasta hoy.</p>
 
@@ -23,7 +27,8 @@
         <p class="mb-0">Del <%= @week_start.strftime("%d/%m/%Y") %> al <%= @report_end.strftime("%d/%m/%Y") %></p>
         <small class="text-muted"><%= @week_open ? "Semana en curso · hasta hoy" : (@settlement&.paid? ? "Pagado" : (@settlement&.closed_at ? "Cerrado, pendiente de pago" : "Sin cierre contable registrado")) %></small>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-primary" data-controller="weekly-print" data-action="click->weekly-print#print">Imprimir en rollo</button>
         <%= link_to "Semana anterior", guide_assignments_path(guide_id: @guide.id, week: (@week_start - 7.days).iso8601), class: "btn btn-outline-secondary" %>
         <% if @week_start < @current_week_start %>
           <%= link_to "Semana siguiente", guide_assignments_path(guide_id: @guide.id, week: (@week_start + 7.days).iso8601), class: "btn btn-outline-secondary" %>
@@ -138,6 +143,8 @@
         </div>
       </div>
     </section>
+
+    <%= render "roll_receipt" %>
   <% end %>
 
   <section class="card mt-4" aria-labelledby="operation-expenses-title">
