@@ -575,21 +575,18 @@ class WorkDaysController < ApplicationController
   end
 
   def delete_with_reset
-    @work_day = WorkDay.find(params[:id])
-
-    ActiveRecord::Base.transaction do
-      @work_day.work_day_versions.delete_all
-      @work_day.guide_days.delete_all
-      @work_day.destroy!
-    end
+    @work_day.force_delete!
 
     redirect_to(
       work_days_path,
       notice: "Programación eliminada correctamente."
     )
-  rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::RecordNotDestroyed => e
+  rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::RecordNotDestroyed
     redirect_to @work_day,
-      alert: "Esta programación tiene valoración económica y no se puede eliminar. #{e.message}"
+      alert: "Esta programación tiene dependencias protegidas y no se puede eliminar. Use Editar operación o Reiniciar programación para corregirla."
+  rescue ActiveRecord::InvalidForeignKey
+    redirect_to @work_day,
+      alert: "Esta programación tiene registros vinculados y no se puede eliminar. No se ha eliminado ningún dato."
   end
 
   def reset_roll

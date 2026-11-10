@@ -1,4 +1,6 @@
 class WorkDay < ApplicationRecord
+  # Check financial dependencies before destroying any operational children.
+  has_many :departures, dependent: :restrict_with_error
   has_many :work_day_versions, dependent: :destroy
   has_many :guide_days, dependent: :destroy
   has_many :guides, through: :guide_days
@@ -6,7 +8,6 @@ class WorkDay < ApplicationRecord
   has_many :bus_assignments, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
   has_many :roll_notes, dependent: :destroy
-  has_many :departures, dependent: :restrict_with_error
 
   accepts_nested_attributes_for :guide_days,
                                 update_only: true
@@ -202,16 +203,10 @@ class WorkDay < ApplicationRecord
   end
 
   def force_delete!
-    ActiveRecord::Base.transaction do
-      work_day_versions.delete_all
-      guide_days.delete_all
-      location_slots.delete_all
-      bus_assignments.delete_all
-
-      AuditLog
-        .where(work_day_id: id)
-        .delete_all
-
+    with_lock do
+      # Never reset assignments or remove financial history to make a deletion pass.
+      # Balance restoration and dependent callbacks roll back if destruction fails.
+      RoleResetService.new(self).revert_only_balances
       destroy!
     end
   end
