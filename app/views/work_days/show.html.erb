@@ -1022,7 +1022,6 @@
                                     <tr>
                                         <th>Ubicación</th>
                                         <th>Guías</th>
-                                        <th>Choferes</th>
                                         <th>Pasajeros</th>
                                     </tr>
                                 </thead>
@@ -1032,7 +1031,6 @@
                                     <tr>
                                         <td><%= loc %></td>
                                         <td><%= @location_counts[loc] || 0 %></td>
-                                        <td><%= @work_day.drivers_requested_for(loc) %></td>
                                         <td><%= @passenger_counts[loc] || 0 %></td>
                                     </tr>
                                     <% end %>

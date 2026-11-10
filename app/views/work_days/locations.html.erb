@@ -1,6 +1,6 @@
 <div class="container text-center">
 
-    <h2>Definir guías, choferes y pasajeros por salida</h2>
+    <h2>Definir guías y pasajeros por salida</h2>
 
     <%= form_with url: create_slots_work_day_path(@work_day), method: :post do %>
 
@@ -10,7 +10,6 @@
             <tr>
                 <th>Ubicación</th>
                 <th>Guías requeridos</th>
-                <th>Choferes requeridos</th>
                 <th>Pasajeros</th>
             </tr>
         </thead>
@@ -24,12 +23,6 @@
                     <%= number_field_tag "locations[Sara-3&4][guides]",
               @location_counts["Sara-3&4"] || 0,
               class: "form-control" %>
-                </td>
-
-                <td>
-                    <%= number_field_tag "locations[Sara-3&4][drivers]",
-              @work_day.drivers_requested_for("Sara-3&4"),
-              min: 0, required: true, class: "form-control" %>
                 </td>
 
                 <td>
@@ -50,12 +43,6 @@
                 </td>
 
                 <td>
-                    <%= number_field_tag "locations[Balsa][drivers]",
-              @work_day.drivers_requested_for("Balsa"),
-              min: 0, required: true, class: "form-control" %>
-                </td>
-
-                <td>
                     <%= number_field_tag "locations[Balsa][passengers]",
               @passenger_counts["Balsa"] || 0,
               class: "form-control" %>
@@ -73,12 +60,6 @@
                 </td>
 
                 <td>
-                    <%= number_field_tag "locations[PM][drivers]",
-              @work_day.drivers_requested_for("PM"),
-              min: 0, required: true, class: "form-control" %>
-                </td>
-
-                <td>
                     <%= number_field_tag "locations[PM][passengers]",
               @passenger_counts["PM"] || 0,
               class: "form-control" %>
@@ -93,12 +74,6 @@
                     <%= number_field_tag "locations[Privado][guides]",
               @location_counts["Privado"] || 0,
               class: "form-control" %>
-                </td>
-
-                <td>
-                    <%= number_field_tag "locations[Privado][drivers]",
-              @work_day.drivers_requested_for("Privado"),
-              min: 0, required: true, class: "form-control" %>
                 </td>
 
                 <td>

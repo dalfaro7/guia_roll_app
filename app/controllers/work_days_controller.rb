@@ -456,7 +456,7 @@ class WorkDaysController < ApplicationController
     submitted = params.require(:locations)
     requested = Departure::OPERATING_SECTIONS.keys.index_with do |location|
       values = submitted.require(location)
-      counts = %i[guides drivers passengers].index_with do |field|
+      counts = %i[guides passengers].index_with do |field|
         value = Integer(values.require(field).to_s, 10)
         raise ArgumentError, "Las cantidades no pueden ser negativas." if value.negative?
         value
@@ -480,16 +480,13 @@ class WorkDaysController < ApplicationController
         end
       end
 
-      @work_day.update!(
-        guides_requested: total_slots,
-        drivers_requested_by_location: requested.transform_values { |counts| counts[:drivers] }
-      )
+      @work_day.update!(guides_requested: total_slots)
     end
 
     redirect_to @work_day, notice: "Puestos creados correctamente."
   rescue ActionController::ParameterMissing, ArgumentError => e
     redirect_to locations_work_day_path(@work_day),
-      alert: "Revise las cantidades de guías, choferes y pasajeros: #{e.message}"
+      alert: "Revise las cantidades de guías y pasajeros: #{e.message}"
   end
 
   def edit_slots
