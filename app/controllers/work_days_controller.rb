@@ -120,8 +120,7 @@ class WorkDaysController < ApplicationController
       return
     end
 
-    @priority_five_days = @work_day.guide_days.joins(:guide)
-      .where(guides: { priority: 5, active: true })
+    @sara_availability_days = sara_availability_days
       .includes(:guide).order("guides.name")
     roster = RollOutingRoster.new(@work_day)
     @sara_entries = roster.entries.select { |entry| entry.location.to_s.start_with?("Sara") }
@@ -163,8 +162,7 @@ class WorkDaysController < ApplicationController
     @work_day.with_lock do
       raise SaraManualAssignment::InvalidSelection,
         "La disponibilidad solo se puede modificar en borrador." unless @work_day.draft?
-      guide_day = @work_day.guide_days.joins(:guide)
-        .where(guides: { priority: 5, active: true })
+      guide_day = sara_availability_days
         .find(params[:guide_day_id])
       if guide_day.vacation? || guide_day.assigned_task?
         raise SaraManualAssignment::InvalidSelection,
@@ -822,6 +820,11 @@ end
     redirect_to destination,
       alert: allowed ? "Indique el motivo de la corrección." :
         "Esta programación ya cerró. Solo un administrador puede corregirla."
+  end
+
+  def sara_availability_days
+    @work_day.guide_days.where(guide_id: Guide.active.joins(:skills)
+      .where(skills: { name: "Roll de Sara" }).select(:id))
   end
 
   def set_work_day

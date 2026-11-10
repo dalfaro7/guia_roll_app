@@ -213,7 +213,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
 
     get sara_operation_work_day_url(day)
     assert_response :success
-    assert_select "#sara-priority-five-availability", count: 1
+    assert_select "#sara-availability", count: 1
     assert_select "#day-sara-pending-assignments", count: 0
 
     day.update!(status: :generated)

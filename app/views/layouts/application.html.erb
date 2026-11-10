@@ -2,6 +2,7 @@
 <html lang="es">
 
 <head>
+    <meta charset="utf-8">
     <title><%= content_for(:title) || "Programación de Guías" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,14 +30,14 @@
 
 
 
-    <% flash.each do |type, message| %>
-    <div class="alert alert-<%= type == "notice" ? "success" : "danger" %>">
-        <%= message %>
-    </div>
-    <% end %>
 </head>
 
-<body>
+<body class="<%= 'sara-app' if current_user&.hg_sarapiqui? %>">
+    <% flash.each do |type, message| %>
+      <div class="alert alert-<%= type == "notice" ? "success" : "danger" %>" role="status">
+        <%= message %>
+      </div>
+    <% end %>
     <header class="roll-header">
       <div class="roll-header__identity">
         <strong>Personal de Arenal Rafting</strong>
@@ -47,9 +48,9 @@
           <div class="roll-header__links">
             <div class="roll-header__daily" role="group" aria-label="HG Sarapiquí">
               <%= link_to "Programaciones de Sara y PM", sara_work_days_path,
-                    class: "roll-header__link" %>
+                    class: "roll-header__link", aria: { current: controller_name == "work_days" ? "page" : nil } %>
               <%= link_to "Guías de prioridad 6", sara_guides_path,
-                    class: "roll-header__link" %>
+                    class: "roll-header__link", aria: { current: controller_name == "sara_guides" ? "page" : nil } %>
             </div>
             <%= button_to "Cerrar sesión", destroy_user_session_path,
                   method: :delete, class: "roll-header__logout" %>

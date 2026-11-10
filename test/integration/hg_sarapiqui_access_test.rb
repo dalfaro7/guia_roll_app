@@ -49,7 +49,7 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
   test "HG opens existing unpublished date or creates a new draft" do
     get sara_operation_work_day_path(@day)
     assert_response :success
-    assert_select "#sara-priority-five-availability", count: 1
+    assert_select "#sara-availability", count: 1
 
     post create_sara_work_days_path, params: { date: @day.date.iso8601 }
     assert_redirected_to sara_operation_work_day_path(@day)
@@ -75,7 +75,7 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert_redirected_to sara_work_days_path
   end
 
-  test "HG changes only priority five availability and restores unused day off balance" do
+  test "HG changes Roll de Sara availability and restores unused day off balance" do
     guide = Guide.create!(name: "Sara availability five", priority: 5,
       active: true, pay_category: "freelance_regular",
       day_off_balance: 2, skills: [@class_iv, @sara_roll])
@@ -85,7 +85,7 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     other_day = @day.guide_days.create!(guide: other, status: :standby)
 
     get sara_operation_work_day_path(@day)
-    assert_select "#sara-priority-five-availability form", count: 1
+    assert_select "#sara-availability form", count: 1
 
     patch update_sara_availability_work_day_path(@day),
       params: { guide_day_id: guide_day.id, status: "day_off" }
@@ -117,6 +117,73 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert other_day.reload.standby?
   end
 
+  test "availability uses Roll de Sara at any level and rejects guides outside that skill" do
+    eligible_days = [0, 1, 2, 3, 5, 6].map do |priority|
+      guide = Guide.create!(name: "Sara eligible level #{priority}",
+        priority: priority, active: true, day_off_balance: 2,
+        skills: [@sara_roll])
+      @day.guide_days.create!(guide: guide, status: :standby)
+    end
+    without_skill = Guide.create!(name: "Level five without Sara",
+      priority: 5, active: true)
+    inactive = Guide.create!(name: "Inactive Sara", priority: 1,
+      active: false, skills: [@sara_roll])
+    blocked_days = [without_skill, inactive].map do |guide|
+      @day.guide_days.create!(guide: guide, status: :standby)
+    end
+
+    get sara_operation_work_day_path(@day)
+    assert_response :success
+    eligible_days.each do |day|
+      get sara_operation_work_day_path(@day)
+      assert_select "#sara-availability", text: /#{Regexp.escape(day.guide.name)}/
+      patch update_sara_availability_work_day_path(@day),
+        params: { guide_day_id: day.id, status: "day_off" }
+      assert_redirected_to sara_operation_work_day_path(@day)
+      assert day.reload.day_off?
+      assert_equal 1, day.guide.reload.day_off_balance
+    end
+    blocked_days.each do |day|
+      get sara_operation_work_day_path(@day)
+      assert_select "#sara-availability", text: /#{Regexp.escape(day.guide.name)}/, count: 0
+      patch update_sara_availability_work_day_path(@day),
+        params: { guide_day_id: day.id, status: "day_off" }
+      assert_response :not_found
+      assert day.reload.standby?
+    end
+
+    eligible_days.first.guide.skills.delete(@sara_roll)
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: eligible_days.first.id, status: "standby" }
+    assert_response :not_found
+    assert eligible_days.first.reload.day_off?
+  end
+
+  test "Sara skill does not allow changing another date or protected operating statuses" do
+    guide = Guide.create!(name: "Sara protected guide", priority: 1,
+      active: true, skills: [@sara_roll])
+    day = @day.guide_days.create!(guide: guide, status: :vacation)
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: day.id, status: "standby" }
+    assert day.reload.vacation?
+    day.update!(status: :assigned_task, status_note: "Office")
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: day.id, status: "standby" }
+    assert day.reload.assigned_task?
+    day.update!(status: :worked, location: "Balsa", role_primary: "River Guide")
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: day.id, status: "standby" }
+    assert day.reload.worked?
+    assert_equal "Balsa", day.location
+
+    other_day = WorkDay.create!(date: @day.date + 1.day)
+    other_record = other_day.guide_days.find_by!(guide: guide)
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: other_record.id, status: "day_off" }
+    assert_response :not_found
+    assert other_record.reload.standby?
+  end
+
   test "generated Sara availability is read only and cannot remove an assigned guide" do
     guide = Guide.create!(name: "Assigned Sara five", priority: 5,
       active: true, pay_category: "freelance_regular",
@@ -130,8 +197,8 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
 
     get sara_operation_work_day_path(@day)
     assert_response :success
-    assert_select "#sara-priority-five-availability form", count: 0
-    assert_select "#sara-priority-five-availability", text: /solo para consulta/
+    assert_select "#sara-availability form", count: 0
+    assert_select "#sara-availability", text: /solo para consulta/
 
     patch update_sara_availability_work_day_path(@day),
       params: { guide_day_id: guide_day.id, status: "penalized",

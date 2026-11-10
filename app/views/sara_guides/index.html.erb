@@ -1,23 +1,23 @@
 <% content_for :title, "Guías de prioridad 6 · Sara" %>
-<div class="container py-4">
+<main class="sara-shell sara-guides">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
     <div><h1 class="h3 mb-1">Guías de prioridad 6</h1>
       <p class="text-muted mb-0">Reservas para asignación manual en Sara 3 y 4 o PM.</p></div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <%= link_to "Programaciones de Sara", sara_work_days_path, class: "btn btn-outline-primary" %>
       <%= link_to "Agregar guía", new_sara_guide_path, class: "btn btn-primary" %>
     </div>
   </div>
   <div class="table-responsive">
-    <table class="table table-striped align-middle">
+    <table class="table align-middle sara-responsive-table">
       <thead><tr><th scope="col">Guía</th><th scope="col">Estado</th>
         <th scope="col">Habilidades</th><th scope="col">Acciones</th></tr></thead>
       <tbody>
         <% @guides.each do |guide| %>
-          <tr><td><%= guide.name %></td>
-            <td><%= guide.active? ? "Activo" : "Inactivo" %></td>
-            <td><%= guide.skills.map { |skill| roll_skill_label(skill.name) }.join(", ") %></td>
-            <td><div class="d-flex flex-wrap gap-2">
+          <tr><td data-label="Guía"><strong><%= guide.name %></strong></td>
+            <td data-label="Estado"><%= guide.active? ? "Activo" : "Inactivo" %></td>
+            <td data-label="Habilidades"><%= guide.skills.map { |skill| roll_skill_label(skill.name) }.join(", ") %></td>
+            <td data-label="Acciones"><div class="d-flex flex-wrap gap-2">
               <% unless current_user.hg_sarapiqui? %>
                 <%= link_to "Editar", edit_sara_guide_path(guide), class: "btn btn-sm btn-outline-primary" %>
               <% end %>
@@ -34,4 +34,4 @@
       </tbody>
     </table>
   </div>
-</div>
+</main>
