@@ -267,7 +267,7 @@
             <% compensation_assignment = @team_compensation_assignments[gd.id] %>
             <% selected_secondary = gd.role_secondary == "Bus Guide, towels & SendPhotos" ? "Bus Guide & Towels" : (gd.role_secondary == "SendPhotos" ? nil : gd.role_secondary) %>
             <% selected_photo_task = compensation_assignment&.photo_task.presence || (gd.role_secondary.to_s.include?("SendPhotos") ? "send_only" : "none") %>
-            <tr>
+            <tr data-outing="<%= gd.location %>">
                 <td>
                     <%= location_counters[
                       gd.location.presence || "NO_LOCATION"
@@ -1276,6 +1276,7 @@
                 const sendPhotos = row.querySelector(".team-send-photos-checkbox");
                 const sendControl = row.querySelector(".team-send-photos-control");
                 const update = () => {
+                    row.dataset.outing = location.value;
                     const photographer = primary.value === "Photographer";
                     principal.hidden = !photographer;
                     const headRole = ["Tour Leader", "Head Guide"].includes(secondary.value);

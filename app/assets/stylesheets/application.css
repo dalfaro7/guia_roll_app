@@ -76,3 +76,9 @@ body {
   .roll-header__links,.roll-header__daily,.roll-header__secondary{gap:3px}
   .roll-header__link,.roll-header__logout{padding:6px 7px}
 }
+
+/* Distinguish outings in the team roles editor without overpowering the form. */
+#team-roles-form tbody tr[data-outing="Balsa"] > td { background-color: #f1f8f3; }
+#team-roles-form tbody tr[data-outing^="Sara"] > td { background-color: #f0f5fc; }
+#team-roles-form tbody tr[data-outing="PM"] > td { background-color: #fff8eb; }
+#team-roles-form tbody tr[data-outing="Privado"] > td { background-color: #f7f2fa; }
