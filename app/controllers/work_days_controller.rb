@@ -467,7 +467,7 @@ class WorkDaysController < ApplicationController
     WorkDay.transaction do
       @work_day.location_slots.destroy_all
       total_slots = 0
-      skill_by_name = Skill.where(name: %w[ClassIII ClassIV Busguide Computer]).index_by(&:name)
+      skill_by_name = Skill.where(name: %w[ClassIII ClassIV Busguide Computer Elite]).index_by(&:name)
 
       requested.each do |location, counts|
         counts[:guides].times do |index|
@@ -476,7 +476,10 @@ class WorkDaysController < ApplicationController
             passengers: counts[:passengers]
           )
           skill_names = %w[Sara-3&4 PM].include?(location) ? %w[ClassIV] : %w[ClassIII]
-          skill_names += %w[Busguide Computer] if index.zero? && %w[Sara-3&4 PM].include?(location)
+          if index.zero?
+            skill_names += %w[Busguide Computer] if %w[Sara-3&4 PM].include?(location)
+            skill_names << "Elite" if location == "Privado"
+          end
           slot.skills = skill_names.filter_map { |name| skill_by_name[name] }
           total_slots += 1
         end
