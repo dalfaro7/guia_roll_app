@@ -59,10 +59,7 @@ module Whatsapp
     end
 
     def worked_guides
-      @worked_guides ||= work_day.guide_days
-        .where(status: :worked)
-        .includes(:guide)
-        .to_a
+      @worked_guides ||= RollOutingRoster.new(work_day).entries
         .sort_by do |guide_day|
           [
             LOCATION_ORDER.index(guide_day.location) || 99,

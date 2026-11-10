@@ -22,6 +22,25 @@ class Whatsapp::RollDocumentFormatterTest < ActiveSupport::TestCase
     assert_equal "Balsa Guide 01", balsa[:rows].first[:name]
     assert_equal "Balsa Guide 20", balsa[:rows].last[:name]
   end
+  test "shows the same guide separately in Sara and PM" do
+    guide = Guide.create!(name: "Sara PM Guide", priority: 3, active: true)
+    work_day = WorkDay.create!(date: Date.current + 2.days, status: :published)
+    work_day.guide_days.find_by!(guide: guide).update!(
+      status: :worked, location: "Sara-3&4", role_primary: "River Guide"
+    )
+    departure = work_day.departures.create!(label: "PM", location: "PM",
+      starts_at: Departure.fixed_start_for(work_day.date, "PM"))
+    departure.compensation_assignments.create!(guide: guide,
+      role_code: "river_guide")
+
+    sections = Whatsapp::RollDocumentFormatter.new(work_day).sections
+    sara = sections.find { |section| section[:title] == "SARA 3 & 4" }
+    pm = sections.find { |section| section[:title] == "PM" }
+
+    assert_equal ["Sara PM Guide"], sara[:rows].pluck(:name)
+    assert_equal ["Sara PM Guide"], pm[:rows].pluck(:name)
+  end
+
   test "uses the published fairness order for standby rows" do
     worked_guide = Guide.create!(name: "Alpha Worked", priority: 3, active: true)
     waiting_guide = Guide.create!(name: "Zulu Waiting", priority: 3, active: true)

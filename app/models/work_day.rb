@@ -113,14 +113,14 @@ class WorkDay < ApplicationRecord
     location_slots.count
   end
 
-  # Solo worked ocupa una posición real dentro del roll.
-  #
-  # assigned_task puede representar trabajo realizado,
-  # pero no ocupa un LocationSlot del roll normal.
+  # Cada salida cubierta cuenta por separado, aunque la haga el mismo guía.
+  # Las tareas asignadas no ocupan un puesto de guía.
   def assigned_roll_count
-    guide_days
-      .where(status: :worked)
-      .count
+    RollOutingRoster.new(self).entries.count
+  end
+
+  def roll_coverage_errors
+    RollOutingRoster.new(self).coverage_errors
   end
 
   def required_roll_count
@@ -130,6 +130,11 @@ class WorkDay < ApplicationRecord
   def publish!
     with_lock do
       raise "Only generated days can be published" unless generated?
+      coverage_errors = roll_coverage_errors
+      if coverage_errors.any?
+        errors.add(:base, "Asignaciones incompletas por salida: #{coverage_errors.join("; ")}")
+        raise ActiveRecord::RecordInvalid, self
+      end
 
       bus_assignments.order(:id).lock.each(&:refresh_rate_for_publication!)
       previous_status = status

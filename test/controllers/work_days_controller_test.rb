@@ -163,6 +163,28 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2#day-transport", count: 0
   end
 
+  test "published operation lists a guide in Sara and PM on the same day" do
+    user = User.create!(name: "Second outing admin",
+      email: "second-outing-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    guide = Guide.create!(name: "Second outing guide", priority: 3,
+      active: true, pay_category: "freelance_regular")
+    day = WorkDay.create!(date: Date.current + 25.days, status: :published)
+    guide_day = day.guide_days.find_by!(guide: guide)
+    guide_day.update!(status: :worked, location: "Sara-3&4",
+      role_primary: "River Guide")
+    pm = day.departures.create!(label: "PM", location: "PM",
+      starts_at: Departure.fixed_start_for(day.date, "PM"))
+    pm.compensation_assignments.create!(guide: guide, role_code: "river_guide")
+
+    get work_day_path(day)
+
+    assert_response :success
+    assert_select "tr.location-sara td", text: "Second outing guide", count: 1
+    assert_select "tr.location-pm td", text: "Second outing guide", count: 1
+  end
+
   test "published distribution keeps the old roll table and groups guides and drivers by outing" do
     user = User.create!(name: "Distribution admin", email: "distribution-admin@example.test",
       password: "password123", role: :admin)

@@ -368,12 +368,11 @@ class WorkDaysController < ApplicationController
       return
     end
 
-    if @work_day.assigned_roll_count != @work_day.required_roll_count
+    coverage_errors = @work_day.roll_coverage_errors
+    if coverage_errors.any?
       redirect_to(
         @work_day,
-        alert: "Asignaciones incompletas. Se asignaron " \
-               "#{@work_day.assigned_roll_count} de " \
-               "#{@work_day.required_roll_count} puestos requeridos."
+        alert: "Asignaciones incompletas por salida: #{coverage_errors.join("; ")}."
       )
       return
     end
