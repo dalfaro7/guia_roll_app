@@ -27,7 +27,7 @@ class SaraManualAssignment
 
       day = days[guide.id]
       assignments = occupied.fetch(guide.id, [])
-      kind = if guide.priority == 6 &&
+      kind = if guide.priority == 6 && guide.active? &&
           guide.skills.any? { |skill| skill.name == "address_Sarapiqui" } &&
           guide.skills.any? { |skill| skill.name == "ClassIV" } &&
           (day.nil? || day.standby?) && assignments.empty?
@@ -75,6 +75,38 @@ class SaraManualAssignment
       raise InvalidSelection, "El guía ya no está disponible para ese puesto." unless candidate
 
       assign_candidate(slot, candidate, actor)
+    end
+    @guide
+  end
+
+  def extra_guide_candidates_for(location)
+    return [] unless %w[Sara-3&4 PM].include?(location)
+
+    class_iv = Skill.find_by(name: "ClassIV")
+    return [] unless class_iv
+
+    virtual_slot = LocationSlot.new(work_day: @work_day, location: location)
+    virtual_slot.skills = [class_iv]
+    candidates_for(virtual_slot)
+  end
+
+  def add_guide(location:, guide_id:, actor:)
+    @work_day.with_lock do
+      raise InvalidSelection, "La programación debe estar generada." unless @work_day.generated?
+      unless %w[Sara-3&4 PM].include?(location)
+        raise InvalidSelection, "Solo puede añadir guías a Sara o PM."
+      end
+      ensure_departure_open!(location)
+      class_iv = Skill.find_by(name: "ClassIV")
+      raise InvalidSelection, "Falta la habilidad Clase IV." unless class_iv
+
+      slot = @work_day.location_slots.create!(location: location)
+      slot.skills = [class_iv]
+      candidate = candidates_for(slot).find { |entry| entry.guide.id == guide_id.to_i }
+      raise InvalidSelection, "El guía ya no está disponible para esa salida." unless candidate
+
+      assign_candidate(slot, candidate, actor)
+      @work_day.update!(guides_requested: @work_day.location_slots.count)
     end
     @guide
   end

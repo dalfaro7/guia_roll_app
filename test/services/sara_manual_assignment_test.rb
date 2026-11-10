@@ -20,15 +20,19 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
     @day = WorkDay.create!(date: Date.current + 45.days, status: :generated)
   end
 
-  test "inactive priority six reserve can fill a pending Sara slot" do
+  test "only active priority six reserve can fill a pending Sara slot" do
     reserve = guide("Sara reserve", 6, active: false,
       skills: %w[ClassIV address_Sarapiqui])
     slot = create_slot("Sara-3&4", %w[ClassIV])
 
+    assert_raises(SaraManualAssignment::InvalidSelection) do
+      service.call(slot_id: slot.id, guide_id: reserve.id, actor: @actor)
+    end
+    reserve.update!(active: true)
     selected = service.call(slot_id: slot.id, guide_id: reserve.id, actor: @actor)
 
     assert_equal reserve, selected
-    assert_not reserve.reload.active?
+    assert reserve.reload.active?
     assert_equal "Sara-3&4", @day.guide_days.find_by!(guide: reserve).location
     assert @day.guide_days.find_by!(guide: reserve).worked?
     assert_equal 1, CompensationAssignment.joins(:departure)

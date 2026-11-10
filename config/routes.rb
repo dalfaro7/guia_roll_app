@@ -81,6 +81,10 @@ Rails.application.routes.draw do
   root "dashboard#index"
   get "dashboard", to: "dashboard#index"
 
+  resources :sara_guides, only: [:index, :new, :create, :edit, :update] do
+    patch :toggle_active, on: :member
+  end
+
   resources :guides do
     member do
       # Activa o desactiva un guía.
@@ -97,6 +101,10 @@ Rails.application.routes.draw do
       as: :public_work_day_distribution
 
   resources :work_days do
+    collection do
+      get :sara
+      post :create_sara
+    end
     resource :compensation, only: [:show], controller: :compensation_work_days
     resources :departures, only: [:update] do
       member { get :confirm_cancel }
@@ -105,6 +113,8 @@ Rails.application.routes.draw do
     member do
       get :distribution
       get :sara_operation
+      patch :update_sara_availability
+      post :add_sara_guide
       patch :generate_roles
 
       post :publish

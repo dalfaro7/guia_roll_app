@@ -1,0 +1,38 @@
+<% content_for :title, "Programaciones de Sara y PM" %>
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div><h1 class="h3 mb-1">Programaciones de Sara y PM</h1>
+      <p class="text-muted mb-0">Prepare disponibilidad y asigne guías antes de la publicación.</p></div>
+    <%= link_to "Guías de prioridad 6", sara_guides_path, class: "btn btn-outline-primary" %>
+  </div>
+  <section class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5">Abrir una fecha</h2>
+      <p class="text-muted">Si no existe programación, se creará como borrador. Una fecha publicada no se puede editar aquí.</p>
+      <%= form_with url: create_sara_work_days_path, method: :post, local: true,
+            class: "d-flex flex-wrap align-items-end gap-2" do %>
+        <div><%= label_tag :date, "Fecha", class: "form-label" %>
+          <%= date_field_tag :date, nil, min: Date.current, required: true, class: "form-control" %></div>
+        <%= submit_tag "Abrir fecha", class: "btn btn-primary" %>
+      <% end %>
+    </div>
+  </section>
+  <h2 class="h5">Programaciones sin publicar</h2>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead><tr><th scope="col">Fecha</th><th scope="col">Estado</th>
+        <th scope="col">Acción</th></tr></thead>
+      <tbody>
+        <% @work_days.each do |day| %>
+          <tr><td><%= l(day.date, format: :long) %></td>
+            <td><%= roll_status_label(day.status) %></td>
+            <td><%= link_to "Abrir Sara y PM", sara_operation_work_day_path(day),
+              class: "btn btn-sm btn-outline-primary" %></td></tr>
+        <% end %>
+        <% if @work_days.empty? %>
+          <tr><td colspan="3" class="text-muted">No hay programaciones pendientes.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -5,14 +5,15 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
 
-  enum :role, { operador: 0, admin: 1, recursos_humanos: 2, contabilidad: 3 }
+  enum :role, { operador: 0, admin: 1, recursos_humanos: 2, contabilidad: 3, hg_sarapiqui: 4 }
 
   ACCESS_ROLE_LABELS = {
     "operador" => "Operador",
     "admin" => "Administrador",
     "recursos_humanos" => "Recursos Humanos",
     "contabilidad" => "Contabilidad",
-    "superadmin" => "Super Admin"
+    "superadmin" => "Super Admin",
+    "hg_sarapiqui" => "HG Sarapiquí"
   }.freeze
 
   validate :superadmin_requires_admin

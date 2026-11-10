@@ -7,8 +7,16 @@
       <h1 class="h3 mb-1">Sara 3 y 4 y PM</h1>
       <p class="text-muted mb-0"><%= l(@work_day.date, format: :long) %></p>
     </div>
-    <%= link_to "Volver a la operación", work_day_path(@work_day),
-          class: "btn btn-outline-primary" %>
+    <div class="d-flex flex-wrap gap-2">
+      <%= link_to "Programaciones de Sara", sara_work_days_path,
+            class: "btn btn-outline-primary" %>
+      <%= link_to "Guías de prioridad 6", sara_guides_path,
+            class: "btn btn-outline-primary" %>
+      <% unless current_user.hg_sarapiqui? %>
+        <%= link_to "Operación completa", work_day_path(@work_day),
+              class: "btn btn-outline-secondary" %>
+      <% end %>
+    </div>
   </div>
 
   <% if @sara_pm_coverage_errors.any? %>
@@ -17,6 +25,55 @@
       <%= @sara_pm_coverage_errors.join(" · ") %>
     </div>
   <% end %>
+
+  <section class="card mb-4" id="sara-priority-five-availability">
+    <div class="card-header"><strong>Disponibilidad · prioridad 5</strong></div>
+    <div class="card-body">
+      <p class="text-muted">«Libre» registra un día libre; «Penalizado» requiere motivo. «Disponible» revierte ambos estados. Si un guía ya está asignado en Sara o PM, cambiar su estado retira esa asignación.</p>
+      <% if @priority_five_days.any? %>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead><tr><th scope="col">Guía</th><th scope="col">Estado actual</th>
+              <th scope="col">Cambiar disponibilidad</th></tr></thead>
+            <tbody>
+              <% @priority_five_days.each do |day| %>
+                <tr><td><%= day.guide.name %></td>
+                  <td><%= { "standby" => "Disponible", "day_off" => "Libre",
+                    "penalized" => "Penalizado", "worked" => "Asignado",
+                    "vacation" => "Vacaciones", "assigned_task" => "Tarea asignada" }
+                    .fetch(day.status, day.status) %></td>
+                  <td>
+                    <% if day.worked? && !%w[Sara-3&4 Sara-3 Sara-4 PM].include?(day.location) %>
+                      <span class="text-muted">Asignado fuera de Sara y PM</span>
+                    <% else %>
+                      <%= form_with url: update_sara_availability_work_day_path(@work_day),
+                            method: :patch, local: true,
+                            class: "d-flex flex-wrap gap-2 align-items-center",
+                            data: (day.worked? ? { turbo_confirm: "¿Retirar la asignación de #{day.guide.name} y cambiar su disponibilidad?" } : {}) do %>
+                        <%= hidden_field_tag :guide_day_id, day.id %>
+                        <%= select_tag :status,
+                          options_for_select([["Seleccione cambio", ""],
+                            ["Disponible", "standby"], ["Libre", "day_off"],
+                            ["Penalizado", "penalized"]]),
+                          required: true, class: "form-select form-select-sm w-auto",
+                          aria: { label: "Estado de #{day.guide.name}" } %>
+                        <%= text_field_tag :status_note, nil,
+                          placeholder: "Motivo si es penalizado",
+                          class: "form-control form-control-sm w-auto",
+                          aria: { label: "Motivo de #{day.guide.name}" } %>
+                        <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
+                      <% end %>
+                    <% end %>
+                  </td></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-muted mb-0">No hay guías de prioridad 5 registrados para esta fecha.</p>
+      <% end %>
+    </div>
+  </section>
 
   <% [
     ["Sara 3 y 4", @sara_entries, @sara_required],
@@ -57,5 +114,9 @@
     </section>
   <% end %>
 
-  <%= render "sara_manual_controls" %>
+  <% if @work_day.generated? %>
+    <%= render "sara_manual_controls" %>
+  <% else %>
+    <p class="alert alert-info">La programación está en borrador. El operador general configurará los puestos y generará los roles antes de completar Sara y PM.</p>
+  <% end %>
 </div>

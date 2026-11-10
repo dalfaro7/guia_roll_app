@@ -1,0 +1,35 @@
+<% content_for :title, "Guías de prioridad 6 · Sara" %>
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div><h1 class="h3 mb-1">Guías de prioridad 6</h1>
+      <p class="text-muted mb-0">Reservas para asignación manual en Sara 3 y 4 o PM.</p></div>
+    <div class="d-flex gap-2">
+      <%= link_to "Programaciones de Sara", sara_work_days_path, class: "btn btn-outline-primary" %>
+      <%= link_to "Agregar guía", new_sara_guide_path, class: "btn btn-primary" %>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead><tr><th scope="col">Guía</th><th scope="col">Estado</th>
+        <th scope="col">Habilidades</th><th scope="col">Acciones</th></tr></thead>
+      <tbody>
+        <% @guides.each do |guide| %>
+          <tr><td><%= guide.name %></td>
+            <td><%= guide.active? ? "Activo" : "Inactivo" %></td>
+            <td><%= guide.skills.map { |skill| roll_skill_label(skill.name) }.join(", ") %></td>
+            <td><div class="d-flex flex-wrap gap-2">
+              <%= link_to "Editar", edit_sara_guide_path(guide), class: "btn btn-sm btn-outline-primary" %>
+              <%= button_to guide.active? ? "Desactivar" : "Activar",
+                toggle_active_sara_guide_path(guide), method: :patch,
+                class: "btn btn-sm #{guide.active? ? 'btn-outline-danger' : 'btn-outline-success'}",
+                data: { turbo_confirm: "¿Seguro que desea #{guide.active? ? 'desactivar' : 'activar'} a #{guide.name}?" } %>
+            </div></td>
+          </tr>
+        <% end %>
+        <% if @guides.empty? %>
+          <tr><td colspan="4" class="text-muted">Todavía no hay guías de prioridad 6.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<%= form_with model: @guide,
+      url: @guide.persisted? ? sara_guide_path(@guide) : sara_guides_path,
+      local: true do |form| %>
+  <div class="mb-3">
+    <%= form.label :name, "Nombre", class: "form-label" %>
+    <%= form.text_field :name, class: "form-control", required: true %>
+  </div>
+  <p><strong>Prioridad:</strong> 6 · <strong>Perfil económico:</strong> Freelance regular</p>
+  <p class="text-muted">Clase IV y residencia en Sarapiquí se agregan siempre.</p>
+  <fieldset class="mb-3">
+    <legend class="h6">Otras habilidades</legend>
+    <%= hidden_field_tag "guide[skill_ids][]", "" %>
+    <% Skill.where.not(name: SaraGuidesController::REQUIRED_SKILLS).order(:name).each do |skill| %>
+      <div class="form-check">
+        <%= check_box_tag "guide[skill_ids][]", skill.id,
+          @guide.skill_ids.include?(skill.id),
+          id: "sara_skill_#{skill.id}", class: "form-check-input" %>
+        <%= label_tag "sara_skill_#{skill.id}", roll_skill_label(skill.name),
+          class: "form-check-label" %>
+      </div>
+    <% end %>
+  </fieldset>
+  <div class="d-flex gap-2">
+    <%= form.submit @guide.persisted? ? "Guardar guía" : "Crear guía",
+      class: "btn btn-primary" %>
+    <%= link_to "Cancelar", sara_guides_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

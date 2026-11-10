@@ -3,6 +3,8 @@ class WorkDaysController < ApplicationController
   before_action :set_work_day, only: [
     :show,
     :sara_operation,
+    :update_sara_availability,
+    :add_sara_guide,
     :distribution,
     :available_buses,
     :driver_payment_quote,
@@ -22,15 +24,19 @@ class WorkDaysController < ApplicationController
   ]
 
   before_action :require_compensation_operator!, only: [
-    :create, :update, :force_assign, :sara_operation,
-    :assign_sara_guide, :add_sara_bus_guide,
+    :create, :update, :force_assign,
     :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
     :move_assigned_task_to_roll
   ]
+  before_action :require_sara_operator!, only: [
+    :sara, :sara_operation, :create_sara, :update_sara_availability,
+    :assign_sara_guide, :add_sara_bus_guide, :add_sara_guide
+  ]
   before_action :enforce_edit_window, only: [
     :update, :force_assign, :assign_sara_guide, :add_sara_bus_guide,
+    :add_sara_guide, :update_sara_availability,
     :update_availability, :update_roles,
     :generate_roles, :publish, :unpublish, :delete_with_reset,
     :reset_roll, :create_slots, :move_assigned_task_to_roll
@@ -72,13 +78,42 @@ class WorkDaysController < ApplicationController
         .maximum(:passengers)
   end
 
+  def sara
+    @work_days = WorkDay.where(date: Date.current..)
+      .where(status: [:draft, :generated]).order(:date)
+  end
+
+  def create_sara
+    date = Date.iso8601(params.require(:date).to_s)
+    existing = WorkDay.find_by(date: date)
+    if existing
+      return redirect_to sara_operation_work_day_path(existing) unless existing.published?
+
+      return redirect_to sara_work_days_path,
+        alert: "La programación de esa fecha ya está publicada."
+    end
+
+    work_day = WorkDay.create!(date: date)
+    audit!(action: "create_sara_work_day", auditable: work_day,
+      work_day: work_day, metadata: { date: date.iso8601 })
+    redirect_to sara_operation_work_day_path(work_day),
+      notice: "Programación creada para #{date}."
+  rescue Date::Error, ActionController::ParameterMissing
+    redirect_to sara_work_days_path, alert: "Seleccione una fecha válida."
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => error
+    redirect_to sara_work_days_path, alert: error.message
+  end
+
   def sara_operation
-    unless @work_day.generated?
-      redirect_to @work_day,
-        alert: "Esta pantalla está disponible cuando la programación está generada."
+    if @work_day.published?
+      redirect_to sara_work_days_path,
+        alert: "Solo se puede editar una programación sin publicar."
       return
     end
 
+    @priority_five_days = @work_day.guide_days.joins(:guide)
+      .where(guides: { priority: 5, active: true })
+      .includes(:guide).order("guides.name")
     roster = RollOutingRoster.new(@work_day)
     @sara_entries = roster.entries.select { |entry| entry.location.to_s.start_with?("Sara") }
     @pm_entries = roster.entries.select { |entry| entry.location == "PM" }
@@ -86,7 +121,14 @@ class WorkDaysController < ApplicationController
       @pm_entries.map { |entry| entry.guide.id }
     @sara_required = @work_day.location_slots.where(location: "Sara-3&4").count
     @pm_required = @work_day.location_slots.where(location: "PM").count
-    @sara_pm_coverage_errors = roster.coverage_errors.grep(/\A(?:Sara-3&4|PM):/)
+    @sara_pm_coverage_errors = @work_day.generated? ?
+      roster.coverage_errors.grep(/\A(?:Sara-3&4|PM):/) : []
+    @pending_sara_slots = []
+    @sara_candidates_by_slot = {}
+    @extra_bus_candidates_by_location = {}
+    @extra_guide_candidates_by_location = {}
+    return unless @work_day.generated?
+
     manual_assignment = SaraManualAssignment.new(@work_day)
     @pending_sara_slots = manual_assignment.unfilled_slots
     @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
@@ -95,6 +137,59 @@ class WorkDaysController < ApplicationController
     @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
       manual_assignment.extra_bus_candidates_for(location)
     end
+    @extra_guide_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
+      manual_assignment.extra_guide_candidates_for(location)
+    end
+  end
+
+  def update_sara_availability
+    unless @work_day.draft? || @work_day.generated?
+      return redirect_to sara_work_days_path,
+        alert: "La programación publicada no se puede editar desde Sara."
+    end
+
+    status = params[:status].to_s
+    unless %w[standby day_off penalized].include?(status)
+      return redirect_to sara_operation_work_day_path(@work_day),
+        alert: "Seleccione Disponible, Libre o Penalizado."
+    end
+
+    @work_day.with_lock do
+      guide_day = @work_day.guide_days.joins(:guide)
+        .where(guides: { priority: 5, active: true })
+        .find(params[:guide_day_id])
+      if guide_day.vacation? || guide_day.assigned_task?
+        raise SaraManualAssignment::InvalidSelection,
+          "Vacaciones y tareas asignadas se gestionan en la operación general."
+      end
+      if guide_day.worked? &&
+          !%w[Sara-3&4 Sara-3 Sara-4 PM].include?(guide_day.location)
+        raise SaraManualAssignment::InvalidSelection,
+          "No puede cambiar desde Sara una asignación de otra salida."
+      end
+
+      before = guide_day.attributes.slice("status", "status_note", "location")
+      updates = { status: status, status_note: status == "penalized" ?
+        params[:status_note].to_s.strip : nil,
+        manually_modified: true, modified_by: current_user }
+      if guide_day.worked?
+        updates.merge!(location: nil, role_primary: nil, role_secondary: nil)
+      end
+      if guide_day.day_off? && guide_day.day_off_consumed? && status != "day_off"
+        guide_day.guide.update!(day_off_balance:
+          guide_day.guide.day_off_balance.to_i + 1)
+        updates[:day_off_consumed] = false
+      end
+      guide_day.update!(updates)
+      audit!(action: "update_sara_availability", auditable: guide_day,
+        work_day: @work_day,
+        metadata: { before: before,
+          after: guide_day.attributes.slice("status", "status_note", "location") })
+    end
+    redirect_to sara_operation_work_day_path(@work_day),
+      notice: "Disponibilidad del guía actualizada."
+  rescue ActiveRecord::RecordInvalid, SaraManualAssignment::InvalidSelection => error
+    redirect_to sara_operation_work_day_path(@work_day), alert: error.message
   end
 
   def distribution
@@ -224,6 +319,18 @@ class WorkDaysController < ApplicationController
         alert: e.message
       )
     end
+  end
+
+  def add_sara_guide
+    guide = SaraManualAssignment.new(@work_day).add_guide(
+      location: params[:location], guide_id: params[:guide_id],
+      actor: current_user
+    )
+    redirect_to sara_operation_work_day_path(@work_day),
+      notice: "#{guide.name} añadido a la salida."
+  rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
+      ActiveRecord::RecordNotUnique => error
+    redirect_to sara_operation_work_day_path(@work_day), alert: error.message
   end
 
   def assign_sara_guide
@@ -711,7 +818,9 @@ end
     return if allowed && (!closed || !current_user.admin? ||
       params[:correction_reason].present?)
 
-    redirect_to @work_day,
+    destination = current_user.hg_sarapiqui? ?
+      sara_operation_work_day_path(@work_day) : @work_day
+    redirect_to destination,
       alert: allowed ? "Indique el motivo de la corrección." :
         "Esta programación ya cerró. Solo un administrador puede corregirla."
   end

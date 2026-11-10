@@ -149,7 +149,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
       active: true, pay_category: "freelance_regular",
       skills: [class_iv, busguide])
     reserve = Guide.create!(name: "Reserve from operation", priority: 6,
-      active: false, pay_category: "freelance_regular",
+      active: true, pay_category: "freelance_regular",
       skills: [class_iv, residence])
     day = WorkDay.create!(date: Date.current + 46.days, status: :generated)
     slot = day.location_slots.create!(location: "Sara-3&4")
@@ -183,7 +183,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_empty day.roll_coverage_errors
   end
 
-  test "Sara operation is restricted to generated rolls and current operators" do
+  test "Sara operation accepts drafts but stays restricted to authorized roles" do
     day = WorkDay.create!(date: Date.current + 47.days)
     admin = User.create!(name: "Sara operation admin",
       email: "sara-operation-admin@example.test",
@@ -191,7 +191,9 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     sign_in admin
 
     get sara_operation_work_day_url(day)
-    assert_redirected_to work_day_url(day)
+    assert_response :success
+    assert_select "#sara-priority-five-availability", count: 1
+    assert_select "#day-sara-pending-assignments", count: 0
 
     day.update!(status: :generated)
     sign_out admin

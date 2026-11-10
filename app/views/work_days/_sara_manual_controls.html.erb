@@ -2,7 +2,7 @@
     <section class="card mt-4" id="day-sara-pending-assignments">
       <div class="card-header">Completar puestos de Sara y PM</div>
       <div class="card-body">
-        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En PM puede elegir un guía de prioridad 5 que ya hizo Sara 3 y 4.</p>
+        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas activas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En PM puede elegir un guía de prioridad 5 que ya hizo Sara 3 y 4.</p>
         <% @pending_sara_slots.each do |slot| %>
           <% candidates = @sara_candidates_by_slot.fetch(slot) %>
           <div class="border rounded p-3 mb-3">
@@ -67,3 +67,33 @@
       </div>
     </section>
     <% end %>
+
+<% if @extra_guide_candidates_by_location.present? %>
+  <section class="card mt-4" id="day-extra-sara-guides">
+    <div class="card-header">Añadir guía a Sara o PM</div>
+    <div class="card-body">
+      <p class="work-day-hint">Añade un puesto nuevo de guía de río cuando la salida requiere más personal. El guía debe tener Clase IV.</p>
+      <% @extra_guide_candidates_by_location.each do |location, candidates| %>
+        <div class="border rounded p-3 mb-3">
+          <strong><%= location == "Sara-3&4" ? "Sara 3 y 4" : "PM" %></strong>
+          <%= form_with url: add_sara_guide_work_day_path(@work_day),
+                method: :post, local: true do %>
+            <%= hidden_field_tag :location, location %>
+            <%= label_tag "extra_sara_#{location}", "Guía" %>
+            <%= select_tag :guide_id,
+                  options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
+                  include_blank: "Seleccione un guía", id: "extra_sara_#{location}",
+                  class: "form-select mb-2", required: true, disabled: candidates.empty? %>
+            <% if compensation_correction_required?(@work_day) %>
+              <%= text_field_tag :correction_reason, nil,
+                    class: "form-control mb-2", placeholder: "Motivo de corrección",
+                    required: true %>
+            <% end %>
+            <%= submit_tag "Añadir guía", class: "btn btn-outline-primary",
+                  disabled: candidates.empty? %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </section>
+<% end %>

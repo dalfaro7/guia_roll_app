@@ -26,7 +26,7 @@ module Compensation
       return false if user.blank? || work_day.blank?
       return true unless applicable?(work_day)
       return true if user.admin?
-      return false unless user.operador?
+      return false unless user.operador? || user.hg_sarapiqui?
 
       !closed?(work_day, now: now)
     end

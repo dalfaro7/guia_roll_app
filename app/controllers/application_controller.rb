@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   before_action :authenticate_user!
+  before_action :restrict_hg_sarapiqui_scope!
   before_action :configure_permitted_parameters,
                 if: :devise_controller?
   around_action :with_compensation_context
@@ -12,6 +13,34 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def restrict_hg_sarapiqui_scope!
+    return unless current_user&.hg_sarapiqui?
+    return if devise_controller? && controller_name == "sessions" && action_name == "destroy"
+    return if devise_controller? && controller_name == "registrations" &&
+      %w[edit update].include?(action_name)
+
+    allowed = {
+      "work_days" => %w[sara sara_operation create_sara
+        update_sara_availability assign_sara_guide add_sara_bus_guide
+        add_sara_guide],
+      "sara_guides" => %w[index new create edit update toggle_active]
+    }
+    return if allowed.fetch(controller_name, []).include?(action_name)
+
+    redirect_to sara_work_days_path, alert: "HG Sarapiquí solo puede gestionar Sara y PM."
+  end
+
+  def after_sign_in_path_for(resource)
+    resource.hg_sarapiqui? ? sara_work_days_path : super
+  end
+
+  def require_sara_operator!
+    return if current_user&.admin? || current_user&.operador? ||
+      current_user&.hg_sarapiqui?
+
+    redirect_to root_path, alert: "No tiene permiso para gestionar Sara y PM."
+  end
 
   def with_compensation_context
     Compensation::Current.set(

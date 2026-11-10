@@ -36,6 +36,17 @@ class UserRolesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "contabilidad", log.metadata.fetch("after")
   end
 
+  test "superadmin can assign HG Sarapiquí without administrator privileges" do
+    patch user_role_path(@operator),
+      params: { user: { access_role: "hg_sarapiqui" } }
+
+    assert_redirected_to user_roles_path
+    assert @operator.reload.hg_sarapiqui?
+    assert_not @operator.superadmin?
+    assert_equal "hg_sarapiqui",
+      AuditLog.order(:id).last.metadata.fetch("after")
+  end
+
   test "superadmin can promote another administrator" do
     patch user_role_path(@admin), params: { user: { access_role: "superadmin" } }
 

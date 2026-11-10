@@ -6,24 +6,25 @@
     <p class="text-muted mb-0">Solo Super Admin puede cambiar los roles. Los cambios se registran en Auditoría.</p>
   </div>
 
-  <% access_roles = %w[superadmin admin operador contabilidad recursos_humanos] %>
+  <% access_roles = %w[superadmin admin operador contabilidad recursos_humanos hg_sarapiqui] %>
   <% access_rows = [
-    ["Programación de guías", "Gestionar y corregir tras el cierre", "Gestionar y corregir tras el cierre", "Gestionar hasta el cierre", "Consultar", "Consultar"],
-    ["Reportes semanales y valoración", "Consultar", "Consultar", "Consultar", "Consultar", "Sin acceso"],
-    ["Tarifas de guías y perfiles económicos", "Gestionar; Tarifas requiere clave", "Gestionar; Tarifas requiere clave", "Sin acceso", "Sin acceso", "Sin acceso"],
-    ["Tarifario de transporte", "Consultar y editar", "Consultar y editar", "Consultar y editar", "Consultar", "Sin acceso"],
-    ["Consolidados y pagos", "Consultar y marcar pagado", "Consultar y marcar pagado", "Consultar", "Consultar y marcar pagado", "Sin acceso"],
-    ["Calendarios y créditos de oficina", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso", "Consultar"],
-    ["Choferes y empresas de transporte", "Consultar y editar", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso"],
-    ["Pruebas de WhatsApp", "Usar", "Usar", "Sin acceso", "Sin acceso", "Sin acceso"],
-    ["Roles de usuarios", "Consultar y cambiar", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso"]
+    ["Programación de guías", "Gestionar y corregir tras el cierre", "Gestionar y corregir tras el cierre", "Gestionar hasta el cierre", "Consultar", "Consultar", "Crear fecha y gestionar Sara y PM sin publicar; disponibilidad nivel 5"],
+    ["Reportes semanales y valoración", "Consultar", "Consultar", "Consultar", "Consultar", "Sin acceso", "Sin acceso"],
+    ["Tarifas de guías y perfiles económicos", "Gestionar; Tarifas requiere clave", "Gestionar; Tarifas requiere clave", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Tarifario de transporte", "Consultar y editar", "Consultar y editar", "Consultar y editar", "Consultar", "Sin acceso", "Sin acceso"],
+    ["Consolidados y pagos", "Consultar y marcar pagado", "Consultar y marcar pagado", "Consultar", "Consultar y marcar pagado", "Sin acceso", "Sin acceso"],
+    ["Calendarios y créditos de oficina", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso", "Consultar", "Sin acceso"],
+    ["Choferes y empresas de transporte", "Consultar y editar", "Consultar y editar", "Consultar y editar", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Pruebas de WhatsApp", "Usar", "Usar", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Roles de usuarios", "Consultar y cambiar", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso", "Sin acceso"],
+    ["Guías de prioridad 6", "Crear, editar y activar", "Crear, editar y activar", "Crear, editar y activar", "Crear, editar y activar", "Crear, editar y activar", "Crear, editar y activar"]
   ] %>
 
   <section class="mb-4" aria-labelledby="role-access-heading">
     <h2 class="h4" id="role-access-heading">Accesos por rol</h2>
     <p class="text-muted">Permisos vigentes en la aplicación para cada cuenta con sesión iniciada.</p>
     <div class="alert alert-info" role="note">
-      <strong>Accesos compartidos:</strong> todos los roles pueden consultar la programación, guías, buses, días libres, el panel de equidad y Auditoría. También pueden editar fichas de guías y buses, registrar días libres y notas, y agregar o retirar buses de una programación.
+      <strong>Accesos compartidos:</strong> los roles generales conservan sus accesos habituales. HG Sarapiquí solo puede abrir sus programaciones sin publicar y administrar guías de prioridad 6; no puede publicar, gestionar Balsa ni ver datos contables.
     </div>
     <div class="table-responsive card shadow-sm border-0">
       <table class="table table-bordered align-middle mb-0">

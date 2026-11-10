@@ -43,6 +43,18 @@
         <% if user_signed_in? && !content_for?(:work_day_shell) %><span><%= current_user.name %></span><% end %>
       </div>
       <nav class="roll-header__nav" aria-label="Navegación principal">
+        <% if current_user&.hg_sarapiqui? %>
+          <div class="roll-header__links">
+            <div class="roll-header__daily" role="group" aria-label="HG Sarapiquí">
+              <%= link_to "Programaciones de Sara y PM", sara_work_days_path,
+                    class: "roll-header__link" %>
+              <%= link_to "Guías de prioridad 6", sara_guides_path,
+                    class: "roll-header__link" %>
+            </div>
+            <%= button_to "Cerrar sesión", destroy_user_session_path,
+                  method: :delete, class: "roll-header__logout" %>
+          </div>
+        <% else %>
         <div class="roll-header__links">
           <div class="roll-header__secondary" role="group" aria-label="Administración ocasional">
             <% [["Guías", guides_path], ["Auditoría", audit_logs_path]].each do |label, path| %>
@@ -87,6 +99,7 @@
             <span>KayakTalkie&amp;GPS</span><span aria-hidden="true">↗</span>
           <% end %>
         </div>
+        <% end %>
       </nav>
     </header>
 
