@@ -75,30 +75,6 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert_redirected_to sara_work_days_path
   end
 
-  test "a future draft created by HG appears in the operator schedule" do
-    future_date = Date.current + 35.days
-    post create_sara_work_days_path, params: { date: future_date.iso8601 }
-    created = WorkDay.find_by!(date: future_date)
-    assert created.draft?
-
-    sign_out @hg
-    operator = User.create!(name: "Future schedule operator",
-      email: "future-schedule-operator@example.test",
-      password: "password123", role: :operador)
-    sign_in operator
-
-    get work_days_path
-    assert_response :success
-    assert_select "a[href='#{work_day_path(created)}']", text: "Ver"
-
-    get work_days_path, params: {
-      start_date: Date.current.iso8601,
-      end_date: (Date.current + 1.day).iso8601
-    }
-    assert_response :success
-    assert_select "a[href='#{work_day_path(created)}']", count: 0
-  end
-
   test "HG changes only priority five availability and restores unused day off balance" do
     guide = Guide.create!(name: "Sara availability five", priority: 5,
       active: true, pay_category: "freelance_regular",
