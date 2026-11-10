@@ -23,7 +23,7 @@ class ApplicationController < ActionController::Base
     allowed = {
       "work_days" => %w[sara sara_operation create_sara
         update_sara_availability assign_sara_guide add_sara_guide],
-      "sara_guides" => %w[index new create edit update toggle_active]
+      "sara_guides" => %w[index new create toggle_active]
     }
     return if allowed.fetch(controller_name, []).include?(action_name)
 

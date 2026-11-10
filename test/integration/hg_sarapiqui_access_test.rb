@@ -196,20 +196,47 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert_equal %w[Busguide ClassIV address_Sarapiqui],
       reserve.skills.pluck(:name).sort
 
+    get sara_guides_path
+    assert_response :success
+    assert_select "a[href='#{edit_sara_guide_path(reserve)}']", count: 0
+    get edit_sara_guide_path(reserve)
+    assert_redirected_to sara_work_days_path
     patch sara_guide_path(reserve), params: { guide: {
-      name: "Updated Sara reserve", priority: 1,
-      skill_ids: []
+      name: "Updated Sara reserve", skill_ids: []
     } }
-    assert_redirected_to sara_guides_path
-    assert_equal 6, reserve.reload.priority
-    assert_equal "Updated Sara reserve", reserve.name
-    assert_equal %w[ClassIV address_Sarapiqui], reserve.skills.pluck(:name).sort
+    assert_redirected_to sara_work_days_path
+    assert_equal "New Sara reserve", reserve.reload.name
+    assert_equal %w[Busguide ClassIV address_Sarapiqui],
+      reserve.skills.pluck(:name).sort
 
     patch toggle_active_sara_guide_path(reserve)
     assert reserve.reload.active?
     assert @day.guide_days.exists?(guide: reserve)
     patch toggle_active_sara_guide_path(reserve)
     assert_not reserve.reload.active?
+
+  end
+
+  test "operator may edit priority six but not another priority" do
+    reserve = Guide.create!(name: "Operator editable reserve", priority: 6,
+      active: false, pay_category: "freelance_regular",
+      skills: [@class_iv, @residence, @busguide])
+    sign_out @hg
+    operator = User.create!(name: "Sara guide operator",
+      email: "sara-guide-operator@example.test",
+      password: "password123", role: :operador)
+    sign_in operator
+
+    get sara_guides_path
+    assert_select "a[href='#{edit_sara_guide_path(reserve)}']", count: 1
+    get edit_sara_guide_path(reserve)
+    assert_response :success
+    patch sara_guide_path(reserve), params: { guide: {
+      name: "Updated Sara reserve", skill_ids: []
+    } }
+    assert_redirected_to sara_guides_path
+    assert_equal "Updated Sara reserve", reserve.reload.name
+    assert_equal %w[ClassIV address_Sarapiqui], reserve.skills.pluck(:name).sort
 
     priority_five = Guide.create!(name: "Not a reserve", priority: 5,
       active: false)

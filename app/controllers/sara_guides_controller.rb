@@ -1,5 +1,6 @@
 class SaraGuidesController < ApplicationController
   before_action :require_sara_operator!
+  before_action :require_compensation_operator!, only: [:edit, :update]
   before_action :set_guide, only: [:edit, :update, :toggle_active]
 
   REQUIRED_SKILLS = %w[ClassIV address_Sarapiqui].freeze
