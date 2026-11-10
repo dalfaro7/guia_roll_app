@@ -46,6 +46,16 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "guide detail offers priority and page size controls without changing monthly totals" do
+    Guide.create!(name: "Priority Six Guide", priority: 6, active: true)
+    get dashboard_url
+    assert_response :success
+    assert_select '#equity-guide-priority option[value="6"]', text: 'Nivel 6'
+    assert_select '#equity-guide-page-size option[value="25"][selected]'
+    assert_select 'tr[data-equity-guide="Priority Six Guide"][data-equity-priority="6"]', 1
+    assert_select '#equity-summary .equity-period span', text: /guías activos/
+  end
+
   test "annual incident total includes grouped PostgreSQL month values" do
     day = WorkDay.create!(date: Date.current + 1.day)
     RollNote.create!(work_day: day, created_by: @user, note_type: :incident, note: "Test incident")
