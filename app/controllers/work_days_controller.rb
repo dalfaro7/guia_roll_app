@@ -24,7 +24,7 @@ class WorkDaysController < ApplicationController
   ]
 
   before_action :require_compensation_operator!, only: [
-    :create, :update, :force_assign,
+    :create, :update, :force_assign, :add_sara_bus_guide,
     :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
@@ -134,8 +134,10 @@ class WorkDaysController < ApplicationController
     @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
       manual_assignment.candidates_for(slot)
     end
-    @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
-      manual_assignment.extra_bus_candidates_for(location)
+    unless current_user.hg_sarapiqui?
+      @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
+        manual_assignment.extra_bus_candidates_for(location)
+      end
     end
     @extra_guide_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
       manual_assignment.extra_guide_candidates_for(location)

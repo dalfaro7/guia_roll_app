@@ -193,6 +193,31 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "HG sees freelance label but cannot add extra bus guides" do
+    specialist = Guide.create!(name: "Bus specialist for operator", priority: 2,
+      active: true, pay_category: "freelance_regular",
+      skills: [@class_iv, @busguide])
+    Guide.create!(name: "Freelance reserve", priority: 6,
+      active: true, pay_category: "freelance_regular",
+      skills: [@class_iv, @residence])
+    @day.update!(status: :generated)
+    slot = @day.location_slots.create!(location: "Sara-3&4")
+    slot.skills << @class_iv
+
+    get sara_operation_work_day_path(@day)
+    assert_response :success
+    assert_select "#day-extra-bus-guides", count: 0
+    assert_select "form[action='#{add_sara_bus_guide_work_day_path(@day)}']", count: 0
+    assert_select "#day-sara-pending-assignments option", text: /Freelance reserve.*freelance/
+
+    assert_no_difference "@day.location_slots.count" do
+      post add_sara_bus_guide_work_day_path(@day),
+        params: { location: "Sara-3&4", guide_id: specialist.id }
+    end
+    assert_redirected_to sara_work_days_path
+    assert_nil @day.guide_days.find_by(guide: specialist)
+  end
+
   test "HG fills Sara and adds a PM guide but cannot create a Balsa slot" do
     reserve = Guide.create!(name: "Reserve for manual HG", priority: 6,
       active: false, pay_category: "freelance_regular",

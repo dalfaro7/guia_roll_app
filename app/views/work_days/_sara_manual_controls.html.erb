@@ -13,7 +13,7 @@
               <%= hidden_field_tag :slot_id, slot.id %>
               <%= label_tag "guide_for_slot_#{slot.id}", "Guía" %>
               <%= select_tag :guide_id,
-                    options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
+                    options_for_select(candidates.map { |candidate| [sara_candidate_label(candidate), candidate.guide.id] }),
                     include_blank: "Seleccione un guía",
                     id: "guide_for_slot_#{slot.id}", class: "form-select mb-2",
                     required: true, disabled: candidates.empty? %>
@@ -47,7 +47,7 @@
               <%= hidden_field_tag :location, location %>
               <%= label_tag "extra_bus_#{location}", "Guía de bus" %>
               <%= select_tag :guide_id,
-                    options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
+                    options_for_select(candidates.map { |candidate| [sara_candidate_label(candidate), candidate.guide.id] }),
                     include_blank: "Seleccione un guía",
                     id: "extra_bus_#{location}", class: "form-select mb-2",
                     required: true, disabled: candidates.empty? %>
@@ -81,7 +81,7 @@
             <%= hidden_field_tag :location, location %>
             <%= label_tag "extra_sara_#{location}", "Guía" %>
             <%= select_tag :guide_id,
-                  options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
+                  options_for_select(candidates.map { |candidate| [sara_candidate_label(candidate), candidate.guide.id] }),
                   include_blank: "Seleccione un guía", id: "extra_sara_#{location}",
                   class: "form-select mb-2", required: true, disabled: candidates.empty? %>
             <% if compensation_correction_required?(@work_day) %>
