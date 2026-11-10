@@ -1,11 +1,28 @@
-<% content_for :title, "Programaciones de Sara y PM" %>
+<% content_for :title, "Programaciones de Sarapiquí Clase IV y Sarapiquí PM" %>
 <main class="sara-shell">
   <header class="sara-hero">
     <p class="sara-eyebrow">OPERACIÓN · SARAPIQUÍ</p>
     <h1>Tu equipo, listo para salir.</h1>
-    <p>Organiza la disponibilidad y completa las salidas de Sara y PM.</p>
-    <span class="sara-pill">HG Sarapiquí · antes de publicar</span>
+    <p>Organiza la disponibilidad y completa las salidas de Sarapiquí Clase IV y Sarapiquí PM.</p>
+    <span class="sara-pill">HG Sarapiquí · gestión y consulta</span>
   </header>
+  <section class="sara-published-list" aria-labelledby="sara-published-title">
+    <div class="sara-section-heading"><div><p class="sara-eyebrow">HOY Y MAÑANA</p><h2 id="sara-published-title">Roll publicado</h2></div></div>
+    <div class="sara-date-grid">
+      <% @published_work_days.each do |day| %>
+        <%= link_to sara_published_work_day_path(day), class: "sara-date-card" do %>
+          <div class="sara-calendar" aria-hidden="true"><strong><%= day.date.day %></strong><span><%= l(day.date, format: "%b") %></span></div>
+          <div class="sara-date-detail">
+            <strong class="sara-status">Publicado</strong>
+            <h3><%= day.date == Date.current ? "Hoy" : "Mañana" %></h3>
+            <time datetime="<%= day.date.iso8601 %>"><%= l(day.date, format: :long) %></time>
+            <span class="sara-card-action">Consultar roll <span aria-hidden="true">→</span></span>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    <% if @published_work_days.empty? %><p class="sara-empty">Aún no hay roll publicado para hoy o mañana.</p><% end %>
+  </section>
   <section class="sara-panel" aria-labelledby="sara-date-title">
     <div class="sara-section-heading">
       <div><p class="sara-eyebrow">PLANIFICA</p><h2 id="sara-date-title">Abrir una fecha</h2></div>
@@ -27,15 +44,15 @@
         <%= link_to sara_operation_work_day_path(day), class: "sara-date-card" do %>
           <div class="sara-calendar" aria-hidden="true"><strong><%= day.date.day %></strong><span><%= l(day.date, format: "%b") %></span></div>
           <div class="sara-date-detail">
-            <span class="sara-status"><%= roll_status_label(day.status) %></span>
+            <strong class="sara-status"><%= roll_status_label(day.status) %></strong>
             <h3><%= day.date == Date.current ? "Hoy" : day.date == Date.tomorrow ? "Mañana" : l(day.date, format: "%A") %></h3>
             <time datetime="<%= day.date.iso8601 %>"><%= l(day.date, format: :long) %></time>
-            <span class="sara-card-action">Abrir Sara y PM <span aria-hidden="true">→</span></span>
+            <span class="sara-card-action">Abrir Sarapiquí Clase IV y Sarapiquí PM <span aria-hidden="true">→</span></span>
           </div>
         <% end %>
       <% end %>
     </div>
     <% if @work_days.empty? %><div class="sara-empty"><h3>Todo al día</h3><p>No hay programaciones pendientes. Abre una fecha para empezar.</p></div><% end %>
   </section>
-  <aside class="sara-support"><div><strong>¿Necesitas un guía de reserva?</strong><p>Consulta y activa guías de prioridad 6.</p></div><%= link_to "Ver guías de reserva", sara_guides_path, class: "btn btn-outline-primary" %></aside>
+  <aside class="sara-support"><div><strong>¿Necesitas un guía de reserva?</strong><p>Consulta y activa guías freelance.</p></div><%= link_to "Ver guías de reserva", sara_guides_path, class: "btn btn-outline-primary" %></aside>
 </main>

@@ -174,3 +174,14 @@ body.sara-app{background:#f3f6f5;background-image:none;color:#183e37}
  .sara-availability-form input[type=submit]{width:100%}
 }
 .sara-operation-header{align-items:flex-start}
+
+/* Clear operation dates and states in both Sara and general schedules. */
+.sara-operation-date{font-size:clamp(1.25rem,4vw,1.7rem);font-weight:750;color:#164a3a;margin:18px 0 0;padding:14px 18px;background:#e2efe7;border-left:4px solid #17604c;border-radius:8px;line-height:1.4}
+.sara-state-label{display:inline-block;font-size:13px;font-weight:800;color:#173e35;padding:5px 10px;background:#e2efe7;border-radius:8px}
+.sara-date-detail time{display:block;font-size:17px;font-weight:750;color:#173e35;line-height:1.4}
+.sara-date-detail .sara-status{font-weight:800;font-size:12px}
+.schedule-date{font-size:1.1rem;color:#173e35}
+
+.sara-published-list{margin-bottom:28px}
+
+.sara-published-transport{border-top:1px solid #dce7e1;margin-top:24px;padding-top:20px}

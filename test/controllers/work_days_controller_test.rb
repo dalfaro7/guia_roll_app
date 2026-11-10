@@ -181,11 +181,11 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
 
     get work_day_url(day)
     assert_response :success
-    assert_select "a[href='#{sara_operation_work_day_path(day)}']", text: "Completar Sara y PM"
+    assert_select "a[href='#{sara_operation_work_day_path(day)}']", text: "Completar Sarapiquí Clase IV y Sarapiquí PM"
 
     get sara_operation_work_day_url(day)
     assert_response :success
-    assert_select "h1", text: "Sara 3 y 4 y PM"
+    assert_select "h1", text: "Sarapiquí Clase IV y Sarapiquí PM"
     assert_select "#day-sara-pending-assignments", text: /Reserve from operation/
     assert_select "form[action='#{assign_sara_guide_work_day_path(day)}']", count: 1
 

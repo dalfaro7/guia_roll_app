@@ -53,7 +53,7 @@ class DashboardController < ApplicationController
     # guías actualmente activos.
     # ========================================================
     @guides =
-      Guide.active.order(:name)
+      Guide.active.for_operational_reports.order(:name)
 
 
     # ========================================================
@@ -113,7 +113,7 @@ class DashboardController < ApplicationController
     # la fecha cuenta solamente una vez.
     # ========================================================
     @worked_month_days =
-      GuideDay
+      GuideDay.where(guide_id: Guide.for_operational_reports.select(:id))
         .joins(:work_day)
         .where(
           status: assigned_statuses
@@ -377,7 +377,7 @@ class DashboardController < ApplicationController
   def build_special_role_data(month_range)
 
     special_role_rows =
-      GuideDay
+      GuideDay.where(guide_id: Guide.for_operational_reports.select(:id))
         .joins(
           :work_day,
           :guide

@@ -21,13 +21,13 @@ class ApplicationController < ActionController::Base
       %w[edit update].include?(action_name)
 
     allowed = {
-      "work_days" => %w[sara sara_operation create_sara
+      "work_days" => %w[sara sara_operation sara_published create_sara
         update_sara_availability assign_sara_guide add_sara_guide],
       "sara_guides" => %w[index new create toggle_active]
     }
     return if allowed.fetch(controller_name, []).include?(action_name)
 
-    redirect_to sara_work_days_path, alert: "HG Sarapiquí solo puede gestionar Sara y PM."
+    redirect_to sara_work_days_path, alert: "HG Sarapiquí solo puede gestionar Sarapiquí Clase IV y Sarapiquí PM."
   end
 
   def after_sign_in_path_for(resource)
@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
     return if current_user&.admin? || current_user&.operador? ||
       current_user&.hg_sarapiqui?
 
-    redirect_to root_path, alert: "No tiene permiso para gestionar Sara y PM."
+    redirect_to root_path, alert: "No tiene permiso para gestionar Sarapiquí Clase IV y Sarapiquí PM."
   end
 
   def with_compensation_context

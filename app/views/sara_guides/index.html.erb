@@ -1,10 +1,10 @@
-<% content_for :title, "Guías de prioridad 6 · Sara" %>
+<% content_for :title, "Guías Freelance · Sara" %>
 <main class="sara-shell sara-guides">
   <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-    <div><h1 class="h3 mb-1">Guías de prioridad 6</h1>
-      <p class="text-muted mb-0">Reservas para asignación manual en Sara 3 y 4 o PM.</p></div>
+    <div><h1 class="h3 mb-1">Guías Freelance</h1>
+      <p class="text-muted mb-0">Reservas para asignación manual en Sarapiquí Clase IV o PM.</p></div>
     <div class="d-flex flex-wrap gap-2">
-      <%= link_to "Programaciones de Sara", sara_work_days_path, class: "btn btn-outline-primary" %>
+      <%= link_to "Programaciones de Sarapiquí", sara_work_days_path, class: "btn btn-outline-primary" %>
       <%= link_to "Agregar guía", new_sara_guide_path, class: "btn btn-primary" %>
     </div>
   </div>
@@ -29,7 +29,7 @@
           </tr>
         <% end %>
         <% if @guides.empty? %>
-          <tr><td colspan="4" class="text-muted">Todavía no hay guías de prioridad 6.</td></tr>
+          <tr><td colspan="4" class="text-muted">Todavía no hay guías freelance.</td></tr>
         <% end %>
       </tbody>
     </table>

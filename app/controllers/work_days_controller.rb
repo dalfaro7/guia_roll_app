@@ -30,7 +30,7 @@ class WorkDaysController < ApplicationController
     :move_assigned_task_to_roll
   ]
   before_action :require_sara_operator!, only: [
-    :sara, :sara_operation, :create_sara, :update_sara_availability,
+    :sara, :sara_operation, :sara_published, :create_sara, :update_sara_availability,
     :assign_sara_guide, :add_sara_guide
   ]
   before_action :enforce_edit_window, only: [
@@ -88,8 +88,24 @@ class WorkDaysController < ApplicationController
   end
 
   def sara
+    @published_work_days = WorkDay.published.where(date: Date.current..Date.tomorrow).order(:date)
     @work_days = WorkDay.where(date: Date.current..)
       .where(status: [:draft, :generated]).order(:date)
+  end
+
+  def sara_published
+    response.headers["Cache-Control"] = "private, no-store"
+    @work_day = WorkDay.published
+      .where(date: Date.current..Date.tomorrow).find(params[:id])
+    transport = @work_day.bus_assignments
+      .where(location: %w[Sara-3&4 Sara-3 Sara-4 PM]).includes(:bus, :driver).order(:id).to_a
+    @sara_transport = transport.reject { |assignment| assignment.location == "PM" }
+    @pm_transport = transport.select { |assignment| assignment.location == "PM" }
+    entries = RollOutingRoster.new(@work_day).entries
+    @sara_entries = entries.select { |entry| %w[Sara-3&4 Sara-3 Sara-4].include?(entry.location) }
+    @pm_entries = entries.select { |entry| entry.location == "PM" }
+    @second_outing_guide_ids = @sara_entries.map { |entry| entry.guide.id } &
+      @pm_entries.map { |entry| entry.guide.id }
   end
 
   def create_sara

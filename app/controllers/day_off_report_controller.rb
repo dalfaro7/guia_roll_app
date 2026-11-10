@@ -14,7 +14,7 @@ class DayOffReportController < ApplicationController
     @calendar_days = (start_date..end_date).to_a
 
     #@guides = Guide.where(priority: 2).order(:name)
-    @guides = Guide.order(:name)
+    @guides = Guide.for_operational_reports.order(:name)
 
     @work_days =
       WorkDay.where(date: start_date..end_date)

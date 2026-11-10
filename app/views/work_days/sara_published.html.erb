@@ -1,0 +1,55 @@
+<% content_for :title, "Roll publicado · Sarapiquí · #{l(@work_day.date, format: :long)}" %>
+<main class="sara-shell">
+  <header class="sara-operation-header">
+    <div>
+      <p class="sara-eyebrow">ROLL DE GUÍAS · <strong class="sara-state-label">Publicado</strong></p>
+      <h1>Sarapiquí Clase IV y Sarapiquí PM</h1>
+      <p class="sara-operation-date"><time datetime="<%= @work_day.date.iso8601 %>"><%= l(@work_day.date, format: :long) %></time></p>
+      <p class="sara-hint mt-3">Solo consulta · asignaciones de la programación publicada.</p>
+    </div>
+    <%= link_to "Volver a programaciones", sara_work_days_path, class: "btn btn-outline-primary" %>
+  </header>
+  <nav class="sara-section-nav" aria-label="Salidas publicadas">
+    <a href="#published-sara">Sarapiquí Clase IV</a><a href="#published-pm">Sarapiquí PM</a>
+  </nav>
+  <% [["Sarapiquí Clase IV", @sara_entries, @sara_transport, "published-sara"], ["Sarapiquí PM", @pm_entries, @pm_transport, "published-pm"]].each do |title, entries, transport, section_id| %>
+    <section class="card mb-4" id="<%= section_id %>">
+      <div class="card-header d-flex justify-content-between gap-2"><strong><%= title %></strong><span><%= entries.size %> <%= entries.one? ? "guía" : "guías" %></span></div>
+      <div class="card-body">
+        <% if entries.any? %>
+          <table class="table sara-responsive-table">
+            <thead><tr><th scope="col">Guía</th><th scope="col">Función principal</th><th scope="col">Función secundaria</th></tr></thead>
+            <tbody>
+              <% entries.each do |entry| %>
+                <tr>
+                  <td data-label="Guía"><strong><%= entry.guide.name %></strong>
+                    <% if section_id == "published-pm" && @second_outing_guide_ids.include?(entry.guide.id) %><span class="sara-level">Segunda salida</span><% end %>
+                  </td>
+                  <td data-label="Función principal"><%= roll_role_label(entry.role_primary) %></td>
+                  <td data-label="Función secundaria"><%= entry.role_secondary.present? ? roll_role_label(entry.role_secondary) : "—" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %><p class="sara-hint mb-0">No hay guías asignados a esta salida.</p><% end %>
+        <div class="sara-published-transport">
+          <h2>Transporte y choferes</h2>
+          <% if transport.any? %>
+            <table class="table sara-responsive-table mt-3">
+              <thead><tr><th scope="col">Vehículo</th><th scope="col">Empresa</th><th scope="col">Chofer</th></tr></thead>
+              <tbody>
+                <% transport.each do |assignment| %>
+                  <tr>
+                    <td data-label="Vehículo"><strong><%= assignment.bus.alias %></strong><span class="sara-level"><%= assignment.bus.four_by_four? ? "4×4" : "Bus" %></span></td>
+                    <td data-label="Empresa"><%= assignment.transport_company_name_snapshot %></td>
+                    <td data-label="Chofer"><strong><%= assignment.driver&.name || "Por asignar" %></strong></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          <% else %><p class="sara-hint mt-2 mb-0">No hay transporte asignado a esta salida.</p><% end %>
+        </div>
+      </div>
+    </section>
+  <% end %>
+</main>

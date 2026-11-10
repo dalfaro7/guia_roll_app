@@ -6,7 +6,7 @@
 <aside class="day-sidebar day-sidebar-left" aria-label="Menú de la operación">
     <header class="work-day-hero day-sidebar-heading">
       <div><span class="work-day-eyebrow">PROGRAMACIÓN DE GUÍAS</span><h1><%= l(@work_day.date, format: :long) %></h1><p>Organiza el equipo y revisa los detalles de la operación.</p></div>
-      <span class="work-day-state"><%= roll_status_label(@work_day.status) %></span>
+      <strong class="work-day-state"><%= roll_status_label(@work_day.status) %></strong>
     </header>
 <details class="day-sidebar-disclosure" open><summary class="day-sidebar-toggle">Menú de acciones</summary>
 <div class="day-menu-content"><span class="work-day-eyebrow">EN ESTE DÍA</span>
@@ -33,7 +33,7 @@
             <% end %>
 
             <% if @work_day.generated? && (current_user.admin? || current_user.operador?) %>
-              <%= link_to "Completar Sara y PM",
+              <%= link_to "Completar Sarapiquí Clase IV y Sarapiquí PM",
                     sara_operation_work_day_path(@work_day),
                     class: "btn btn-outline-primary" %>
             <% end %>
@@ -895,6 +895,7 @@
                             <%
                 fairness_guide_days =
                   @work_day.guide_days
+                    .where(guide_id: Guide.for_operational_reports.select(:id))
                     .includes(:guide)
                     .select do |guide_day|
                       guide_day.worked? ||

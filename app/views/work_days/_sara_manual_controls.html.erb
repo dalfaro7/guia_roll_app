@@ -1,12 +1,12 @@
     <% if @pending_sara_slots.present? %>
     <section class="card mt-4" id="day-sara-pending-assignments">
-      <div class="card-header">Completar puestos de Sara y PM</div>
+      <div class="card-header">Completar puestos de Sarapiquí Clase IV y Sarapiquí PM</div>
       <div class="card-body">
-        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas activas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En PM puede elegir un guía de prioridad 5 que ya hizo Sara 3 y 4.</p>
+        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas activas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En Sarapiquí PM puede elegir un guía de prioridad 5 que ya hizo Sarapiquí Clase IV.</p>
         <% @pending_sara_slots.each do |slot| %>
           <% candidates = @sara_candidates_by_slot.fetch(slot) %>
           <div class="border rounded p-3 mb-3">
-            <strong><%= slot.location == "Sara-3&4" ? "Sara 3 y 4" : "PM" %> · puesto <%= slot.id %></strong>
+            <strong><%= slot.location == "Sara-3&4" ? "Sarapiquí Clase IV" : "Sarapiquí PM" %> · puesto <%= slot.id %></strong>
             <small class="d-block text-muted mb-2">Requisitos: <%= slot.skills.map { |skill| roll_skill_label(skill.name) }.join(", ").presence || "Sin requisitos adicionales" %></small>
             <%= form_with url: assign_sara_guide_work_day_path(@work_day),
                   method: :post, local: true do %>
@@ -36,12 +36,12 @@
 
 <% if @extra_guide_candidates_by_location.present? %>
   <section class="card mt-4" id="day-extra-sara-guides">
-    <div class="card-header">Añadir guía a Sara o PM</div>
+    <div class="card-header">Añadir guía a Sarapiquí Clase IV o Sarapiquí PM</div>
     <div class="card-body">
       <p class="work-day-hint">Añade un puesto nuevo de guía de río cuando la salida requiere más personal. El guía debe tener Clase IV.</p>
       <% @extra_guide_candidates_by_location.each do |location, candidates| %>
         <div class="border rounded p-3 mb-3">
-          <strong><%= location == "Sara-3&4" ? "Sara 3 y 4" : "PM" %></strong>
+          <strong><%= location == "Sara-3&4" ? "Sarapiquí Clase IV" : "Sarapiquí PM" %></strong>
           <%= form_with url: add_sara_guide_work_day_path(@work_day),
                 method: :post, local: true do %>
             <%= hidden_field_tag :location, location %>

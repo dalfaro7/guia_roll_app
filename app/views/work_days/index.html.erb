@@ -50,9 +50,9 @@
 
         <% @work_days.each do |day| %>
         <tr>
-            <td><%= day.date %></td>
+            <td><strong class="schedule-date"><%= l(day.date, format: :long) %></strong></td>
             <td><%= day.guides_requested %></td>
-            <td><%= roll_status_label(day.status) %></td>
+            <td><strong><%= roll_status_label(day.status) %></strong></td>
             <td>
                 <div class="btn-group" role="group">
                     <%= link_to "Ver", work_day_path(day), class: "btn btn-info" %>

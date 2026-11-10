@@ -47,9 +47,9 @@
         <% if current_user&.hg_sarapiqui? %>
           <div class="roll-header__links">
             <div class="roll-header__daily" role="group" aria-label="HG Sarapiquí">
-              <%= link_to "Programaciones de Sara y PM", sara_work_days_path,
+              <%= link_to "Programaciones de Sarapiquí", sara_work_days_path,
                     class: "roll-header__link", aria: { current: controller_name == "work_days" ? "page" : nil } %>
-              <%= link_to "Guías de prioridad 6", sara_guides_path,
+              <%= link_to "Guías Freelance", sara_guides_path,
                     class: "roll-header__link", aria: { current: controller_name == "sara_guides" ? "page" : nil } %>
             </div>
             <%= button_to "Cerrar sesión", destroy_user_session_path,

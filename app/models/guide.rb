@@ -22,6 +22,9 @@ class Guide < ApplicationRecord
                on: :update,
                if: :saved_change_to_pay_category_or_priority?
 
+  # Presentation/reporting only: never use this scope for assignment ranking.
+  scope :for_operational_reports, -> { where.not(priority: 6) }
+
   scope :active, -> { where(active: true) }
 
   # Si cambia la prioridad, los rolls futuros generados

@@ -1,17 +1,17 @@
-<% content_for :title, "Sara y PM · #{l(@work_day.date, format: :long)}" %>
+<% content_for :title, "Sarapiquí Clase IV y Sarapiquí PM · #{l(@work_day.date, format: :long)}" %>
 
 <main class="sara-shell sara-operation">
   <header class="sara-operation-header">
     <div>
-      <p class="text-uppercase text-muted small mb-1">Programación de guías · <%= roll_status_label(@work_day.status) %></p>
-      <h1 class="h3 mb-1">Sara 3 y 4 y PM</h1>
-      <p class="text-muted mb-0"><%= l(@work_day.date, format: :long) %></p>
+      <p class="text-uppercase text-muted small mb-1">Programación de guías · <strong class="sara-state-label"><%= roll_status_label(@work_day.status) %></strong></p>
+      <h1 class="h3 mb-1">Sarapiquí Clase IV y Sarapiquí PM</h1>
+      <p class="sara-operation-date"><time datetime="<%= @work_day.date.iso8601 %>"><%= l(@work_day.date, format: :long) %></time></p>
     </div>
     <% unless current_user.hg_sarapiqui? %>
     <div class="d-flex flex-wrap gap-2 align-items-start">
-      <%= link_to "Programaciones de Sara", sara_work_days_path,
+      <%= link_to "Programaciones de Sarapiquí", sara_work_days_path,
             class: "btn btn-outline-primary" %>
-      <%= link_to "Guías de prioridad 6", sara_guides_path,
+      <%= link_to "Guías Freelance", sara_guides_path,
             class: "btn btn-outline-primary" %>
       <% unless current_user.hg_sarapiqui? %>
         <%= link_to "Operación completa", work_day_path(@work_day),
@@ -20,8 +20,8 @@
     </div>
     <% end %>
   </header>
-  <nav class="sara-section-nav" aria-label="Secciones de Sara y PM">
-    <a href="#sara-availability">Disponibilidad</a><a href="#sara-outing-0">Sara 3 y 4</a><a href="#sara-outing-1">PM</a>
+  <nav class="sara-section-nav" aria-label="Secciones de Sarapiquí Clase IV y Sarapiquí PM">
+    <a href="#sara-availability">Disponibilidad</a><a href="#sara-outing-0">Sarapiquí Clase IV</a><a href="#sara-outing-1">Sarapiquí PM</a>
     <% if @work_day.generated? %><a href="#day-extra-sara-guides">Añadir guía</a><% end %>
   </nav>
 
@@ -57,7 +57,7 @@
                     <% if day.vacation? || day.assigned_task? %>
                       <span class="text-muted">Se gestiona desde la operación general.</span>
                     <% elsif day.worked? && !%w[Sara-3&4 Sara-3 Sara-4 PM].include?(day.location) %>
-                      <span class="text-muted">Asignado fuera de Sara y PM</span>
+                      <span class="text-muted">Asignado fuera de Sarapiquí Clase IV y Sarapiquí PM</span>
                     <% else %>
                       <%= form_with url: update_sara_availability_work_day_path(@work_day),
                             method: :patch, local: true,
@@ -91,8 +91,8 @@
   </section>
 
   <% [
-    ["Sara 3 y 4", @sara_entries, @sara_required],
-    ["PM", @pm_entries, @pm_required]
+    ["Sarapiquí Clase IV", @sara_entries, @sara_required],
+    ["Sarapiquí PM", @pm_entries, @pm_required]
   ].each_with_index do |(title, entries, required), index| %>
     <section class="card mb-4" id="sara-outing-<%= index %>">
       <div class="card-header d-flex justify-content-between gap-2">
@@ -111,7 +111,7 @@
                   <tr>
                     <td data-label="Guía">
                       <strong><%= entry.guide.name %></strong>
-                      <% if title == "PM" && @second_outing_guide_ids.include?(entry.guide.id) %>
+                      <% if title == "Sarapiquí PM" && @second_outing_guide_ids.include?(entry.guide.id) %>
                         <span class="badge text-bg-info ms-1">Segunda salida</span>
                       <% end %>
                     </td>
@@ -132,6 +132,6 @@
   <% if @work_day.generated? %>
     <%= render "sara_manual_controls" %>
   <% else %>
-    <p class="alert alert-info">La programación está en borrador. El operador general configurará los puestos y generará los roles antes de completar Sara y PM.</p>
+    <p class="alert alert-info">La programación está en borrador. El operador general configurará los puestos y generará los roles antes de completar Sarapiquí Clase IV y Sarapiquí PM.</p>
   <% end %>
 </main>
