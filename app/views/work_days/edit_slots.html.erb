@@ -2,11 +2,20 @@
 
 <h2>Configurar requisitos de puestos</h2>
 
+<% slots_by_location = @work_day.location_slots.includes(:skills).group_by(&:location) %>
+
+<% if slots_by_location.empty? %>
+  <div class="alert alert-info" role="status">
+    Aún no hay puestos de guías para configurar. Primero define cuántos guías necesita cada salida.
+  </div>
+  <%= link_to "Definir guías por salida", locations_work_day_path(@work_day),
+              class: "btn btn-primary" %>
+<% else %>
 <% skills = Skill.all %>
 
 <%= form_with url: update_all_location_slots_path, method: :patch do %>
 
-<% @work_day.location_slots.group_by(&:location).each do |location, slots| %>
+<% slots_by_location.each do |location, slots| %>
 
 <div class="card p-3 mb-4">
 
@@ -71,6 +80,8 @@ end
 <div class="text-center mt-4">
 <%= submit_tag "Actualizar todas las ubicaciones", class: "btn btn-success btn-lg" %>
 </div>
+
+<% end %>
 
 <% end %>
 

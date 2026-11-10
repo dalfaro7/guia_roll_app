@@ -41,6 +41,28 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "th", text: "Choferes requeridos", count: 0
   end
 
+  test "requirements page guides operator when there are no guide slots" do
+    user = User.create!(name: "Requirements admin", email: "requirements-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    work_day = WorkDay.create!(date: Date.current + 3.days)
+
+    get edit_slots_work_day_url(work_day)
+
+    assert_response :success
+    assert_select "div[role='status']", text: /Aún no hay puestos de guías/
+    assert_select "a[href='#{locations_work_day_path(work_day)}']", text: "Definir guías por salida"
+    assert_select "form[action='#{update_all_location_slots_path}']", count: 0
+
+    work_day.location_slots.create!(location: "Balsa")
+    get edit_slots_work_day_url(work_day)
+
+    assert_response :success
+    assert_select "h3", text: "Balsa"
+    assert_select "strong", text: "Puesto 1"
+    assert_select "form[action='#{update_all_location_slots_path}']", count: 1
+  end
+
   test "publishing sends TourFotos and WhatsApp notifications" do
     user = User.create!(
       name: "Roll Admin",
