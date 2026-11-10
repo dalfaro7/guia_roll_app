@@ -53,6 +53,7 @@ skills = [
   "Elite",
   "Kayaker",
   "ClassIV",
+  "Roll de Sara",
   "Photographer",
   "Busguide",
   "HG",
