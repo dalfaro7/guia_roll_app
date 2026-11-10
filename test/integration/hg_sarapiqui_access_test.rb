@@ -84,6 +84,9 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
       active: true, pay_category: "freelance_regular")
     other_day = @day.guide_days.create!(guide: other, status: :standby)
 
+    get sara_operation_work_day_path(@day)
+    assert_select "#sara-priority-five-availability form", count: 1
+
     patch update_sara_availability_work_day_path(@day),
       params: { guide_day_id: guide_day.id, status: "day_off" }
     assert_redirected_to sara_operation_work_day_path(@day)
@@ -114,7 +117,7 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert other_day.reload.standby?
   end
 
-  test "HG removal of an assigned priority five guide opens the Sara slot" do
+  test "generated Sara availability is read only and cannot remove an assigned guide" do
     guide = Guide.create!(name: "Assigned Sara five", priority: 5,
       active: true, pay_category: "freelance_regular",
       skills: [@class_iv, @sara_roll])
@@ -125,17 +128,28 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
       role_primary: "River Guide")
     @day.update!(status: :generated)
 
+    get sara_operation_work_day_path(@day)
+    assert_response :success
+    assert_select "#sara-priority-five-availability form", count: 0
+    assert_select "#sara-priority-five-availability", text: /solo para consulta/
+
     patch update_sara_availability_work_day_path(@day),
       params: { guide_day_id: guide_day.id, status: "penalized",
         status_note: "Cambio operativo" }
 
     assert_redirected_to sara_operation_work_day_path(@day)
-    assert guide_day.reload.penalized?
-    assert_nil guide_day.location
-    assert_equal ["Sara-3&4: falta 1 puesto por cubrir"],
-      @day.roll_coverage_errors
+    assert_match(/solo se puede modificar en borrador/, flash[:alert])
+    assert guide_day.reload.worked?
+    assert_equal "Sara-3&4", guide_day.location
+    assert_empty @day.roll_coverage_errors
     assignment = CompensationAssignment.find_by!(guide_day: guide_day)
-    assert_equal "canceled", assignment.status
+    assert_equal "planned", assignment.status
+
+    @day.update!(status: :published)
+    patch update_sara_availability_work_day_path(@day),
+      params: { guide_day_id: guide_day.id, status: "day_off" }
+    assert_redirected_to sara_work_days_path
+    assert guide_day.reload.worked?
   end
 
   test "HG cannot edit today's availability after the eight PM cutoff" do

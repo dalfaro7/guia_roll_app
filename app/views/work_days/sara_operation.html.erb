@@ -29,12 +29,16 @@
   <section class="card mb-4" id="sara-priority-five-availability">
     <div class="card-header"><strong>Disponibilidad · prioridad 5</strong></div>
     <div class="card-body">
-      <p class="text-muted">«Libre» registra un día libre; «Penalizado» requiere motivo. «Disponible» revierte ambos estados. Si un guía ya está asignado en Sara o PM, cambiar su estado retira esa asignación.</p>
+      <% if @work_day.draft? %>
+        <p class="text-muted">«Libre» registra un día libre; «Penalizado» requiere motivo. «Disponible» revierte ambos estados. Si un guía ya está asignado en Sara o PM, cambiar su estado retira esa asignación.</p>
+      <% else %>
+        <p class="text-muted">La disponibilidad quedó cerrada al generar la programación. Los estados se muestran solo para consulta.</p>
+      <% end %>
       <% if @priority_five_days.any? %>
         <div class="table-responsive">
           <table class="table table-striped align-middle">
             <thead><tr><th scope="col">Guía</th><th scope="col">Estado actual</th>
-              <th scope="col">Cambiar disponibilidad</th></tr></thead>
+              <% if @work_day.draft? %><th scope="col">Cambiar disponibilidad</th><% end %></tr></thead>
             <tbody>
               <% @priority_five_days.each do |day| %>
                 <tr><td><%= day.guide.name %></td>
@@ -42,6 +46,7 @@
                     "penalized" => "Penalizado", "worked" => "Asignado",
                     "vacation" => "Vacaciones", "assigned_task" => "Tarea asignada" }
                     .fetch(day.status, day.status) %></td>
+                  <% if @work_day.draft? %>
                   <td>
                     <% if day.worked? && !%w[Sara-3&4 Sara-3 Sara-4 PM].include?(day.location) %>
                       <span class="text-muted">Asignado fuera de Sara y PM</span>
@@ -64,7 +69,9 @@
                         <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
                       <% end %>
                     <% end %>
-                  </td></tr>
+                  </td>
+                  <% end %>
+                </tr>
               <% end %>
             </tbody>
           </table>

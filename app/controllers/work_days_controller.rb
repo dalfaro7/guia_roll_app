@@ -148,9 +148,10 @@ class WorkDaysController < ApplicationController
   end
 
   def update_sara_availability
-    unless @work_day.draft? || @work_day.generated?
-      return redirect_to sara_work_days_path,
-        alert: "La programación publicada no se puede editar desde Sara."
+    unless @work_day.draft?
+      return redirect_to (@work_day.published? ? sara_work_days_path :
+        sara_operation_work_day_path(@work_day)),
+        alert: "La disponibilidad solo se puede modificar en borrador."
     end
 
     status = params[:status].to_s
@@ -160,6 +161,8 @@ class WorkDaysController < ApplicationController
     end
 
     @work_day.with_lock do
+      raise SaraManualAssignment::InvalidSelection,
+        "La disponibilidad solo se puede modificar en borrador." unless @work_day.draft?
       guide_day = @work_day.guide_days.joins(:guide)
         .where(guides: { priority: 5, active: true })
         .find(params[:guide_day_id])
@@ -397,7 +400,12 @@ class WorkDaysController < ApplicationController
   def update_availability
     @work_day = WorkDay.find(params[:id])
 
-    ActiveRecord::Base.transaction do
+    @work_day.with_lock do
+      unless @work_day.draft?
+        return redirect_to @work_day,
+          alert: "La disponibilidad solo se puede modificar en borrador."
+      end
+
       params[:availability]&.each do |guide_day_id, data|
         guide_day =
           @work_day.guide_days.find(guide_day_id)

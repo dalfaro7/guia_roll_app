@@ -41,6 +41,34 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "th", text: "Choferes requeridos", count: 0
   end
 
+  test "availability changes only while the programming is a draft" do
+    operator = User.create!(name: "Availability operator",
+      email: "availability-operator@example.test",
+      password: "password123", role: :operador)
+    sign_in operator
+    guide = Guide.create!(name: "Availability guide", priority: 3, active: true)
+    day = WorkDay.create!(date: Date.current + 5.days)
+    guide_day = day.guide_days.create!(guide: guide, status: :standby)
+
+    patch update_availability_work_day_path(day), params: {
+      availability: { guide_day.id.to_s => { status: "penalized",
+        status_note: "Ausencia" } }
+    }
+    assert_redirected_to work_day_path(day)
+    assert guide_day.reload.penalized?
+
+    [:generated, :published].each do |state|
+      day.update!(status: state)
+      patch update_availability_work_day_path(day), params: {
+        availability: { guide_day.id.to_s => { status: "standby",
+          status_note: "" } }
+      }
+      assert_redirected_to work_day_path(day)
+      assert_match(/solo se puede modificar en borrador/, flash[:alert])
+      assert guide_day.reload.penalized?
+    end
+  end
+
   test "Sara PM and Private default requirements keep one specialized first slot" do
     user = User.create!(name: "Slot defaults admin", email: "slot-defaults-admin@example.test",
       password: "password123", role: :admin)
