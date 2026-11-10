@@ -590,7 +590,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert second.reload.principal_photographer?
   end
 
-  test "only PM and Sarapiqui river guides see the send photos checkbox beside primary role" do
+  test "a photographer hides both photo tasks for other guides in the same outing" do
     @day.update!(status: :generated)
     entries = [
       ["Balsa guide", "Balsa", "River Guide"],
@@ -610,11 +610,31 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     get work_day_path(@day)
     assert_response :success
     days.each_with_index do |day, index|
-      expected = [false, true, true, false, false][index]
+      expected = [false, false, true, false, false][index]
       assert_select "#team-roles-form .team-primary-cell .team-send-photos-control input[name='roles[#{day.id}][send_photos]'][type='checkbox']", 1
       assert_select "#team-roles-form tr:has(select[name='roles[#{day.id}][role_primary]']) .team-send-photos-control#{expected ? ':not([hidden])' : '[hidden]'}", 1
     end
+    assert_select "#team-roles-form tr:has(select[name='roles[#{days[1].id}][role_primary]']) .team-photo-task-control[hidden]", 1
+    assert_select "#team-roles-form tr:has(select[name='roles[#{days[2].id}][role_primary]']) .team-photo-task-control:not([hidden])", 1
     assert_select "#team-roles-form select[name='roles[#{days[1].id}][photo_task]'] option[value='send_only']", 0
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { days[1].id.to_s => { role_primary: "River Guide",
+        role_secondary: "", location: "PM", photo_task: "take_and_send",
+        principal_photographer: "0" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert flash[:alert].present?
+    assert_equal "none", CompensationAssignment.find_by!(guide_day: days[1]).reload.photo_task
+
+    patch update_roles_work_day_path(@day), params: {
+      roles: { days[1].id.to_s => { role_primary: "River Guide",
+        role_secondary: "", location: "PM", send_photos: "1",
+        principal_photographer: "0" } }
+    }
+    assert_redirected_to work_day_path(@day)
+    assert flash[:alert].present?
+    assert_equal "none", CompensationAssignment.find_by!(guide_day: days[1]).reload.photo_task
   end
 
   test "PM guide send photos checkbox creates the single paid sender" do

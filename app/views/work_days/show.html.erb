@@ -219,7 +219,8 @@
 
     <%= form_with url: update_roles_work_day_path(@work_day),
                   method: :patch,
-                  local: true, id: "team-roles-form" do %>
+                  local: true, id: "team-roles-form",
+                  data: { external_photo_outings: @external_photo_outings.to_json } do %>
 
     <div class="work-day-table-scroll" tabindex="0" role="region" aria-label="Tabla de la operación"><table class="table table-bordered">
         <thead>
@@ -293,7 +294,7 @@
                         <%= hidden_field_tag "roles[#{gd.id}][principal_photographer]", "0" %>
                         <label><%= check_box_tag "roles[#{gd.id}][principal_photographer]", "1", compensation_assignment&.principal_photographer?, class: "team-principal-checkbox", aria: { label: "Fotógrafo principal: #{gd.guide.name}" } %> Principal</label>
                     </span>
-                    <span class="team-send-photos-control" <%= "hidden" unless gd.role_primary == "River Guide" && CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(gd.location) && !["Tour Leader", "Head Guide"].include?(selected_secondary) %>>
+                    <span class="team-send-photos-control" <%= "hidden" unless gd.role_primary == "River Guide" && CompensationAssignment::PHOTO_SENDING_LOCATIONS.include?(gd.location) && !["Tour Leader", "Head Guide"].include?(selected_secondary) && !@photo_outings.include?(gd.location) %>>
                         <%= hidden_field_tag "roles[#{gd.id}][send_photos]", "0" %>
                         <label><%= check_box_tag "roles[#{gd.id}][send_photos]", "1", selected_photo_task == "send_only", class: "team-send-photos-checkbox", aria: { label: "Envía fotos: #{gd.guide.name}" } %> Envía fotos</label>
                     </span>
@@ -313,7 +314,7 @@
                 </td>
 
                 <td>
-                    <span class="team-photo-task-control" <%= "hidden" if gd.role_primary == "Photographer" || ["Tour Leader", "Head Guide"].include?(selected_secondary) %>>
+                    <span class="team-photo-task-control" <%= "hidden" if gd.role_primary == "Photographer" || ["Tour Leader", "Head Guide"].include?(selected_secondary) || @photo_outings.include?(gd.location) %>>
                         <%= select_tag "roles[#{gd.id}][photo_task]",
                           options_for_select([["Sin tarea de fotos", "none"], ["Toma y envía", "take_and_send"]], selected_photo_task),
                           class: "form-select form-select-sm team-photo-task",
@@ -1265,55 +1266,68 @@
         if (!form || form.dataset.teamRolesBound) return;
         form.dataset.teamRolesBound = "true";
         const rows = form.querySelectorAll("tbody tr");
-            rows.forEach((row) => {
-                const primary = row.querySelector(".team-primary-role");
-                const secondary = row.querySelector("select[name$='[role_secondary]']");
-                const photoTask = row.querySelector(".team-photo-task");
-                const photoTaskControl = row.querySelector(".team-photo-task-control");
-                const principal = row.querySelector(".team-principal-control");
-                const checkbox = row.querySelector(".team-principal-checkbox");
-                const location = row.querySelector(".team-location");
-                const sendPhotos = row.querySelector(".team-send-photos-checkbox");
-                const sendControl = row.querySelector(".team-send-photos-control");
-                const update = () => {
-                    row.dataset.outing = location.value;
-                    const photographer = primary.value === "Photographer";
-                    principal.hidden = !photographer;
-                    const headRole = ["Tour Leader", "Head Guide"].includes(secondary.value);
-                    const canSend = primary.value === "River Guide" &&
-                        ["PM", "Sara-3&4", "Sara-3", "Sara-4"].includes(location.value) && !headRole;
-                    sendControl.hidden = !canSend;
-                    if (!canSend) sendPhotos.checked = false;
-                    photoTaskControl.hidden = photographer || headRole || sendPhotos.checked;
-                    photoTask.disabled = photographer || headRole || sendPhotos.checked;
-                    if (photographer || headRole || sendPhotos.checked) photoTask.value = "none";
-                    if (!photographer) checkbox.checked = false;
-                };
-                primary.addEventListener("change", update);
-                secondary.addEventListener("change", update);
-                location.addEventListener("change", update);
-                sendPhotos.addEventListener("change", () => {
-                    if (sendPhotos.checked) {
-                        rows.forEach((other) => {
-                            if (other !== row && other.querySelector(".team-location").value === location.value) {
-                                other.querySelector(".team-send-photos-checkbox").checked = false;
-                                other.querySelector(".team-primary-role").dispatchEvent(new Event("change"));
-                            }
-                        });
-                    }
-                    update();
-                });
-                checkbox.addEventListener("change", () => {
-                    if (!checkbox.checked) return;
-                    const location = row.querySelector(".team-location").value;
+        const externalPhotoOutings = JSON.parse(form.dataset.externalPhotoOutings || "[]");
+        const updates = [];
+        const hasPhotographer = (outing) => externalPhotoOutings.includes(outing) ||
+            Array.from(rows).some((row) =>
+                row.querySelector(".team-location").value === outing &&
+                row.querySelector(".team-primary-role").value === "Photographer");
+        const refreshAll = () => updates.forEach((update) => update());
+
+        rows.forEach((row) => {
+            const primary = row.querySelector(".team-primary-role");
+            const secondary = row.querySelector("select[name$='[role_secondary]']");
+            const photoTask = row.querySelector(".team-photo-task");
+            const photoTaskControl = row.querySelector(".team-photo-task-control");
+            const principal = row.querySelector(".team-principal-control");
+            const checkbox = row.querySelector(".team-principal-checkbox");
+            const location = row.querySelector(".team-location");
+            const sendPhotos = row.querySelector(".team-send-photos-checkbox");
+            const sendControl = row.querySelector(".team-send-photos-control");
+            const update = () => {
+                row.dataset.outing = location.value;
+                const photographer = primary.value === "Photographer";
+                const photographerInOuting = hasPhotographer(location.value);
+                principal.hidden = !photographer;
+                const headRole = ["Tour Leader", "Head Guide"].includes(secondary.value);
+                const canSend = primary.value === "River Guide" &&
+                    ["PM", "Sara-3&4", "Sara-3", "Sara-4"].includes(location.value) &&
+                    !headRole && !photographerInOuting;
+                sendControl.hidden = !canSend;
+                if (!canSend) sendPhotos.checked = false;
+                const canTakeAndSend = !photographer && !headRole &&
+                    !photographerInOuting && !sendPhotos.checked;
+                photoTaskControl.hidden = !canTakeAndSend;
+                photoTask.disabled = !canTakeAndSend;
+                if (!canTakeAndSend) photoTask.value = "none";
+                if (!photographer) checkbox.checked = false;
+            };
+            updates.push(update);
+            primary.addEventListener("change", refreshAll);
+            secondary.addEventListener("change", refreshAll);
+            location.addEventListener("change", refreshAll);
+            sendPhotos.addEventListener("change", () => {
+                if (sendPhotos.checked) {
                     rows.forEach((other) => {
-                        if (other !== row && other.querySelector(".team-location").value === location) {
+                        if (other !== row && other.querySelector(".team-location").value === location.value) {
+                            other.querySelector(".team-send-photos-checkbox").checked = false;
+                        }
+                    });
+                }
+                refreshAll();
+            });
+            checkbox.addEventListener("change", () => {
+                if (checkbox.checked) {
+                    rows.forEach((other) => {
+                        if (other !== row && other.querySelector(".team-location").value === location.value) {
                             other.querySelector(".team-principal-checkbox").checked = false;
                         }
                     });
-                });
-                update();
+                }
+                refreshAll();
             });
+        });
+        refreshAll();
     }
     document.addEventListener("DOMContentLoaded", initializeTeamRoles);
     document.addEventListener("turbo:load", initializeTeamRoles);

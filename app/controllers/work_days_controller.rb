@@ -65,6 +65,16 @@ class WorkDaysController < ApplicationController
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
+    if @work_day.generated?
+      photographers = CompensationAssignment.active.joins(:departure)
+        .where(departures: { work_day_id: @work_day.id }, role_code: "photographer")
+        .pluck(:guide_day_id, "departures.location")
+      visible_guide_day_ids = @guide_days.counts_as_worked_for_roll.pluck(:id)
+      @photo_outings = photographers.map(&:last).uniq
+      @external_photo_outings = photographers.filter_map do |guide_day_id, location|
+        location unless visible_guide_day_ids.include?(guide_day_id)
+      end.uniq
+    end
     @location_counts =
       @work_day
         .location_slots
