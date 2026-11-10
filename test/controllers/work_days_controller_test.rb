@@ -157,25 +157,51 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
 
     get work_day_url(day)
     assert_response :success
+    assert_select "a[href='#{sara_operation_work_day_path(day)}']", text: "Completar Sara y PM"
+
+    get sara_operation_work_day_url(day)
+    assert_response :success
+    assert_select "h1", text: "Sara 3 y 4 y PM"
     assert_select "#day-sara-pending-assignments", text: /Reserve from operation/
     assert_select "form[action='#{assign_sara_guide_work_day_path(day)}']", count: 1
 
     post assign_sara_guide_work_day_path(day),
       params: { slot_id: slot.id, guide_id: reserve.id }
 
-    assert_redirected_to work_day_url(day)
+    assert_redirected_to sara_operation_work_day_url(day)
     assert_equal "Sara-3&4", day.guide_days.find_by!(guide: reserve).location
     assert_empty day.roll_coverage_errors
 
-    get work_day_url(day)
+    get sara_operation_work_day_url(day)
     assert_response :success
     assert_select "#day-extra-bus-guides", text: /Extra bus guide from operation/
     post add_sara_bus_guide_work_day_path(day),
       params: { location: "PM", guide_id: specialist.id }
-    assert_redirected_to work_day_url(day)
+    assert_redirected_to sara_operation_work_day_url(day)
     assert_equal "PM", day.guide_days.find_by!(guide: specialist).location
     assert_equal 2, day.location_slots.count
     assert_empty day.roll_coverage_errors
+  end
+
+  test "Sara operation is restricted to generated rolls and current operators" do
+    day = WorkDay.create!(date: Date.current + 47.days)
+    admin = User.create!(name: "Sara operation admin",
+      email: "sara-operation-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in admin
+
+    get sara_operation_work_day_url(day)
+    assert_redirected_to work_day_url(day)
+
+    day.update!(status: :generated)
+    sign_out admin
+    accountant = User.create!(name: "Sara operation accountant",
+      email: "sara-operation-accountant@example.test",
+      password: "password123", role: :contabilidad)
+    sign_in accountant
+
+    get sara_operation_work_day_url(day)
+    assert_redirected_to root_path
   end
 
   test "publishing sends TourFotos and WhatsApp notifications" do

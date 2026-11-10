@@ -1,0 +1,61 @@
+<% content_for :title, "Sara y PM · #{l(@work_day.date, format: :long)}" %>
+
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small mb-1">Programación de guías · <%= roll_status_label(@work_day.status) %></p>
+      <h1 class="h3 mb-1">Sara 3 y 4 y PM</h1>
+      <p class="text-muted mb-0"><%= l(@work_day.date, format: :long) %></p>
+    </div>
+    <%= link_to "Volver a la operación", work_day_path(@work_day),
+          class: "btn btn-outline-primary" %>
+  </div>
+
+  <% if @sara_pm_coverage_errors.any? %>
+    <div class="alert alert-warning" role="status">
+      <strong>Puestos pendientes:</strong>
+      <%= @sara_pm_coverage_errors.join(" · ") %>
+    </div>
+  <% end %>
+
+  <% [
+    ["Sara 3 y 4", @sara_entries, @sara_required],
+    ["PM", @pm_entries, @pm_required]
+  ].each do |title, entries, required| %>
+    <section class="card mb-4">
+      <div class="card-header d-flex justify-content-between gap-2">
+        <strong><%= title %></strong>
+        <span><%= entries.length %> de <%= required %> puestos</span>
+      </div>
+      <div class="card-body p-0">
+        <% if entries.any? %>
+          <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+              <thead>
+                <tr><th scope="col">Guía</th><th scope="col">Función principal</th><th scope="col">Función secundaria</th></tr>
+              </thead>
+              <tbody>
+                <% entries.each do |entry| %>
+                  <tr>
+                    <td>
+                      <%= entry.guide.name %>
+                      <% if title == "PM" && @second_outing_guide_ids.include?(entry.guide.id) %>
+                        <span class="badge text-bg-info ms-1">Segunda salida</span>
+                      <% end %>
+                    </td>
+                    <td><%= roll_role_label(entry.role_primary) %></td>
+                    <td><%= entry.role_secondary.present? ? roll_role_label(entry.role_secondary) : "—" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <p class="text-muted p-3 mb-0">Todavía no hay guías asignados.</p>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <%= render "sara_manual_controls" %>
+</div>

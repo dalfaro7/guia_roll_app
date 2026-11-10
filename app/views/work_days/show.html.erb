@@ -32,6 +32,12 @@
                     class: "btn btn-outline-primary" %>
             <% end %>
 
+            <% if @work_day.generated? && (current_user.admin? || current_user.operador?) %>
+              <%= link_to "Completar Sara y PM",
+                    sara_operation_work_day_path(@work_day),
+                    class: "btn btn-outline-primary" %>
+            <% end %>
+
             <% if @work_day.generated? %>
             <%= button_to "Reiniciar programación",
                       reset_roll_work_day_path(@work_day),
@@ -345,76 +351,6 @@
     <% end %>
 
     <hr>
-
-    <% if @pending_sara_slots.present? %>
-    <section class="card mt-4" id="day-sara-pending-assignments">
-      <div class="card-header">Completar puestos de Sara y PM</div>
-      <div class="card-body">
-        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En PM puede elegir un guía de prioridad 5 que ya hizo Sara 3 y 4.</p>
-        <% @pending_sara_slots.each do |slot| %>
-          <% candidates = @sara_candidates_by_slot.fetch(slot) %>
-          <div class="border rounded p-3 mb-3">
-            <strong><%= slot.location == "Sara-3&4" ? "Sara 3 y 4" : "PM" %> · puesto <%= slot.id %></strong>
-            <small class="d-block text-muted mb-2">Requisitos: <%= slot.skills.map { |skill| roll_skill_label(skill.name) }.join(", ").presence || "Sin requisitos adicionales" %></small>
-            <%= form_with url: assign_sara_guide_work_day_path(@work_day),
-                  method: :post, local: true do %>
-              <%= hidden_field_tag :slot_id, slot.id %>
-              <%= label_tag "guide_for_slot_#{slot.id}", "Guía" %>
-              <%= select_tag :guide_id,
-                    options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
-                    include_blank: "Seleccione un guía",
-                    id: "guide_for_slot_#{slot.id}", class: "form-select mb-2",
-                    required: true, disabled: candidates.empty? %>
-              <% if compensation_correction_required?(@work_day) %>
-                <%= text_field_tag :correction_reason, nil,
-                      class: "form-control mb-2", placeholder: "Motivo de corrección",
-                      required: true %>
-              <% end %>
-              <%= submit_tag "Cubrir puesto", class: "btn btn-warning",
-                    disabled: candidates.empty? %>
-            <% end %>
-            <% if candidates.empty? %>
-              <small class="text-muted d-block mt-2">No hay guías elegibles para este puesto.</small>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </section>
-    <% end %>
-
-    <% if @extra_bus_candidates_by_location.present? %>
-    <section class="card mt-4" id="day-extra-bus-guides">
-      <div class="card-header">Guías de bus adicionales</div>
-      <div class="card-body">
-        <p class="work-day-hint">Añadir un guía aquí crea un puesto adicional en la salida elegida. Requiere Clase IV y Guía de bus.</p>
-        <% @extra_bus_candidates_by_location.each do |location, candidates| %>
-          <div class="border rounded p-3 mb-3">
-            <strong><%= location == "Sara-3&4" ? "Sara 3 y 4" : "PM" %></strong>
-            <%= form_with url: add_sara_bus_guide_work_day_path(@work_day),
-                  method: :post, local: true do %>
-              <%= hidden_field_tag :location, location %>
-              <%= label_tag "extra_bus_#{location}", "Guía de bus" %>
-              <%= select_tag :guide_id,
-                    options_for_select(candidates.map { |candidate| [candidate.label, candidate.guide.id] }),
-                    include_blank: "Seleccione un guía",
-                    id: "extra_bus_#{location}", class: "form-select mb-2",
-                    required: true, disabled: candidates.empty? %>
-              <% if compensation_correction_required?(@work_day) %>
-                <%= text_field_tag :correction_reason, nil,
-                      class: "form-control mb-2", placeholder: "Motivo de corrección",
-                      required: true %>
-              <% end %>
-              <%= submit_tag "Añadir guía de bus", class: "btn btn-outline-warning",
-                    disabled: candidates.empty? %>
-            <% end %>
-            <% if candidates.empty? %>
-              <small class="text-muted d-block mt-2">No hay guías elegibles para esta salida.</small>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    </section>
-    <% end %>
 
     <!-- FORCE GUIDE ASSIGNMENT -->
     <div class="card mt-4">

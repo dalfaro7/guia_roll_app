@@ -2,6 +2,7 @@ class WorkDaysController < ApplicationController
   skip_before_action :authenticate_user!, only: :public_distribution
   before_action :set_work_day, only: [
     :show,
+    :sara_operation,
     :distribution,
     :available_buses,
     :driver_payment_quote,
@@ -21,7 +22,8 @@ class WorkDaysController < ApplicationController
   ]
 
   before_action :require_compensation_operator!, only: [
-    :create, :update, :force_assign, :assign_sara_guide, :add_sara_bus_guide,
+    :create, :update, :force_assign, :sara_operation,
+    :assign_sara_guide, :add_sara_bus_guide,
     :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
@@ -53,19 +55,7 @@ class WorkDaysController < ApplicationController
   def show
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
-    if @work_day.generated?
-      @roll_coverage_errors = @work_day.roll_coverage_errors
-      if current_user.admin? || current_user.operador?
-        sara_assignment = SaraManualAssignment.new(@work_day)
-        @pending_sara_slots = sara_assignment.unfilled_slots
-        @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
-          sara_assignment.candidates_for(slot)
-        end
-        @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
-          sara_assignment.extra_bus_candidates_for(location)
-        end
-      end
-    end
+    @roll_coverage_errors = @work_day.roll_coverage_errors if @work_day.generated?
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
@@ -80,6 +70,31 @@ class WorkDaysController < ApplicationController
         .location_slots
         .group(:location)
         .maximum(:passengers)
+  end
+
+  def sara_operation
+    unless @work_day.generated?
+      redirect_to @work_day,
+        alert: "Esta pantalla está disponible cuando la programación está generada."
+      return
+    end
+
+    roster = RollOutingRoster.new(@work_day)
+    @sara_entries = roster.entries.select { |entry| entry.location.to_s.start_with?("Sara") }
+    @pm_entries = roster.entries.select { |entry| entry.location == "PM" }
+    @second_outing_guide_ids = @sara_entries.map { |entry| entry.guide.id } &
+      @pm_entries.map { |entry| entry.guide.id }
+    @sara_required = @work_day.location_slots.where(location: "Sara-3&4").count
+    @pm_required = @work_day.location_slots.where(location: "PM").count
+    @sara_pm_coverage_errors = roster.coverage_errors.grep(/\A(?:Sara-3&4|PM):/)
+    manual_assignment = SaraManualAssignment.new(@work_day)
+    @pending_sara_slots = manual_assignment.unfilled_slots
+    @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
+      manual_assignment.candidates_for(slot)
+    end
+    @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
+      manual_assignment.extra_bus_candidates_for(location)
+    end
   end
 
   def distribution
@@ -215,10 +230,10 @@ class WorkDaysController < ApplicationController
     guide = SaraManualAssignment.new(@work_day).call(
       slot_id: params[:slot_id], guide_id: params[:guide_id], actor: current_user
     )
-    redirect_to @work_day, notice: "#{guide.name} asignado al puesto pendiente."
+    redirect_to sara_operation_work_day_path(@work_day), notice: "#{guide.name} asignado al puesto pendiente."
   rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
       ActiveRecord::RecordNotUnique => error
-    redirect_to @work_day, alert: error.message
+    redirect_to sara_operation_work_day_path(@work_day), alert: error.message
   end
 
   def add_sara_bus_guide
@@ -226,10 +241,10 @@ class WorkDaysController < ApplicationController
       location: params[:location], guide_id: params[:guide_id],
       actor: current_user
     )
-    redirect_to @work_day, notice: "#{guide.name} añadido como guía de bus."
+    redirect_to sara_operation_work_day_path(@work_day), notice: "#{guide.name} añadido como guía de bus."
   rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
       ActiveRecord::RecordNotUnique => error
-    redirect_to @work_day, alert: error.message
+    redirect_to sara_operation_work_day_path(@work_day), alert: error.message
   end
 
   def preview_force_assign

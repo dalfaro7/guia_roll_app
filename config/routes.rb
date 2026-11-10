@@ -104,6 +104,7 @@ Rails.application.routes.draw do
     resources :compensation_assignments, only: [:create, :update, :destroy]
     member do
       get :distribution
+      get :sara_operation
       patch :generate_roles
 
       post :publish
