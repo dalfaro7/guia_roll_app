@@ -143,11 +143,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
       password: "password123", role: :operador)
     sign_in operator
     class_iv = Skill.find_or_create_by!(name: "ClassIV")
-    busguide = Skill.find_or_create_by!(name: "Busguide")
     residence = Skill.find_or_create_by!(name: "address_Sarapiqui")
-    specialist = Guide.create!(name: "Extra bus guide from operation", priority: 2,
-      active: true, pay_category: "freelance_regular",
-      skills: [class_iv, busguide])
     reserve = Guide.create!(name: "Reserve from operation", priority: 6,
       active: true, pay_category: "freelance_regular",
       skills: [class_iv, residence])
@@ -174,13 +170,10 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
 
     get sara_operation_work_day_url(day)
     assert_response :success
-    assert_select "#day-extra-bus-guides", text: /Extra bus guide from operation/
-    post add_sara_bus_guide_work_day_path(day),
-      params: { location: "PM", guide_id: specialist.id }
-    assert_redirected_to sara_operation_work_day_url(day)
-    assert_equal "PM", day.guide_days.find_by!(guide: specialist).location
-    assert_equal 2, day.location_slots.count
-    assert_empty day.roll_coverage_errors
+    assert_select "#day-extra-bus-guides", count: 0
+    get work_day_url(day)
+    assert_response :success
+    assert_select "#day-extra-bus-guides", count: 0
   end
 
   test "Sara operation accepts drafts but stays restricted to authorized roles" do

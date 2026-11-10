@@ -137,35 +137,6 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
     assert_empty @day.roll_coverage_errors
   end
 
-  test "operator can add multiple bus guides to Sara and PM" do
-    first = guide("First extra bus guide", 2,
-      skills: %w[ClassIV Busguide])
-    second = guide("Second extra bus guide", 3,
-      skills: %w[ClassIV Busguide])
-    pm = guide("PM extra bus guide", 3,
-      skills: %w[ClassIV Busguide])
-
-    assert_includes service.extra_bus_candidates_for("Sara-3&4")
-      .map { |candidate| candidate.guide.id }, first.id
-    service.add_bus_guide(location: "Sara-3&4", guide_id: first.id, actor: @actor)
-    service.add_bus_guide(location: "Sara-3&4", guide_id: second.id, actor: @actor)
-    service.add_bus_guide(location: "PM", guide_id: pm.id, actor: @actor)
-
-    assert_equal 2, @day.location_slots.where(location: "Sara-3&4").count
-    assert_equal 1, @day.location_slots.where(location: "PM").count
-    assert_equal 3, @day.reload.guides_requested
-    assert_equal "Bus Guide & Towels",
-      @day.guide_days.find_by!(guide: first).role_secondary
-    assert CompensationAssignment.joins(:departure)
-      .where(guide: first, departures: { work_day_id: @day.id }).first.bus_guide?
-    assert_empty @day.roll_coverage_errors
-
-    assert_raises(SaraManualAssignment::InvalidSelection) do
-      service.add_bus_guide(location: "PM", guide_id: first.id, actor: @actor)
-    end
-    assert_equal 3, @day.location_slots.count
-  end
-
   test "unqualified reserve and day off guide are rejected" do
     unqualified = guide("Reserve without Sarapiqui address", 6,
       active: false, skills: %w[ClassIV])

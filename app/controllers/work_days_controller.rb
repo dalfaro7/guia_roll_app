@@ -11,7 +11,6 @@ class WorkDaysController < ApplicationController
     :update,
     :force_assign,
     :assign_sara_guide,
-    :add_sara_bus_guide,
     :update_availability,
     :delete_with_reset,
     :create_slots,
@@ -24,7 +23,7 @@ class WorkDaysController < ApplicationController
   ]
 
   before_action :require_compensation_operator!, only: [
-    :create, :update, :force_assign, :add_sara_bus_guide,
+    :create, :update, :force_assign,
     :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
@@ -32,10 +31,10 @@ class WorkDaysController < ApplicationController
   ]
   before_action :require_sara_operator!, only: [
     :sara, :sara_operation, :create_sara, :update_sara_availability,
-    :assign_sara_guide, :add_sara_bus_guide, :add_sara_guide
+    :assign_sara_guide, :add_sara_guide
   ]
   before_action :enforce_edit_window, only: [
-    :update, :force_assign, :assign_sara_guide, :add_sara_bus_guide,
+    :update, :force_assign, :assign_sara_guide,
     :add_sara_guide, :update_sara_availability,
     :update_availability, :update_roles,
     :generate_roles, :publish, :unpublish, :delete_with_reset,
@@ -135,7 +134,6 @@ class WorkDaysController < ApplicationController
       roster.coverage_errors.grep(/\A(?:Sara-3&4|PM):/) : []
     @pending_sara_slots = []
     @sara_candidates_by_slot = {}
-    @extra_bus_candidates_by_location = {}
     @extra_guide_candidates_by_location = {}
     return unless @work_day.generated?
 
@@ -143,11 +141,6 @@ class WorkDaysController < ApplicationController
     @pending_sara_slots = manual_assignment.unfilled_slots
     @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
       manual_assignment.candidates_for(slot)
-    end
-    unless current_user.hg_sarapiqui?
-      @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
-        manual_assignment.extra_bus_candidates_for(location)
-      end
     end
     @extra_guide_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
       manual_assignment.extra_guide_candidates_for(location)
@@ -350,17 +343,6 @@ class WorkDaysController < ApplicationController
       slot_id: params[:slot_id], guide_id: params[:guide_id], actor: current_user
     )
     redirect_to sara_operation_work_day_path(@work_day), notice: "#{guide.name} asignado al puesto pendiente."
-  rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
-      ActiveRecord::RecordNotUnique => error
-    redirect_to sara_operation_work_day_path(@work_day), alert: error.message
-  end
-
-  def add_sara_bus_guide
-    guide = SaraManualAssignment.new(@work_day).add_bus_guide(
-      location: params[:location], guide_id: params[:guide_id],
-      actor: current_user
-    )
-    redirect_to sara_operation_work_day_path(@work_day), notice: "#{guide.name} añadido como guía de bus."
   rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
       ActiveRecord::RecordNotUnique => error
     redirect_to sara_operation_work_day_path(@work_day), alert: error.message

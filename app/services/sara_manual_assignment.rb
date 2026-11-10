@@ -111,38 +111,6 @@ class SaraManualAssignment
     @guide
   end
 
-  def extra_bus_candidates_for(location)
-    return [] unless %w[Sara-3&4 PM].include?(location)
-
-    skills = Skill.where(name: %w[ClassIV Busguide]).to_a
-    return [] unless skills.size == 2
-
-    virtual_slot = LocationSlot.new(work_day: @work_day, location: location)
-    virtual_slot.skills = skills
-    candidates_for(virtual_slot)
-  end
-
-  def add_bus_guide(location:, guide_id:, actor:)
-    @work_day.with_lock do
-      raise InvalidSelection, "La programación debe estar generada." unless @work_day.generated?
-      unless %w[Sara-3&4 PM].include?(location)
-        raise InvalidSelection, "Solo puede añadir guías de bus a Sara o PM."
-      end
-      ensure_departure_open!(location)
-      skills = Skill.where(name: %w[ClassIV Busguide]).to_a
-      raise InvalidSelection, "Faltan las habilidades Clase IV o Guía de bus." unless skills.size == 2
-
-      slot = @work_day.location_slots.create!(location: location)
-      slot.skills = skills
-      candidate = candidates_for(slot).find { |entry| entry.guide.id == guide_id.to_i }
-      raise InvalidSelection, "El guía ya no está disponible para ese puesto." unless candidate
-
-      assign_candidate(slot, candidate, actor)
-      @work_day.update!(guides_requested: @work_day.location_slots.count)
-    end
-    @guide
-  end
-
   private
 
   def ranking_key_for(guide)
