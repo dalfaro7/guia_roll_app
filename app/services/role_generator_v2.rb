@@ -1,9 +1,9 @@
 class RoleGeneratorV2
   PRIORITY_ALLOWED = {
     "Privado"  => [1, 2],
-    "Sara-3&4" => [1, 2, 3],
+    "Sara-3&4" => [1, 2, 3, 5],
     "Balsa"    => [0, 1, 2, 3, 4],
-    "PM"       => [1, 2, 3]
+    "PM"       => [1, 2, 3, 5]
   }
 
   def initialize(work_day)
@@ -83,23 +83,46 @@ class RoleGeneratorV2
           required_skill_ids.size
         )
         .includes(:guide)
+        .to_a
+    ActiveRecord::Associations::Preloader.new(
+      records: candidates.map(&:guide), associations: :skills
+    ).call
 
-    # Un guía solo puede ocupar un slot dentro del mismo WorkDay.
+    # La generación automática conserva una sola salida por guía.
+    # La segunda salida en PM se asignará desde la operación en otro paso.
     candidates = candidates.reject do |guide_day|
       @assigned_guides.include?(guide_day.guide_id)
     end
 
-    # Toda la lógica de fairness está centralizada en
-    # RollFairnessPolicy para que generación normal, force assign
-    # y cualquier otra selección utilicen exactamente las mismas reglas.
-    selected = candidates.sort_by do |guide_day|
-      RollFairnessPolicy.ranking_key_for(
-        guide_day.guide,
-        before_date: @work_day.date
-      )
-    end.first
+    candidates = candidates.filter_map do |guide_day|
+      tier = candidate_tier_for(slot, guide_day.guide)
+      [tier, guide_day] if tier
+    end
 
-    selected&.guide
+    # Dentro de cada grupo se conserva exactamente el ranking de fairness.
+    selected = candidates.min_by do |tier, guide_day|
+      [tier, *RollFairnessPolicy.ranking_key_for(
+        guide_day.guide, before_date: @work_day.date
+      )]
+    end
+
+    selected&.last&.guide
+  end
+
+  def candidate_tier_for(slot, guide)
+    return 0 unless %w[Sara-3&4 PM].include?(slot.location)
+
+    # El puesto con Busguide/Computer u otros requisitos puede cubrirlo
+    # un guía calificado del grupo habitual sin Roll de Sara.
+    specialized = slot.skills.any? { |skill| skill.name != "ClassIV" }
+    return 0 if specialized && [1, 2, 3].include?(guide.priority)
+    return 0 if !specialized && guide.priority == 1
+
+    # Los puestos generales corresponden al nuevo grupo de Sara.
+    return 1 if guide.priority == 5 &&
+      guide.skills.any? { |skill| skill.name == "Roll de Sara" }
+
+    nil
   end
 
   def assign_guide(slot, guide)
