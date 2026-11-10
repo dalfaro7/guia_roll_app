@@ -247,7 +247,7 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
     get work_day_path(work_day)
     assert_response :success
     assert_select "aside.day-sidebar-left a[href='#{guide_assignments_path}']",
-      text: "Reportes semanales"
+      count: 0
   end
 
   test "human resources cannot view monetary reports" do

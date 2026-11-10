@@ -49,10 +49,6 @@
                       } %>
             <% end %>
 
-            <% if current_user.admin? || current_user.operador? || current_user.contabilidad? %>
-              <%= link_to "Reportes semanales", guide_assignments_path,
-                          class: "btn btn-outline-primary" %>
-            <% end %>
 
             <% if Compensation::EditWindow.applicable?(@work_day) &&
                   (@work_day.generated? || @work_day.published?) &&
