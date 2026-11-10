@@ -36,32 +36,16 @@
 
 <td>
 <strong>Puesto <%= index + 1 %></strong>
+<%= hidden_field_tag "slots[#{slot.id}][]", "" %>
 </td>
 
 <% skills.each do |skill| %>
 
 <td>
 
-<%
-checked = slot.skills.include?(skill)
-
-# reglas automáticas para Sara
-if location == "Sara-3&4"
-
-  if skill.name == "ClassIV"
-    checked = true
-  end
-
-  if index == 0 && skill.name == "Computer"
-    checked = true
-  end
-
-end
-%>
-
 <%= check_box_tag "slots[#{slot.id}][]",
                   skill.id,
-                  checked %>
+                  slot.skills.include?(skill) %>
 
 </td>
 

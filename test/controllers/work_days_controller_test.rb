@@ -41,6 +41,48 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "th", text: "Choferes requeridos", count: 0
   end
 
+  test "Sara and PM default requirements use Class IV with one bus and computer guide" do
+    user = User.create!(name: "Slot defaults admin", email: "slot-defaults-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    skills = %w[ClassIII ClassIV Busguide Computer].index_with do |name|
+      Skill.find_or_create_by!(name: name)
+    end
+    work_day = WorkDay.create!(date: Date.current + 3.days)
+    locations = Departure::OPERATING_SECTIONS.keys.index_with do |_location|
+      { guides: "0", passengers: "0" }
+    end
+    locations["Sara-3&4"][:guides] = "2"
+    locations["PM"][:guides] = "2"
+    locations["Balsa"][:guides] = "1"
+
+    post create_slots_work_day_url(work_day), params: { locations: locations }
+
+    assert_redirected_to work_day_url(work_day)
+    sara_slots = work_day.location_slots.where(location: "Sara-3&4").order(:id).to_a
+    pm_slots = work_day.location_slots.where(location: "PM").order(:id).to_a
+    assert_equal %w[Busguide ClassIV Computer], sara_slots.first.skills.pluck(:name).sort
+    assert_equal %w[ClassIV], sara_slots.second.skills.pluck(:name).sort
+    assert_equal %w[Busguide ClassIV Computer], pm_slots.first.skills.pluck(:name).sort
+    assert_equal %w[ClassIV], pm_slots.second.skills.pluck(:name).sort
+    assert_equal %w[ClassIII], work_day.location_slots.find_by!(location: "Balsa").skills.pluck(:name)
+
+    get edit_slots_work_day_url(work_day)
+    assert_response :success
+    assert_select "input[name='slots[#{sara_slots.first.id}][]'][value='#{skills["ClassIII"].id}'][checked]", count: 0
+    assert_select "input[name='slots[#{sara_slots.first.id}][]'][value='#{skills["Busguide"].id}'][checked]", count: 1
+    assert_select "input[name='slots[#{pm_slots.first.id}][]'][value='#{skills["Computer"].id}'][checked]", count: 1
+
+    patch update_all_location_slots_url,
+      params: { slots: { sara_slots.first.id.to_s => [skills["ClassIV"].id.to_s] } }
+    get edit_slots_work_day_url(work_day)
+    assert_select "input[name='slots[#{sara_slots.first.id}][]'][value='#{skills["Busguide"].id}'][checked]", count: 0
+
+    patch update_all_location_slots_url,
+      params: { slots: { pm_slots.second.id.to_s => [""] } }
+    assert_empty pm_slots.second.reload.skills
+  end
+
   test "requirements page guides operator when there are no guide slots" do
     user = User.create!(name: "Requirements admin", email: "requirements-admin@example.test",
       password: "password123", role: :admin)
