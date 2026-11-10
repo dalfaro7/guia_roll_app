@@ -49,6 +49,7 @@ class WorkDaysController < ApplicationController
   def show
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
+    @roll_coverage_errors = @work_day.roll_coverage_errors if @work_day.generated?
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
@@ -351,7 +352,12 @@ class WorkDaysController < ApplicationController
 
     begin
       work_day.generate_roles!
-      flash[:notice] = "Generated"
+      pending = work_day.roll_coverage_errors
+      flash[:notice] = if pending.any?
+        "Programación generada con puestos pendientes: #{pending.join("; ")}."
+      else
+        "Programación generada correctamente."
+      end
     rescue => e
       flash[:alert] = e.message
     end

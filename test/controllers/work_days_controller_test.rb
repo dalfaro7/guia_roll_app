@@ -111,6 +111,32 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action='#{update_all_location_slots_path}']", count: 1
   end
 
+  test "generated Sara shortage is visible and cannot be published" do
+    user = User.create!(name: "Pending Sara admin",
+      email: "pending-sara-admin@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    class_iv = Skill.find_or_create_by!(name: "ClassIV")
+    day = WorkDay.create!(date: Date.current + 35.days)
+    day.location_slots.create!(location: "Sara-3&4").skills << class_iv
+
+    patch generate_roles_work_day_url(day)
+
+    assert_redirected_to work_day_url(day)
+    assert_match(/puestos pendientes/, flash[:notice])
+    assert day.reload.generated?
+
+    get work_day_url(day)
+    assert_response :success
+    assert_select "#day-pending-slots", text: /Sara-3&4: 0 de 1 puestos cubiertos/
+    assert_select "input[type='submit'][value='Publicar programación'][disabled]", count: 1
+
+    post publish_work_day_url(day)
+    assert_redirected_to work_day_url(day)
+    assert_match(/Asignaciones incompletas por salida/, flash[:alert])
+    assert day.reload.generated?
+  end
+
   test "publishing sends TourFotos and WhatsApp notifications" do
     user = User.create!(
       name: "Roll Admin",

@@ -20,7 +20,13 @@ class RoleGeneratorV2
       ordered_slots.each do |slot|
         guide = select_guide_for_slot(slot)
 
-        raise diagnostic_message(slot) unless guide
+        unless guide
+          # Sara y PM pueden quedar pendientes para completarse después.
+          # Las demás salidas conservan la exigencia de cobertura total.
+          next if %w[Sara-3&4 PM].include?(slot.location)
+
+          raise diagnostic_message(slot)
+        end
 
         assign_guide(slot, guide)
       end

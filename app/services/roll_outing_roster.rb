@@ -62,20 +62,55 @@ class RollOutingRoster
   end
 
   def coverage_errors
-    required = @work_day.location_slots.pluck(:location)
-      .map { |location| section_for(location) }.tally
+    slots = @work_day.location_slots.includes(:skills).to_a
+    required = slots.map { |slot| section_for(slot.location) }.tally
     actual = counts_by_section
 
     (required.keys | actual.keys).filter_map do |section|
       expected = required.fetch(section, 0)
       assigned = actual.fetch(section, 0)
-      next if expected == assigned
-
-      "#{section}: #{assigned} de #{expected} puestos cubiertos"
+      if expected != assigned
+        "#{section}: #{assigned} de #{expected} puestos cubiertos"
+      elsif %w[Sara-3&4 PM].include?(section) && expected.positive? &&
+          !skills_cover_slots?(slots.select { |slot| section_for(slot.location) == section },
+            entries.select { |entry| section_for(entry.location) == section })
+        "#{section}: hay puestos cuyos requisitos de habilidades no están cubiertos"
+      end
     end
   end
 
   private
+
+  def skills_cover_slots?(slots, assigned_entries)
+    guides = assigned_entries.map(&:guide).uniq
+    ActiveRecord::Associations::Preloader.new(
+      records: guides, associations: :skills
+    ).call
+    requirements = slots.map { |slot| slot.skills.map(&:id) }
+    guide_skills = assigned_entries.map { |entry| entry.guide.skills.map(&:id) }
+    slot_owners = {}
+
+    assigned_entries.each_index do |entry_index|
+      match_entry_to_slot(entry_index, requirements, guide_skills, slot_owners, [])
+    end
+    slot_owners.size == slots.size
+  end
+
+  def match_entry_to_slot(entry_index, requirements, guide_skills, slot_owners, seen)
+    requirements.each_with_index do |required, slot_index|
+      next if seen.include?(slot_index)
+      next unless (required - guide_skills[entry_index]).empty?
+
+      seen << slot_index
+      owner = slot_owners[slot_index]
+      if owner.nil? ||
+          match_entry_to_slot(owner, requirements, guide_skills, slot_owners, seen)
+        slot_owners[slot_index] = entry_index
+        return true
+      end
+    end
+    false
+  end
 
   def section_for(location)
     Departure::OPERATING_SECTIONS.find do |_section, locations|

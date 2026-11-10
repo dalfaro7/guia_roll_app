@@ -74,7 +74,8 @@
                 <%= text_field_tag :correction_reason, nil, class: "form-control mb-2",
                       placeholder: "Motivo de corrección", required: true %>
               <% end %>
-              <%= submit_tag "Publicar programación", class: "btn btn-success" %>
+              <%= submit_tag "Publicar programación", class: "btn btn-success",
+                    disabled: @roll_coverage_errors.present? %>
             <% end %>
             <% end %>
 
@@ -201,6 +202,17 @@
 
     <!-- EDIT ROLES -->
     <% if @work_day.generated? %>
+    <% if @roll_coverage_errors.present? %>
+    <div class="alert alert-warning" id="day-pending-slots" role="status">
+      <strong>Puestos pendientes por cubrir</strong>
+      <ul class="mb-1">
+        <% @roll_coverage_errors.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+      Complete las asignaciones antes de publicar la programación.
+    </div>
+    <% end %>
     <h2 id="day-roles">Roles del equipo</h2><p class="work-day-hint">Compara el rol actual con el nuevo y guarda los cambios antes de publicar.</p>
 
     <%= form_with url: update_roles_work_day_path(@work_day),

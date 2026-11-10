@@ -48,15 +48,91 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
     assert_equal "Sara-3&4", day.guide_days.find_by!(guide: eligible).location
   end
 
-  test "ordinary Sara post does not take a Balsa guide without Sara roll" do
+  test "ordinary Sara post stays pending instead of taking a Balsa guide" do
     balsa = guide("Balsa Class IV guide", 2, %w[ClassIV])
     day = WorkDay.create!(date: Date.current + 32.days)
     slot(day, "Sara-3&4", %w[ClassIV])
 
+    day.generate_roles!
+
+    assert day.reload.generated?
+    assert day.guide_days.find_by!(guide: balsa).standby?
+    assert_equal ["Sara-3&4: 0 de 1 puestos cubiertos"], day.roll_coverage_errors
+  end
+
+  test "PM shortage leaves its slot pending while preserving Sara and Balsa" do
+    sara = guide("Sara available guide", 5, ["ClassIV", "Roll de Sara"])
+    balsa = guide("Balsa available guide", 2, %w[ClassIII])
+    day = WorkDay.create!(date: Date.current + 33.days)
+    slot(day, "Sara-3&4", %w[ClassIV])
+    slot(day, "PM", %w[ClassIV])
+    slot(day, "Balsa", %w[ClassIII])
+
+    day.generate_roles!
+
+    assert day.reload.generated?
+    assert_equal "Sara-3&4", day.guide_days.find_by!(guide: sara).location
+    assert_equal "Balsa", day.guide_days.find_by!(guide: balsa).location
+    assert_equal ["PM: 0 de 1 puestos cubiertos"], day.roll_coverage_errors
+    assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
+    assert day.reload.generated?
+  end
+
+  test "missing Sara specialist does not prevent a general Sara post from being filled" do
+    sara = guide("General Sara guide", 5, ["ClassIV", "Roll de Sara"])
+    reserve = guide("Reserve without Busguide", 6, %w[ClassIV])
+    day = WorkDay.create!(date: Date.current + 36.days)
+    slot(day, "Sara-3&4", %w[ClassIV Busguide Computer])
+    slot(day, "Sara-3&4", %w[ClassIV])
+
+    day.generate_roles!
+
+    assert day.reload.generated?
+    assert_equal "Sara-3&4", day.guide_days.find_by!(guide: sara).location
+    assert_equal ["Sara-3&4: 1 de 2 puestos cubiertos"], day.roll_coverage_errors
+
+    departure = day.departures.find_or_create_by!(label: "Sara-3&4") do |outing|
+      outing.location = "Sara-3&4"
+      outing.starts_at = Departure.fixed_start_for(day.date, "Sara-3&4")
+    end
+    departure.compensation_assignments.create!(guide: reserve,
+      role_code: "river_guide")
+
+    assert_equal 2, day.assigned_roll_count
+    assert_includes day.roll_coverage_errors,
+      "Sara-3&4: hay puestos cuyos requisitos de habilidades no están cubiertos"
+    assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
+  end
+
+  test "Sara and PM can each request more than one bus-qualified guide" do
+    specialists = 4.times.map do |index|
+      guide("Extra bus specialist #{index}", index < 2 ? 2 : 3,
+        %w[ClassIV Busguide Computer])
+    end
+    day = WorkDay.create!(date: Date.current + 37.days)
+    2.times { slot(day, "Sara-3&4", %w[ClassIV Busguide Computer]) }
+    2.times { slot(day, "PM", %w[ClassIV Busguide Computer]) }
+
+    day.generate_roles!
+
+    assert day.reload.generated?
+    assert_equal 2, day.guide_days.worked.where(location: "Sara-3&4").count
+    assert_equal 2, day.guide_days.worked.where(location: "PM").count
+    assert specialists.all? { |guide_record| day.guide_days.find_by!(guide: guide_record).worked? }
+    assert_empty day.roll_coverage_errors
+  end
+
+  test "Balsa shortage still rolls back all generated assignments" do
+    sara = guide("Sara rollback guide", 5, ["ClassIV", "Roll de Sara"])
+    day = WorkDay.create!(date: Date.current + 34.days)
+    slot(day, "Sara-3&4", %w[ClassIV])
+    slot(day, "Balsa", %w[ClassIII])
+
     assert_raises(RuntimeError) { day.generate_roles! }
 
     assert day.reload.draft?
-    assert day.guide_days.find_by!(guide: balsa).standby?
+    assert day.guide_days.find_by!(guide: sara).reload.standby?
+    assert_equal 0, day.assigned_roll_count
   end
 
   private
