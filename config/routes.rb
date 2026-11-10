@@ -122,6 +122,8 @@ Rails.application.routes.draw do
       get :edit_slots
 
       post :force_assign
+      post :assign_sara_guide
+      post :add_sara_bus_guide
       get :preview_force_assign
 
       post :move_assigned_task_to_roll

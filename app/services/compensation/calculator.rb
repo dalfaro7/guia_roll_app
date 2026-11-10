@@ -175,7 +175,17 @@ module Compensation
           bus_id: @assignment.bus_assignment.bus_id,
           driver_id: @assignment.driver_id,
           location: "Sara-3&4", outing_variant: "Sara-4").exists?
-      return 0 unless @departure.location.to_s.start_with?("Sara") || transport_second_trip
+      sara_to_pm = @assignment.guide? && @departure.location == "PM" &&
+        CompensationAssignment.joins(:departure)
+          .where(guide_id: @assignment.guide_id,
+            departures: { work_day_id: @departure.work_day_id,
+              location: %w[Sara-3&4 Sara-3 Sara-4] })
+          .active
+          .where.not(departures: { status: "canceled" })
+          .where("departures.starts_at < ?", @departure.starts_at)
+          .exists?
+      return 0 unless @departure.location.to_s.start_with?("Sara") ||
+        sara_to_pm || transport_second_trip
 
       rule = CompensationDiscountRule.for("second_sara", at: @departure.starts_at)
       raise MissingRate, "No hay descuento vigente para second_sara" unless rule

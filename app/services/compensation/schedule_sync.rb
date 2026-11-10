@@ -35,6 +35,9 @@ module Compensation
         &.in_time_zone("America/Costa_Rica")&.to_date
       return if started_on.blank? || @work_day.date < started_on
 
+      cancel_unlinked_pm_outing if @guide_day.saved_change_to_status? &&
+        @guide_day.saved_change_to_status.first == "worked" &&
+        !@guide_day.worked?
       assignment = CompensationAssignment.find_by(guide_day: @guide_day)
       if assignment&.source == "manual"
         if !@guide_day.worked? &&
@@ -98,6 +101,19 @@ module Compensation
     end
 
     private
+
+    def cancel_unlinked_pm_outing
+      assignments = CompensationAssignment.joins(:departure)
+        .where(guide_id: @guide_day.guide_id, guide_day_id: nil,
+          departures: { work_day_id: @work_day.id, location: "PM" })
+        .active
+      return unless assignments.exists?
+
+      assignments.find_each do |extra|
+        extra.update!(status: "canceled", canceled_by_schedule: true)
+      end
+      Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
+    end
 
     def inferred_role
       if @guide_day.worked?

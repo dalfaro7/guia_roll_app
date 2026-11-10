@@ -137,6 +137,47 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert day.reload.generated?
   end
 
+  test "operator fills a pending Sara slot from the operation screen" do
+    operator = User.create!(name: "Sara schedule operator",
+      email: "sara-schedule-operator@example.test",
+      password: "password123", role: :operador)
+    sign_in operator
+    class_iv = Skill.find_or_create_by!(name: "ClassIV")
+    busguide = Skill.find_or_create_by!(name: "Busguide")
+    residence = Skill.find_or_create_by!(name: "address_Sarapiqui")
+    specialist = Guide.create!(name: "Extra bus guide from operation", priority: 2,
+      active: true, pay_category: "freelance_regular",
+      skills: [class_iv, busguide])
+    reserve = Guide.create!(name: "Reserve from operation", priority: 6,
+      active: false, pay_category: "freelance_regular",
+      skills: [class_iv, residence])
+    day = WorkDay.create!(date: Date.current + 46.days, status: :generated)
+    slot = day.location_slots.create!(location: "Sara-3&4")
+    slot.skills << class_iv
+
+    get work_day_url(day)
+    assert_response :success
+    assert_select "#day-sara-pending-assignments", text: /Reserve from operation/
+    assert_select "form[action='#{assign_sara_guide_work_day_path(day)}']", count: 1
+
+    post assign_sara_guide_work_day_path(day),
+      params: { slot_id: slot.id, guide_id: reserve.id }
+
+    assert_redirected_to work_day_url(day)
+    assert_equal "Sara-3&4", day.guide_days.find_by!(guide: reserve).location
+    assert_empty day.roll_coverage_errors
+
+    get work_day_url(day)
+    assert_response :success
+    assert_select "#day-extra-bus-guides", text: /Extra bus guide from operation/
+    post add_sara_bus_guide_work_day_path(day),
+      params: { location: "PM", guide_id: specialist.id }
+    assert_redirected_to work_day_url(day)
+    assert_equal "PM", day.guide_days.find_by!(guide: specialist).location
+    assert_equal 2, day.location_slots.count
+    assert_empty day.roll_coverage_errors
+  end
+
   test "publishing sends TourFotos and WhatsApp notifications" do
     user = User.create!(
       name: "Roll Admin",

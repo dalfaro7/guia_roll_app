@@ -7,6 +7,8 @@ class WorkDaysController < ApplicationController
     :driver_payment_quote,
     :update,
     :force_assign,
+    :assign_sara_guide,
+    :add_sara_bus_guide,
     :update_availability,
     :delete_with_reset,
     :create_slots,
@@ -19,13 +21,15 @@ class WorkDaysController < ApplicationController
   ]
 
   before_action :require_compensation_operator!, only: [
-    :create, :update, :force_assign, :update_availability,
+    :create, :update, :force_assign, :assign_sara_guide, :add_sara_bus_guide,
+    :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
     :move_assigned_task_to_roll
   ]
   before_action :enforce_edit_window, only: [
-    :update, :force_assign, :update_availability, :update_roles,
+    :update, :force_assign, :assign_sara_guide, :add_sara_bus_guide,
+    :update_availability, :update_roles,
     :generate_roles, :publish, :unpublish, :delete_with_reset,
     :reset_roll, :create_slots, :move_assigned_task_to_roll
   ]
@@ -49,7 +53,19 @@ class WorkDaysController < ApplicationController
   def show
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
-    @roll_coverage_errors = @work_day.roll_coverage_errors if @work_day.generated?
+    if @work_day.generated?
+      @roll_coverage_errors = @work_day.roll_coverage_errors
+      if current_user.admin? || current_user.operador?
+        sara_assignment = SaraManualAssignment.new(@work_day)
+        @pending_sara_slots = sara_assignment.unfilled_slots
+        @sara_candidates_by_slot = @pending_sara_slots.index_with do |slot|
+          sara_assignment.candidates_for(slot)
+        end
+        @extra_bus_candidates_by_location = %w[Sara-3&4 PM].index_with do |location|
+          sara_assignment.extra_bus_candidates_for(location)
+        end
+      end
+    end
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
@@ -193,6 +209,27 @@ class WorkDaysController < ApplicationController
         alert: e.message
       )
     end
+  end
+
+  def assign_sara_guide
+    guide = SaraManualAssignment.new(@work_day).call(
+      slot_id: params[:slot_id], guide_id: params[:guide_id], actor: current_user
+    )
+    redirect_to @work_day, notice: "#{guide.name} asignado al puesto pendiente."
+  rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
+      ActiveRecord::RecordNotUnique => error
+    redirect_to @work_day, alert: error.message
+  end
+
+  def add_sara_bus_guide
+    guide = SaraManualAssignment.new(@work_day).add_bus_guide(
+      location: params[:location], guide_id: params[:guide_id],
+      actor: current_user
+    )
+    redirect_to @work_day, notice: "#{guide.name} añadido como guía de bus."
+  rescue SaraManualAssignment::InvalidSelection, ActiveRecord::RecordInvalid,
+      ActiveRecord::RecordNotUnique => error
+    redirect_to @work_day, alert: error.message
   end
 
   def preview_force_assign

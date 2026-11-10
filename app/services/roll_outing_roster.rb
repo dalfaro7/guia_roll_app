@@ -61,6 +61,23 @@ class RollOutingRoster
     entries.map { |entry| section_for(entry.location) }.tally
   end
 
+  # Puestos de Sara/PM que todavía no tienen una persona con las
+  # habilidades requeridas. Si ya hay tantas asignaciones como puestos,
+  # corresponde corregir una asignación existente en vez de agregar otra.
+  def unfilled_sara_pm_slots
+    slots = @work_day.location_slots.includes(:skills).to_a
+    %w[Sara-3&4 PM].flat_map do |section|
+      section_slots = slots.select { |slot| section_for(slot.location) == section }
+      section_entries = entries.select { |entry| section_for(entry.location) == section }
+      next [] if section_entries.size >= section_slots.size
+
+      matched = slot_matches(section_slots, section_entries)
+      section_slots.each_with_index.filter_map do |slot, index|
+        slot unless matched.key?(index)
+      end
+    end
+  end
+
   def coverage_errors
     slots = @work_day.location_slots.includes(:skills).to_a
     required = slots.map { |slot| section_for(slot.location) }.tally
@@ -82,6 +99,10 @@ class RollOutingRoster
   private
 
   def skills_cover_slots?(slots, assigned_entries)
+    slot_matches(slots, assigned_entries).size == slots.size
+  end
+
+  def slot_matches(slots, assigned_entries)
     guides = assigned_entries.map(&:guide).uniq
     ActiveRecord::Associations::Preloader.new(
       records: guides, associations: :skills
@@ -93,7 +114,7 @@ class RollOutingRoster
     assigned_entries.each_index do |entry_index|
       match_entry_to_slot(entry_index, requirements, guide_skills, slot_owners, [])
     end
-    slot_owners.size == slots.size
+    slot_owners
   end
 
   def match_entry_to_slot(entry_index, requirements, guide_skills, slot_owners, seen)

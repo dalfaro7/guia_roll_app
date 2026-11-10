@@ -7,6 +7,7 @@ class RoleResetService
     ActiveRecord::Base.transaction do
       restore_day_off_balances
       clear_roll_assignments
+      clear_unlinked_guide_outings
 
       @work_day.work_day_versions.destroy_all
 
@@ -46,6 +47,21 @@ class RoleResetService
         day_off_consumed: false
       )
     end
+  end
+
+  # Una segunda salida PM no tiene GuideDay propio. Al reiniciar toda
+  # la programación también debe dejar de consumir equidad y pago.
+  def clear_unlinked_guide_outings
+    assignments = CompensationAssignment.joins(:departure)
+      .where(departures: { work_day_id: @work_day.id }, guide_day_id: nil)
+      .where.not(guide_id: nil)
+      .active
+    return unless assignments.exists?
+
+    assignments.find_each do |assignment|
+      assignment.update!(status: "canceled", canceled_by_schedule: true)
+    end
+    Compensation::RepriceDay.call(@work_day)
   end
 
   # Reinicia solamente asignaciones pertenecientes al roll normal.
