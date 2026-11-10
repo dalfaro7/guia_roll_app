@@ -103,7 +103,7 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
       .order("departures.starts_at ASC").pluck(:status)
     assert_equal 0, RollFairnessPolicy.roll_worked_days_for_guide(sara,
       before_date: @day.date + 1.day)
-    assert_equal ["Sara-3&4: 0 de 1 puestos cubiertos", "PM: 0 de 1 puestos cubiertos"],
+    assert_equal ["Sara-3&4: falta 1 puesto por cubrir", "PM: falta 1 puesto por cubrir"],
       @day.roll_coverage_errors
   end
 
@@ -121,7 +121,7 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
 
     assert_equal 1, CompensationAssignment.joins(:departure)
       .where(guide: sara, departures: { work_day_id: @day.id }).count
-    assert_equal ["PM: 0 de 1 puestos cubiertos"], @day.roll_coverage_errors
+    assert_equal ["PM: falta 1 puesto por cubrir"], @day.roll_coverage_errors
   end
 
   test "a specialist slot accepts an available qualified guide without Sara roll" do

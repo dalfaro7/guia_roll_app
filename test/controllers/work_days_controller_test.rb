@@ -128,7 +128,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
 
     get work_day_url(day)
     assert_response :success
-    assert_select "#day-pending-slots", text: /Sara-3&4: 0 de 1 puestos cubiertos/
+    assert_select "#day-pending-slots", text: /Sara-3&4: falta 1 puesto por cubrir/
     assert_select "input[type='submit'][value='Publicar programación'][disabled]", count: 1
 
     post publish_work_day_url(day)

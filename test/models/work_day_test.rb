@@ -70,10 +70,27 @@ class WorkDayTest < ActiveSupport::TestCase
     end
 
     assert_equal 2, day.assigned_roll_count
-    assert_includes day.roll_coverage_errors, "Sara-3&4: 2 de 1 puestos cubiertos"
-    assert_includes day.roll_coverage_errors, "PM: 0 de 1 puestos cubiertos"
+    assert_includes day.roll_coverage_errors, "Sara-3&4: sobra 1 asignación"
+    assert_includes day.roll_coverage_errors, "PM: falta 1 puesto por cubrir"
     assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
     assert day.reload.generated?
+  end
+
+  test "coverage notice gives the remaining count for each outing" do
+    guides = 2.times.map do |index|
+      Guide.create!(name: "PM coverage guide #{index}", priority: 3,
+        active: true, pay_category: "freelance_regular")
+    end
+    day = WorkDay.create!(date: Date.current + 24.days, status: :generated)
+    3.times { day.location_slots.create!(location: "PM") }
+    2.times { day.location_slots.create!(location: "Balsa") }
+    guides.each do |guide|
+      day.guide_days.find_by!(guide: guide).update!(status: :worked,
+        location: "PM", role_primary: "River Guide")
+    end
+
+    assert_includes day.roll_coverage_errors, "PM: falta 1 puesto por cubrir"
+    assert_includes day.roll_coverage_errors, "Balsa: faltan 2 puestos por cubrir"
   end
 
   test "four by four spaces do not count as passenger seats" do

@@ -57,7 +57,7 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
 
     assert day.reload.generated?
     assert day.guide_days.find_by!(guide: balsa).standby?
-    assert_equal ["Sara-3&4: 0 de 1 puestos cubiertos"], day.roll_coverage_errors
+    assert_equal ["Sara-3&4: falta 1 puesto por cubrir"], day.roll_coverage_errors
   end
 
   test "PM shortage leaves its slot pending while preserving Sara and Balsa" do
@@ -73,7 +73,7 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
     assert day.reload.generated?
     assert_equal "Sara-3&4", day.guide_days.find_by!(guide: sara).location
     assert_equal "Balsa", day.guide_days.find_by!(guide: balsa).location
-    assert_equal ["PM: 0 de 1 puestos cubiertos"], day.roll_coverage_errors
+    assert_equal ["PM: falta 1 puesto por cubrir"], day.roll_coverage_errors
     assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
     assert day.reload.generated?
   end
@@ -89,7 +89,7 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
 
     assert day.reload.generated?
     assert_equal "Sara-3&4", day.guide_days.find_by!(guide: sara).location
-    assert_equal ["Sara-3&4: 1 de 2 puestos cubiertos"], day.roll_coverage_errors
+    assert_equal ["Sara-3&4: falta 1 puesto por cubrir"], day.roll_coverage_errors
 
     departure = day.departures.find_or_create_by!(label: "Sara-3&4") do |outing|
       outing.location = "Sara-3&4"

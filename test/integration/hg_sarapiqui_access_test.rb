@@ -132,7 +132,7 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert_redirected_to sara_operation_work_day_path(@day)
     assert guide_day.reload.penalized?
     assert_nil guide_day.location
-    assert_equal ["Sara-3&4: 0 de 1 puestos cubiertos"],
+    assert_equal ["Sara-3&4: falta 1 puesto por cubrir"],
       @day.roll_coverage_errors
     assignment = CompensationAssignment.find_by!(guide_day: guide_day)
     assert_equal "canceled", assignment.status

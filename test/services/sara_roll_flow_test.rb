@@ -27,7 +27,7 @@ class SaraRollFlowTest < ActiveSupport::TestCase
 
     assert day.reload.generated?
     assert_equal "Sara-3&4", day.guide_days.find_by!(guide: guide).location
-    assert_equal ["PM: 0 de 1 puestos cubiertos"], day.roll_coverage_errors
+    assert_equal ["PM: falta 1 puesto por cubrir"], day.roll_coverage_errors
     assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
 
     SaraManualAssignment.new(day).call(slot_id: pm_slot.id,

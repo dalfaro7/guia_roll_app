@@ -86,8 +86,12 @@ class RollOutingRoster
     (required.keys | actual.keys).filter_map do |section|
       expected = required.fetch(section, 0)
       assigned = actual.fetch(section, 0)
-      if expected != assigned
-        "#{section}: #{assigned} de #{expected} puestos cubiertos"
+      if assigned < expected
+        missing = expected - assigned
+        "#{section}: #{missing == 1 ? 'falta 1 puesto' : "faltan #{missing} puestos"} por cubrir"
+      elsif assigned > expected
+        extra = assigned - expected
+        "#{section}: #{extra == 1 ? 'sobra 1 asignación' : "sobran #{extra} asignaciones"}"
       elsif %w[Sara-3&4 PM].include?(section) && expected.positive? &&
           !skills_cover_slots?(slots.select { |slot| section_for(slot.location) == section },
             entries.select { |entry| section_for(entry.location) == section })
