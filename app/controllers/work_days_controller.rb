@@ -52,7 +52,7 @@ class WorkDaysController < ApplicationController
       @work_days =
         WorkDay
           .where(
-            date: (Date.current - 7.days)..(Date.current + 1.day)
+            date: (Date.current - 7.days)..
           )
           .order(date: :desc)
     end
