@@ -139,6 +139,14 @@
       </script>
     <% end %>
 
+    <aside class="android-install" data-controller="android-install" hidden aria-label="Acceso directo en Android">
+      <div><strong>Instala esta app en tu teléfono</strong>
+        <p>Ten un acceso directo en tu pantalla de inicio.</p>
+        <details><summary>Cómo instalar</summary><p>Abre el menú de tu navegador (⋮) y elige «Instalar aplicación» o «Añadir a la pantalla de inicio». Si no aparece, abre esta página en Chrome.</p></details>
+      </div>
+      <button type="button" data-action="android-install#dismiss" aria-label="Cerrar aviso de instalación">×</button>
+    </aside>
+
     <%= yield %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

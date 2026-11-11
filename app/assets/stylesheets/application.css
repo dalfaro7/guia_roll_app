@@ -188,3 +188,12 @@ body.sara-app{background:#f3f6f5;background-image:none;color:#183e37}
 .sara-published-list{margin-bottom:28px}
 
 .sara-published-transport{border-top:1px solid #dce7e1;margin-top:24px;padding-top:20px}
+
+.android-install{display:flex;align-items:flex-start;gap:12px;max-width:1048px;margin:12px auto;padding:12px 16px;background:#edf5f0;border:1px solid #cbded2;border-radius:12px;color:#173e35;font-size:14px}
+.android-install[hidden]{display:none}
+.android-install>div{flex:1;min-width:0}
+.android-install p{margin:3px 0 0;line-height:1.4}
+.android-install summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;text-decoration:underline}
+.android-install button{background:transparent;border:0;min-width:44px;min-height:44px;font-size:24px;color:inherit}
+@media(max-width:600px){.android-install{margin:10px 16px}}
+@media print{.android-install{display:none}}
