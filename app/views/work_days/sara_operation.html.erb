@@ -62,16 +62,18 @@
                       <%= form_with url: update_sara_availability_work_day_path(@work_day),
                             method: :patch, local: true,
                             class: "sara-availability-form",
-                            data: (day.worked? ? { turbo_confirm: "¿Retirar la asignación de #{day.guide.name} y cambiar su disponibilidad?" } : {}) do %>
+                            data: { controller: "penalty-reason" }.merge(day.worked? ? { turbo_confirm: "¿Retirar la asignación de #{day.guide.name} y cambiar su disponibilidad?" } : {}) do %>
                         <%= hidden_field_tag :guide_day_id, day.id %>
                         <%= select_tag :status,
                           options_for_select([["Seleccione cambio", ""],
                             ["Disponible", "standby"], ["Libre", "day_off"],
                             ["Penalizado", "penalized"]]),
                           id: "sara_status_#{day.id}", required: true, class: "form-select",
+                          data: { penalty_reason_target: "status", action: "change->penalty-reason#update" },
                           aria: { label: "Estado de #{day.guide.name}" } %>
                         <%= text_field_tag :status_note, nil,
-                          id: "sara_note_#{day.id}", placeholder: "Motivo si es penalizado",
+                          id: "sara_note_#{day.id}", placeholder: "Motivo de penalización",
+                          hidden: true, disabled: true, data: { penalty_reason_target: "note" },
                           class: "form-control",
                           aria: { label: "Motivo de #{day.guide.name}" } %>
                         <%= submit_tag "Guardar", class: "btn btn-sm btn-primary" %>
