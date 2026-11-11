@@ -99,6 +99,9 @@ body.sara-app{background:#f3f6f5;background-image:none;color:#183e37}
 .sara-shell h2{font-size:1.2rem;margin:0}
 .sara-shell h3{font-size:1.1rem}
 .sara-eyebrow{font-size:10px;font-weight:800;letter-spacing:.15em;color:#526e64;margin:0 0 8px}
+.sara-index-heading{margin-bottom:20px}
+.sara-index-heading h1{font-size:clamp(1.2rem,4vw,1.5rem);line-height:1.25;margin:0}
+.sara-pending-list{margin-bottom:24px}
 .sara-hero{background:#143f36;border-radius:24px;padding:28px 24px;margin-bottom:24px;position:relative;overflow:hidden}
 .sara-hero h1{color:#fff;max-width:580px;margin-bottom:12px}
 .sara-hero>p:not(.sara-eyebrow){color:#d5e8df;line-height:1.6;max-width:560px}

@@ -1,10 +1,7 @@
 <% content_for :title, "Programaciones de Sarapiquí Clase IV y Sarapiquí PM" %>
 <main class="sara-shell">
-  <header class="sara-hero">
-    <p class="sara-eyebrow">OPERACIÓN · SARAPIQUÍ</p>
-    <h1>Tu equipo, listo para salir.</h1>
-    <p>Organiza la disponibilidad y completa las salidas de Sarapiquí Clase IV y Sarapiquí PM.</p>
-    <span class="sara-pill">HG Sarapiquí · gestión y consulta</span>
+  <header class="sara-index-heading">
+    <h1>Programaciones de Sarapiquí</h1>
   </header>
   <section class="sara-published-list" aria-labelledby="sara-published-title">
     <div class="sara-section-heading"><div><p class="sara-eyebrow">HOY Y MAÑANA</p><h2 id="sara-published-title">Roll publicado</h2></div></div>
@@ -23,18 +20,7 @@
     </div>
     <% if @published_work_days.empty? %><p class="sara-empty">Aún no hay roll publicado para hoy o mañana.</p><% end %>
   </section>
-  <section class="sara-panel" aria-labelledby="sara-date-title">
-    <div class="sara-section-heading">
-      <div><p class="sara-eyebrow">PLANIFICA</p><h2 id="sara-date-title">Abrir una fecha</h2></div>
-    </div>
-    <p class="sara-hint" id="sara-date-help">Abre una programación existente o crea un borrador. Las fechas publicadas se gestionan desde la operación general.</p>
-    <%= form_with url: create_sara_work_days_path, method: :post, local: true, class: "sara-date-form" do %>
-      <div><%= label_tag :date, "Fecha de operación", class: "form-label" %>
-        <%= date_field_tag :date, Date.tomorrow, min: Date.current, required: true, class: "form-control", aria: { describedby: "sara-date-help" } %></div>
-      <%= submit_tag "Abrir fecha", class: "btn btn-primary" %>
-    <% end %>
-  </section>
-  <section aria-labelledby="sara-pending-title">
+  <section class="sara-pending-list" aria-labelledby="sara-pending-title">
     <div class="sara-section-heading">
       <div><p class="sara-eyebrow">CONTINÚA AQUÍ</p><h2 id="sara-pending-title">Programaciones sin publicar</h2></div>
       <span class="sara-count"><%= @work_days.size %></span>
@@ -53,6 +39,17 @@
       <% end %>
     </div>
     <% if @work_days.empty? %><div class="sara-empty"><h3>Todo al día</h3><p>No hay programaciones pendientes. Abre una fecha para empezar.</p></div><% end %>
+  </section>
+  <section class="sara-panel" aria-labelledby="sara-date-title">
+    <div class="sara-section-heading">
+      <div><p class="sara-eyebrow">PLANIFICA</p><h2 id="sara-date-title">Abrir una fecha</h2></div>
+    </div>
+    <p class="sara-hint" id="sara-date-help">Abre una programación existente o crea un borrador. Las fechas publicadas se gestionan desde la operación general.</p>
+    <%= form_with url: create_sara_work_days_path, method: :post, local: true, class: "sara-date-form" do %>
+      <div><%= label_tag :date, "Fecha de operación", class: "form-label" %>
+        <%= date_field_tag :date, Date.tomorrow, min: Date.current, required: true, class: "form-control", aria: { describedby: "sara-date-help" } %></div>
+      <%= submit_tag "Abrir fecha", class: "btn btn-primary" %>
+    <% end %>
   </section>
   <aside class="sara-support"><div><strong>¿Necesitas un guía de reserva?</strong><p>Consulta y activa guías freelance.</p></div><%= link_to "Ver guías de reserva", sara_guides_path, class: "btn btn-outline-primary" %></aside>
 </main>
