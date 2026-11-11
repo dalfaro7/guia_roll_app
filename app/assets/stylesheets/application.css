@@ -197,3 +197,7 @@ body.sara-app{background:#f3f6f5;background-image:none;color:#183e37}
 .android-install button{background:transparent;border:0;min-width:44px;min-height:44px;font-size:24px;color:inherit}
 @media(max-width:600px){.android-install{margin:10px 16px}}
 @media print{.android-install{display:none}}
+
+.android-install .android-install__install{background:#17604c;color:white;border-radius:8px;font-size:14px;font-weight:700;padding:10px 16px;margin-top:8px}
+.android-install .android-install__install[hidden]{display:none}
+.android-install [role="status"]:empty{display:none}

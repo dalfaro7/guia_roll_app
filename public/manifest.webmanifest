@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Programación de Guías · Arenal Rafting",
+  "short_name": "Roll de Guías",
+  "description": "Programación de guías de Arenal Rafting.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "es",
+  "theme_color": "#143f36",
+  "background_color": "#f3f6f4",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
