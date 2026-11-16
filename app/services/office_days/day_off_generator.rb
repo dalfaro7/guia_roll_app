@@ -81,7 +81,7 @@ end
     end
 
     def available_for_group?(employee, date)
-      return false if holiday?(date)
+      return false if holiday?(date) || OfficeDayOffBlock.exists?(date: date)
 
       assignment_group(employee).all? do |member|
         !member.cannot_take_day_off_on?(date) &&

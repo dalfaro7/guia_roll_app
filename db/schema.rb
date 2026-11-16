@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_10_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_16_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -441,6 +441,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_000000) do
     t.index ["office_employee_id"], name: "index_office_day_credits_on_office_employee_id"
   end
 
+  create_table "office_day_off_blocks", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id", null: false
+    t.date "date", null: false
+    t.string "reason", limit: 250
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_office_day_off_blocks_on_created_by_id"
+    t.index ["date"], name: "index_office_day_off_blocks_on_date", unique: true
+  end
+
   create_table "office_employee_days", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "date"
@@ -830,6 +840,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_10_000000) do
   add_foreign_key "manual_day_offs", "guides"
   add_foreign_key "monthly_balances", "guides"
   add_foreign_key "office_day_credits", "office_employees"
+  add_foreign_key "office_day_off_blocks", "users", column: "created_by_id"
   add_foreign_key "office_employee_days", "office_day_credits"
   add_foreign_key "office_employee_days", "office_employees"
   add_foreign_key "office_employee_days", "office_vacation_credits"

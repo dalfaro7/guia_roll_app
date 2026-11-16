@@ -108,6 +108,8 @@ class OfficeEmployeeDaysController < ApplicationController
   # ==========================================================
   # 8. Feriados
   # ==========================================================
+  @blocked_dates = OfficeDayOffBlock.where(date: @calendar_range).index_by(&:date)
+
   @holidays =
     OfficeHoliday
       .where(date: @calendar_range)

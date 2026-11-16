@@ -189,6 +189,8 @@ Rails.application.routes.draw do
   resources :audit_logs,
             only: [:index]
 
+  resources :office_day_off_blocks, only: [:index, :create, :destroy]
+
   resources :office_holidays
   resources :office_overtimes
 

@@ -28,6 +28,8 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5 class="card-title">Generar calendario</h5>
+            <p>Las fechas bloqueadas se excluyen de la generación para todos los oficinistas. Los días libres existentes se conservan.</p>
+            <%= link_to "Administrar fechas bloqueadas", office_day_off_blocks_path(month: @month.strftime("%Y-%m")), class: "btn btn-outline-danger mb-3" %>
 
             <%= form_with url: generate_month_office_employee_days_path,
                     method: :post,
@@ -186,6 +188,10 @@
                             </small>
                             <% end %>
                         </div>
+
+                        <% if @blocked_dates.key?(date) %>
+                        <div class="mb-1"><span class="badge bg-danger">Bloqueado por admin</span></div>
+                        <% end %>
 
                         <% if holiday.present? %>
                         <div class="mb-1">

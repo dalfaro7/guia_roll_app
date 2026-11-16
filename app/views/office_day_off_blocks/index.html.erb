@@ -1,0 +1,38 @@
+<div class="container mt-4">
+  <h1>Fechas bloqueadas para días libres</h1>
+  <%= render "shared/office_menu" %>
+  <p>El generador no asignará nuevos días libres a ningún oficinista en estas fechas. Los libres ya registrados se conservan. El bloqueo no modifica feriados ni créditos.</p>
+  <%= form_with url: office_day_off_blocks_path, method: :get, class: "d-flex gap-2 mb-3" do %>
+    <%= label_tag :month, "Mes", class: "form-label" %>
+    <%= month_field_tag :month, @month.strftime("%Y-%m"), class: "form-control", style: "max-width:220px" %>
+    <%= submit_tag "Ver mes", class: "btn btn-secondary" %>
+  <% end %>
+  <% if current_user.admin? %>
+    <div class="card mb-4"><div class="card-body">
+      <h2 class="h5">Bloquear una fecha</h2>
+      <% if @block.errors.any? %><div role="alert" class="alert alert-danger"><%= @block.errors.full_messages.to_sentence %></div><% end %>
+      <%= form_with model: @block, class: "row g-3 align-items-end" do |f| %>
+        <%= hidden_field_tag :month, @month.strftime("%Y-%m") %>
+        <div class="col-md-3"><%= f.label :date, "Fecha", class: "form-label" %><%= f.date_field :date, required: true, class: "form-control" %></div>
+        <div class="col-md-6"><%= f.label :reason, "Motivo (opcional)", class: "form-label" %><%= f.text_field :reason, maxlength: 250, class: "form-control" %></div>
+        <div class="col-md-3"><%= f.submit "Bloquear fecha", class: "btn btn-danger" %></div>
+      <% end %>
+    </div></div>
+  <% end %>
+  <h2 class="h5">Bloqueos de <%= l(@month, format: "%B de %Y") %></h2>
+  <p class="text-muted">Incluye las semanas completas que aparecen en el calendario del mes.</p>
+  <% if @blocks.empty? %>
+    <p>No hay fechas bloqueadas en este período.</p>
+  <% else %>
+    <div class="table-responsive"><table class="table table-bordered">
+      <thead><tr><th>Fecha</th><th>Motivo</th><th>Bloqueado por</th><% if current_user.admin? %><th>Acciones</th><% end %></tr></thead>
+      <tbody><% @blocks.each do |block| %><tr>
+        <td><%= l(block.date, format: "%d/%m/%Y") %></td>
+        <td><%= block.reason.presence || "—" %></td>
+        <td><%= block.created_by.name %></td>
+        <% if current_user.admin? %><td><%= button_to "Quitar bloqueo", office_day_off_block_path(block), method: :delete, class: "btn btn-sm btn-outline-danger" %></td><% end %>
+      </tr><% end %></tbody>
+    </table></div>
+  <% end %>
+  <%= link_to "Volver al calendario", office_employee_days_path(month: @month.strftime("%Y-%m")), class: "btn btn-outline-secondary" %>
+</div>
