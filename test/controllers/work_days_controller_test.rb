@@ -41,6 +41,30 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_select "th", text: "Choferes requeridos", count: 0
   end
 
+  test "cannot reduce PM posts below guides already assigned" do
+    operator = User.create!(name: "PM slot operator",
+      email: "pm-slot-operator@example.test", password: "password123",
+      role: :operador)
+    sign_in operator
+    guide = Guide.create!(name: "PM slot guide", priority: 5, active: true,
+      pay_category: "freelance_regular")
+    day = WorkDay.create!(date: Date.current + 5.days, status: :generated)
+    2.times { day.location_slots.create!(location: "PM") }
+    guide_day = day.guide_days.find_by!(guide: guide)
+    guide_day.update!(status: :worked, location: "PM", role_primary: "River Guide")
+    original_ids = day.location_slots.pluck(:id)
+    locations = Departure::OPERATING_SECTIONS.keys.index_with do |_location|
+      { guides: "0", passengers: "0" }
+    end
+
+    post create_slots_work_day_path(day), params: { locations: locations }
+
+    assert_redirected_to locations_work_day_path(day)
+    assert_match(/PM tiene 1 guía asignado/, flash[:alert])
+    assert_equal original_ids, day.location_slots.pluck(:id)
+    assert guide_day.reload.worked?
+  end
+
   test "availability changes only while the programming is a draft" do
     operator = User.create!(name: "Availability operator",
       email: "availability-operator@example.test",

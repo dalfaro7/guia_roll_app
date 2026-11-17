@@ -173,11 +173,20 @@ class SaraManualAssignment
       outing.location = "PM"
       outing.starts_at = Departure.fixed_start_for(@work_day.date, "PM")
     end
-    assignment = departure.compensation_assignments.create!(
-      guide: @guide, role_code: "river_guide", source: "manual",
-      bus_guide: bus_guide_slot?(slot),
-      status: departure.closed? ? "performed" : "planned", updated_by: actor
+    assignment = departure.compensation_assignments.find_by(guide: @guide)
+    if assignment && (assignment.status != "canceled" || !assignment.canceled_by_schedule?)
+      raise InvalidSelection,
+        "Este guía ya tiene una asignación PM que debe revisar el operador."
+    end
+    assignment ||= departure.compensation_assignments.build(guide: @guide)
+    assignment.assign_attributes(
+      guide_day: nil, role_code: "river_guide", source: "manual",
+      bus_guide: bus_guide_slot?(slot), photo_task: "none",
+      also_drives: false, principal_photographer: false,
+      status: departure.closed? ? "performed" : "planned",
+      canceled_by_schedule: false, updated_by: actor
     )
+    assignment.save!
     Compensation::RepriceDay.call(@work_day, guide: @guide)
     ensure_priced!(assignment.reload)
     AuditLog.create!(user: actor, action: "assign_sara_second_outing",

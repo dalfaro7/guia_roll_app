@@ -65,6 +65,9 @@ class WorkDaysController < ApplicationController
       .where(guide_day_id: @work_day.guide_days.select(:id))
       .index_by(&:guide_day_id) if @work_day.generated?
     if @work_day.generated?
+      @second_pm_assignments = CompensationAssignment.active.joins(:departure)
+        .where(departures: { work_day_id: @work_day.id, location: "PM" },
+          guide_day_id: nil).includes(:guide).order(:id)
       photographers = CompensationAssignment.active.joins(:departure)
         .where(departures: { work_day_id: @work_day.id }, role_code: "photographer")
         .pluck(:guide_day_id, "departures.location")
@@ -639,6 +642,18 @@ class WorkDaysController < ApplicationController
         value
       end
       counts
+    end
+
+    if @work_day.generated? || @work_day.published?
+      assigned = RollOutingRoster.new(@work_day).counts_by_section
+      requested.each do |location, counts|
+        next if counts[:guides] >= assigned.fetch(location, 0)
+
+        count = assigned[location]
+        description = count == 1 ? "1 guía asignado" : "#{count} guías asignados"
+        return redirect_to locations_work_day_path(@work_day),
+          alert: "#{location} tiene #{description}. Retire las asignaciones antes de reducir los puestos."
+      end
     end
 
     WorkDay.transaction do

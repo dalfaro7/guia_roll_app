@@ -17,7 +17,7 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
     @actor = User.create!(name: "Sara operator test",
       email: "sara-operator-test@example.test", password: "password123",
       role: :operador)
-    @day = WorkDay.create!(date: Date.current + 45.days, status: :generated)
+    @day = WorkDay.create!(date: Date.current.next_month.beginning_of_month + 7.days, status: :generated)
   end
 
   test "only active priority six reserve can fill a pending Sara slot" do
@@ -85,6 +85,36 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
       .order("departures.starts_at ASC").pluck(:status)
     assert_equal 0, RollFairnessPolicy.roll_worked_days_for_guide(sara,
       before_date: @day.date + 1.day)
+  end
+
+  test "a canceled PM second outing is reused after regenerating the roll" do
+    sara = guide("Sara regenerated guide", 5,
+      skills: ["ClassIV", "Roll de Sara"])
+    sara_slot = create_slot("Sara-3&4", %w[ClassIV])
+    pm_slot = create_slot("PM", %w[ClassIV])
+    service.call(slot_id: sara_slot.id, guide_id: sara.id, actor: @actor)
+    service.call(slot_id: pm_slot.id, guide_id: sara.id, actor: @actor)
+    original_pm = CompensationAssignment.joins(:departure)
+      .find_by!(guide: sara, departures: { work_day_id: @day.id, location: "PM" })
+
+    @day.reset_roll!
+    assert_equal "canceled", original_pm.reload.status
+    assert original_pm.canceled_by_schedule?
+    @day.generate_roles!
+    assert_equal "Sara-3&4", @day.guide_days.find_by!(guide: sara).location
+    assert_includes @day.roll_coverage_errors, "PM: falta 1 puesto por cubrir"
+
+    service.call(slot_id: pm_slot.id, guide_id: sara.id, actor: @actor)
+
+    assert_equal "planned", original_pm.reload.status
+    assert_not original_pm.canceled_by_schedule?
+    assert_equal 1, CompensationAssignment.where(departure: original_pm.departure,
+      guide: sara).count
+    assert_empty @day.roll_coverage_errors
+    assert_equal 2, RollFairnessPolicy.roll_worked_days_for_guide(sara,
+      before_date: @day.date + 1.day)
+    @day.publish!
+    assert_includes RollOutingRoster.new(@day).entries.map(&:location), "PM"
   end
 
   test "removing the first Sara assignment also cancels its PM second outing" do

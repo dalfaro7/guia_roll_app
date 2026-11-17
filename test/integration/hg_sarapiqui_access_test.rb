@@ -46,6 +46,51 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
     assert @day.reload.generated?
   end
 
+  test "HG sees a newly assigned second PM outing and operator sees it before publication" do
+    guide = Guide.create!(name: "Visible Sara PM guide", priority: 5,
+      active: true, pay_category: "freelance_regular",
+      skills: [@class_iv, @sara_roll])
+    CompensationDiscountRule.find_or_create_by!(code: "second_sara",
+      effective_at: Time.utc(2020, 1, 1)) do |rule|
+      rule.percent = 20
+    end
+    sara_slot = @day.location_slots.create!(location: "Sara-3&4")
+    sara_slot.skills << @class_iv
+    pm_slot = @day.location_slots.create!(location: "PM")
+    pm_slot.skills << @class_iv
+    @day.update!(status: :generated)
+    SaraManualAssignment.new(@day).call(slot_id: sara_slot.id,
+      guide_id: guide.id, actor: @hg)
+
+    post assign_sara_guide_work_day_path(@day),
+      params: { slot_id: pm_slot.id, guide_id: guide.id }
+    assert_redirected_to sara_operation_work_day_path(@day)
+    assert_empty @day.roll_coverage_errors
+
+    get sara_operation_work_day_path(@day)
+    assert_response :success
+    assert_select "#sara-outing-1 td[data-label='Guía']", text: /Visible Sara PM guide/
+    assert_select "#sara-outing-1", text: /Segunda salida/
+
+    sign_out @hg
+    operator = User.create!(name: "PM visibility operator",
+      email: "pm-visibility-operator@example.test", password: "password123",
+      role: :operador)
+    sign_in operator
+    get work_day_path(@day)
+    assert_response :success
+    assert_select "tr[data-second-pm-guide='#{guide.id}'][data-outing='PM']",
+      text: /Visible Sara PM guide/
+
+    @day.publish!
+    local_zone = Time.find_zone!("America/Costa_Rica")
+    travel_to local_zone.local(@day.date.year, @day.date.month, @day.date.day, 12) do
+      get sara_published_work_day_path(@day)
+      assert_response :success
+      assert_select "#published-pm", text: /Visible Sara PM guide/
+    end
+  end
+
   test "HG opens existing unpublished date or creates a new draft" do
     get sara_operation_work_day_path(@day)
     assert_response :success
