@@ -54,9 +54,9 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
       effective_at: Time.utc(2020, 1, 1)) do |rule|
       rule.percent = 20
     end
-    sara_slot = @day.location_slots.create!(location: "Sara-3&4")
+    sara_slot = @day.location_slots.create!(location: "Sara-3&4", passengers: 18)
     sara_slot.skills << @class_iv
-    pm_slot = @day.location_slots.create!(location: "PM")
+    pm_slot = @day.location_slots.create!(location: "PM", passengers: 7)
     pm_slot.skills << @class_iv
     @day.update!(status: :generated)
     SaraManualAssignment.new(@day).call(slot_id: sara_slot.id,
@@ -88,6 +88,49 @@ class HgSarapiquiAccessTest < ActionDispatch::IntegrationTest
       get sara_published_work_day_path(@day)
       assert_response :success
       assert_select "#published-pm", text: /Visible Sara PM guide/
+      assert_select ".sara-coverage-card[href='#published-sara']" do
+        assert_select ".sara-coverage-gap", text: /0\s+espacios por llenar/
+        assert_select "dd", text: "18"
+      end
+      assert_select ".sara-coverage-card[href='#published-pm']" do
+        assert_select ".sara-coverage-gap", text: /0\s+espacios por llenar/
+        assert_select "dd", text: "7"
+      end
+
+      @day.departures.find_by!(location: "PM").compensation_assignments
+        .find_by!(guide: guide).update!(status: "canceled", source: "manual")
+      get sara_published_work_day_path(@day)
+      assert_response :success
+      assert_select ".sara-coverage-card[href='#published-pm']", text: /1\s+espacios por llenar/
+      assert_select "#published-pm", text: /Visible Sara PM guide/, count: 0
+    end
+  end
+
+  test "HG sees passengers, required guides, and open spaces for Sara and PM" do
+    guide = Guide.create!(name: "Sara coverage guide", priority: 5,
+      active: true, pay_category: "freelance_regular",
+      skills: [@class_iv, @sara_roll])
+    2.times { @day.location_slots.create!(location: "Sara-3&4", passengers: 18) }
+    @day.location_slots.create!(location: "PM", passengers: 7)
+    @day.update!(status: :generated)
+    @day.guide_days.create!(guide: guide, status: :standby).update!(status: :worked,
+      location: "Sara-3&4", role_primary: "River Guide")
+
+    get sara_operation_work_day_path(@day)
+    assert_response :success
+    assert_select ".sara-coverage-card[href='#sara-outing-0']" do
+      assert_select ".sara-coverage-gap", text: /1\s+espacios por llenar/
+      assert_select "dt", text: "Pasajeros"
+      assert_select "dd", text: "18"
+      assert_select "dt", text: "Guías necesarios"
+      assert_select "dd", text: "2"
+      assert_select "dt", text: "Guías asignados"
+      assert_select "dd", text: "1"
+    end
+    assert_select ".sara-coverage-card[href='#sara-outing-1']" do
+      assert_select ".sara-coverage-gap", text: /1\s+espacios por llenar/
+      assert_select "dd", text: "7"
+      assert_select "dd", text: "0"
     end
   end
 

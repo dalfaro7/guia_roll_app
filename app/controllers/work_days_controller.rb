@@ -109,6 +109,8 @@ class WorkDaysController < ApplicationController
     @pm_entries = entries.select { |entry| entry.location == "PM" }
     @second_outing_guide_ids = @sara_entries.map { |entry| entry.guide.id } &
       @pm_entries.map { |entry| entry.guide.id }
+    @sara_required = @work_day.location_slots.where(location: "Sara-3&4").count
+    @pm_required = @work_day.location_slots.where(location: "PM").count
   end
 
   def create_sara

@@ -12,6 +12,10 @@
   <nav class="sara-section-nav" aria-label="Salidas publicadas">
     <a href="#published-sara">Sarapiquí Clase IV</a><a href="#published-pm">Sarapiquí PM</a>
   </nav>
+  <%= render "sara_coverage_summary", work_day: @work_day,
+    sara_entries: @sara_entries, pm_entries: @pm_entries,
+    sara_required: @sara_required, pm_required: @pm_required,
+    sara_target: "published-sara", pm_target: "published-pm" %>
   <% [["Sarapiquí Clase IV", @sara_entries, @sara_transport, "published-sara"], ["Sarapiquí PM", @pm_entries, @pm_transport, "published-pm"]].each do |title, entries, transport, section_id| %>
     <section class="card mb-4" id="<%= section_id %>">
       <div class="card-header d-flex justify-content-between gap-2"><strong><%= title %></strong><span><%= entries.size %> <%= entries.one? ? "guía" : "guías" %></span></div>

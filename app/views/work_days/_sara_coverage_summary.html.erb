@@ -1,0 +1,23 @@
+  <section class="sara-coverage-grid" aria-label="Pasajeros y puestos por salida">
+    <% [
+      ["Sarapiquí Clase IV", sara_target, "Sara-3&4", sara_entries, sara_required],
+      ["Sarapiquí PM", pm_target, "PM", pm_entries, pm_required]
+    ].each do |title, target, location, entries, required| %>
+      <% assigned = entries.length %>
+      <% missing = [required - assigned, 0].max %>
+      <a class="sara-coverage-card" href="#<%= target %>">
+        <span class="sara-coverage-title"><%= title %></span>
+        <span class="sara-coverage-gap <%= required.zero? ? "is-unconfigured" : (missing.positive? ? "is-pending" : "is-complete") %>">
+          <strong><%= missing %></strong>
+          <span>espacios por llenar</span>
+        </span>
+        <% if required.zero? %><span class="sara-coverage-note">Sin puestos configurados</span><% end %>
+        <dl class="sara-coverage-metrics">
+          <div><dt>Pasajeros</dt><dd><%= work_day.passengers_for(location) %></dd></div>
+          <div><dt>Guías necesarios</dt><dd><%= required %></dd></div>
+          <div><dt>Guías asignados</dt><dd><%= assigned %></dd></div>
+        </dl>
+      </a>
+    <% end %>
+  </section>
+

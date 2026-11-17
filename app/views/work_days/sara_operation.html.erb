@@ -25,6 +25,11 @@
     <% if @work_day.generated? %><a href="#day-extra-sara-guides">Añadir guía</a><% end %>
   </nav>
 
+  <%= render "sara_coverage_summary", work_day: @work_day,
+    sara_entries: @sara_entries, pm_entries: @pm_entries,
+    sara_required: @sara_required, pm_required: @pm_required,
+    sara_target: "sara-outing-0", pm_target: "sara-outing-1" %>
+
   <% if @sara_pm_coverage_errors.any? %>
     <div class="alert alert-warning" role="status">
       <strong>Puestos pendientes:</strong>
