@@ -16,34 +16,28 @@ class ForceAssignmentServiceTest < ActiveSupport::TestCase
     assert day.guide_days.find_by!(guide: guide).standby?
   end
 
-  test "operator can select a specific available level four Balsa guide" do
-    guide = Guide.create!(name: "Selected Balsa guide", priority: 4, active: false,
-      pay_category: "freelance_regular", skills: [@class_iii])
+  test "force assignment uses the fair candidate and rejects a selected guide" do
+    skill = Skill.create!(name: "Fairness service test")
     day = WorkDay.create!(date: Date.current + 3.days, status: :generated)
-    guide.update!(active: true)
-    day.guide_days.find_by!(guide: guide).destroy!
+    guides = ["First", "Second"].map do |name|
+      Guide.create!(name: "#{name} fairness guide", priority: 4, active: true,
+        pay_category: "freelance_regular", skills: [skill])
+    end
+    expected = GuideCandidateRanker.new(work_day: day,
+      skill_ids: [skill.id]).next_candidate.guide
+    other = (guides - [expected]).first
 
-    service = ForceAssignmentService.new(day, "Balsa", [@class_iii.id], guide_id: guide.id)
+    assert_raises(ArgumentError) do
+      ForceAssignmentService.new(day, "Balsa", [skill.id], guide_id: other.id)
+    end
+
+    service = ForceAssignmentService.new(day, "Balsa", [skill.id])
     service.call
 
-    assert_equal guide, service.guide
-    assert day.guide_days.find_by!(guide: guide).worked?
-    assert_equal "Balsa", service.guide_day.location
+    assert_equal expected, service.guide
+    assert day.guide_days.find_by!(guide: expected).worked?
+    assert day.guide_days.find_by!(guide: other).standby?
     assert_equal 1, day.location_slots.where(location: "Balsa").count
-    assert_equal 1, day.guides_requested
     assert_empty day.roll_coverage_errors
-
-    assert_raises(RuntimeError) { service.call }
-    assert_equal 1, day.location_slots.where(location: "Balsa").count
-  end
-
-  test "specific Balsa selection rejects a guide without Class III" do
-    guide = Guide.create!(name: "Unqualified guide", priority: 4, active: true,
-      pay_category: "freelance_regular")
-    day = WorkDay.create!(date: Date.current + 4.days, status: :generated)
-
-    service = ForceAssignmentService.new(day, "Balsa", [], guide_id: guide.id)
-    assert_raises(RuntimeError) { service.call }
-    assert_equal 0, day.location_slots.count
   end
 end

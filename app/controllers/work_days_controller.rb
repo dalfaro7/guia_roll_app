@@ -60,16 +60,6 @@ class WorkDaysController < ApplicationController
   def show
     @active_drivers = Driver.active.includes(:transport_company).order(:name).to_a
     @guide_days = @work_day.guide_days.includes(:guide)
-    if @work_day.generated?
-      unavailable_ids = @guide_days.reject(&:standby?).map(&:guide_id)
-      unavailable_ids.concat(ManualDayOff.where(date: @work_day.date).pluck(:guide_id))
-      unavailable_ids.concat(CompensationAssignment.active.joins(:departure)
-        .where(departures: { work_day_id: @work_day.id }).where.not(guide_id: nil)
-        .pluck(:guide_id))
-      @balsa_manual_guides = Guide.active.where(priority: 0..4)
-        .joins(:skills).where(skills: { name: "ClassIII" })
-        .where.not(id: unavailable_ids).distinct.order(:name)
-    end
     @roll_coverage_errors = @work_day.roll_coverage_errors if @work_day.generated?
     @team_compensation_assignments = CompensationAssignment
       .where(guide_day_id: @work_day.guide_days.select(:id))
@@ -341,14 +331,14 @@ class WorkDaysController < ApplicationController
       work_day,
       location,
       skills,
-      guide_id: params[:guide_id], actor: current_user
+      actor: current_user
     )
 
     begin
       service.call
       audit!(action: "force_assign", auditable: service.guide_day,
         work_day: work_day, metadata: { guide_id: service.guide.id,
-          location: location, selected_guide_id: params[:guide_id].presence,
+          location: location,
           reason: params[:correction_reason] })
 
       redirect_to(

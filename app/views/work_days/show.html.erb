@@ -397,15 +397,6 @@
                              id: "force_skills" %>
                 </div>
 
-                <div class="col-md-4" id="force_balsa_guide_field">
-                    <label for="force_guide_id">Guía específico de Balsa (opcional)</label>
-                    <%= select_tag :guide_id,
-                      options_for_select(@balsa_manual_guides.map { |guide| [guide.name, guide.id] }),
-                      include_blank: "Siguiente por equidad",
-                      class: "form-control", id: "force_guide_id" %>
-                    <small>Seleccione un nombre solo cuando necesite asignarlo manualmente.</small>
-                </div>
-
                 <% if compensation_correction_required?(@work_day) %>
                   <div class="col-md-3">
                     <%= text_field_tag :correction_reason, nil, class: "form-control",
@@ -432,18 +423,11 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const forceSkills = document.getElementById("force_skills");
-            const forceLocation = document.getElementById("force_location");
-            const manualGuide = document.getElementById("force_guide_id");
-            const manualGuideField = document.getElementById("force_balsa_guide_field");
             const preview = document.getElementById("preview_guide");
 
             if (!forceSkills || !preview) return;
 
             function updateGuidePreview() {
-                if (manualGuide && manualGuide.value) {
-                    preview.textContent = "Selección manual: " + manualGuide.selectedOptions[0].text;
-                    return;
-                }
                 const skills =
                     Array.from(forceSkills.selectedOptions)
                     .map(option => option.value);
@@ -485,19 +469,6 @@
                 "change",
                 updateGuidePreview
             );
-
-            if (forceLocation && manualGuide) {
-                const updateManualSelection = function() {
-                    const isBalsa = forceLocation.value === "Balsa";
-                    manualGuideField.hidden = !isBalsa;
-                    manualGuide.disabled = !isBalsa;
-                    if (!isBalsa) manualGuide.value = "";
-                    updateGuidePreview();
-                };
-                forceLocation.addEventListener("change", updateManualSelection);
-                manualGuide.addEventListener("change", updateGuidePreview);
-                updateManualSelection();
-            }
 
             updateGuidePreview();
         });

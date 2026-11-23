@@ -1,28 +1,32 @@
 require "test_helper"
 
 class WorkDaysControllerTest < ActionDispatch::IntegrationTest
-  test "operator can add a guide activated after the day was created to Balsa" do
-    operator = User.create!(name: "Late guide operator",
-      email: "late-guide-operator@example.test", password: "password123",
+  test "force assignment ignores a requested guide and follows fairness" do
+    operator = User.create!(name: "Fairness operator",
+      email: "fairness-operator@example.test", password: "password123",
       role: :operador)
     sign_in operator
-    class_iii = Skill.find_or_create_by!(name: "ClassIII")
-    guide = Guide.create!(name: "Late Balsa guide", priority: 4, active: false,
-      pay_category: "freelance_regular", skills: [class_iii])
+    skill = Skill.create!(name: "Fairness controller test")
     day = WorkDay.create!(date: Date.current + 2.days, status: :generated)
-    guide.update!(active: true)
+    guides = ["First", "Second"].map do |name|
+      Guide.create!(name: "#{name} fairness guide", priority: 4, active: true,
+        pay_category: "freelance_regular", skills: [skill])
+    end
+    expected = GuideCandidateRanker.new(work_day: day,
+      skill_ids: [skill.id]).next_candidate.guide
+    other = (guides - [expected]).first
 
     get work_day_url(day)
     assert_response :success
-    assert_select "select#force_guide_id option[value='#{guide.id}']", text: guide.name
+    assert_select "select#force_guide_id", false
 
     post force_assign_work_day_url(day), params: {
-      location: "Balsa", skills: [class_iii.id], guide_id: guide.id
+      location: "Balsa", skills: [skill.id], guide_id: other.id
     }
 
     assert_redirected_to work_day_url(day)
-    assert day.guide_days.find_by!(guide: guide).worked?
-    assert_equal 1, day.location_slots.where(location: "Balsa").count
+    assert day.guide_days.find_by!(guide: expected).worked?
+    assert day.guide_days.find_by!(guide: other).standby?
   end
 
   test "new programming loads before a date is entered" do
