@@ -1,6 +1,30 @@
 require "test_helper"
 
 class WorkDaysControllerTest < ActionDispatch::IntegrationTest
+  test "operator can add a guide activated after the day was created to Balsa" do
+    operator = User.create!(name: "Late guide operator",
+      email: "late-guide-operator@example.test", password: "password123",
+      role: :operador)
+    sign_in operator
+    class_iii = Skill.find_or_create_by!(name: "ClassIII")
+    guide = Guide.create!(name: "Late Balsa guide", priority: 4, active: false,
+      pay_category: "freelance_regular", skills: [class_iii])
+    day = WorkDay.create!(date: Date.current + 2.days, status: :generated)
+    guide.update!(active: true)
+
+    get work_day_url(day)
+    assert_response :success
+    assert_select "select#force_guide_id option[value='#{guide.id}']", text: guide.name
+
+    post force_assign_work_day_url(day), params: {
+      location: "Balsa", skills: [class_iii.id], guide_id: guide.id
+    }
+
+    assert_redirected_to work_day_url(day)
+    assert day.guide_days.find_by!(guide: guide).worked?
+    assert_equal 1, day.location_slots.where(location: "Balsa").count
+  end
+
   test "new programming loads before a date is entered" do
     user = User.create!(name: "New roll admin", email: "new-roll-admin@example.test",
       password: "password123", role: :admin)

@@ -2,6 +2,8 @@ class Guide < ApplicationRecord
   has_many :guide_activity_changes, dependent: :destroy
   after_create :record_activity_change
   after_update :record_activity_change, if: :saved_change_to_active?
+  after_commit :add_to_open_work_days, on: :create, if: :active?
+  after_commit :add_to_open_work_days, on: :update, if: :activated_for_roll?
 
   has_many :guide_skills, dependent: :destroy
   has_many :skills, through: :guide_skills
@@ -51,6 +53,22 @@ class Guide < ApplicationRecord
   end
 
   private
+
+  def activated_for_roll?
+    active? && saved_change_to_active?
+  end
+
+  # Un guía puede activarse después de que ya exista la programación.
+  # Debe aparecer disponible en las fechas aún editables sin cambiar
+  # silenciosamente una programación publicada.
+  def add_to_open_work_days
+    WorkDay.where("date >= ?", Date.current)
+      .where(status: [:draft, :generated]).find_each do |day|
+        day.guide_days.find_or_create_by!(guide_id: id) do |guide_day|
+          guide_day.status = :standby
+        end
+      end
+  end
 
   def saved_change_to_pay_category_or_priority?
     saved_change_to_pay_category? ||
