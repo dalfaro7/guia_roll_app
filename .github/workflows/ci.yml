@@ -110,6 +110,12 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
         run: bin/rails test test/services/sara_manual_assignment_test.rb
 
+      - name: Verify PM default requirements
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: bin/rails test test/controllers/work_days_controller_test.rb -n /default_requirements/
+
       - name: Run tests
         env:
           RAILS_ENV: test

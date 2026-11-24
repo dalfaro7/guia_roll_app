@@ -145,8 +145,8 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     private_slots = work_day.location_slots.where(location: "Privado").order(:id).to_a
     assert_equal %w[Busguide ClassIV Computer], sara_slots.first.skills.pluck(:name).sort
     assert_equal %w[ClassIV], sara_slots.second.skills.pluck(:name).sort
-    assert_equal %w[Busguide ClassIV Computer], pm_slots.first.skills.pluck(:name).sort
-    assert_equal %w[ClassIV], pm_slots.second.skills.pluck(:name).sort
+    assert_equal %w[Busguide ClassIII Computer], pm_slots.first.skills.pluck(:name).sort
+    assert_empty pm_slots.second.skills
     assert_equal %w[ClassIII], work_day.location_slots.find_by!(location: "Balsa").skills.pluck(:name)
     assert_equal %w[ClassIII Elite], private_slots.first.skills.pluck(:name).sort
     assert_equal %w[ClassIII], private_slots.second.skills.pluck(:name)
@@ -155,6 +155,8 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[name='slots[#{sara_slots.first.id}][]'][value='#{skills["ClassIII"].id}'][checked]", count: 0
     assert_select "input[name='slots[#{sara_slots.first.id}][]'][value='#{skills["Busguide"].id}'][checked]", count: 1
+    assert_select "input[name='slots[#{pm_slots.first.id}][]'][value='#{skills["ClassIII"].id}'][checked]", count: 1
+    assert_select "input[name='slots[#{pm_slots.first.id}][]'][value='#{skills["ClassIV"].id}'][checked]", count: 0
     assert_select "input[name='slots[#{pm_slots.first.id}][]'][value='#{skills["Computer"].id}'][checked]", count: 1
     assert_select "input[name='slots[#{private_slots.first.id}][]'][value='#{skills["Elite"].id}'][checked]", count: 1
     assert_select "input[name='slots[#{private_slots.second.id}][]'][value='#{skills["Elite"].id}'][checked]", count: 0
