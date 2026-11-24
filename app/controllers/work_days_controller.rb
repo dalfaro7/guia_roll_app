@@ -676,7 +676,11 @@ class WorkDaysController < ApplicationController
             location: location,
             passengers: counts[:passengers]
           )
-          skill_names = %w[Sara-3&4 PM].include?(location) ? %w[ClassIV] : %w[ClassIII]
+          skill_names = case location
+          when "Sara-3&4" then %w[ClassIV]
+          when "PM" then index.zero? ? %w[ClassIII] : %w[ClassIV]
+          else %w[ClassIII]
+          end
           if index.zero?
             skill_names += %w[Busguide Computer] if %w[Sara-3&4 PM].include?(location)
             skill_names << "Elite" if location == "Privado"
