@@ -81,7 +81,14 @@
             <% end %>
             <% end %>
 
+            <% if (Date.current..Date.tomorrow).cover?(@work_day.date) %>
+            <%= link_to "Distribución pública · enlace fijo",
+                        public_current_distribution_path(token: PublicCurrentDistributionLink.token),
+                        class: "btn btn-outline-primary" %>
+            <% end %>
+
             <% if @work_day.published? %>
+            <% unless (Date.current..Date.tomorrow).cover?(@work_day.date) %>
             <%= link_to "Distribución de guías y choferes",
                         public_work_day_distribution_path(
                           token: @work_day.signed_id(
@@ -89,6 +96,7 @@
                           )
                         ),
                         class: "btn btn-outline-primary" %>
+            <% end %>
             <%= link_to "Reportes del río Balsa",
                         weather_reports_path,
                         class: "btn btn-info" %>

@@ -10,8 +10,13 @@
     </div>
     <div class="distribution-header-actions">
       <% unless @public_view %><%= link_to "Volver a la operación", work_day_path(@work_day), class: "btn btn-outline-primary" %><% end %>
-      <% share_token = @public_view ? params[:token] : @work_day.signed_id(purpose: :public_distribution, expires_in: 7.days) %>
-      <button type="button" class="btn btn-primary" data-copy-distribution="<%= public_work_day_distribution_url(token: share_token) %>">Copiar enlace</button>
+      <% share_url = if @fixed_public_link
+           public_current_distribution_url(token: PublicCurrentDistributionLink.token)
+         else
+           share_token = @public_view ? params[:token] : @work_day.signed_id(purpose: :public_distribution, expires_in: 7.days)
+           public_work_day_distribution_url(token: share_token)
+         end %>
+      <button type="button" class="btn btn-primary" data-copy-distribution="<%= share_url %>">Copiar enlace</button>
       <span class="distribution-copy-status" role="status" aria-live="polite"></span>
     </div>
   </header>
@@ -38,7 +43,7 @@
               <% if index.zero? %>
                 <th class="distribution-section-cell <%= row[:color] %>" scope="rowgroup" rowspan="<%= section[:rows].size %>" title="<%= section[:label] == "Sara-3&4" ? "Sarapiquí 3 y 4" : section[:label] %>"><span><%= section[:label] == "Sara-3&4" ? "Sara 3/4" : section[:label] %></span></th>
               <% end %>
-              <td class="distribution-number"><% if row[:kind] == :guide && !(section[:label] == "Balsa" && ["Photographer", "Safety Kayaker"].include?(row[:primary])) %><%= guide_number += 1 %><% end %></td>
+              <td class="distribution-number"><% if row[:kind] == :guide && !["Photographer", "Safety Kayaker"].include?(row[:primary]) %><%= guide_number += 1 %><% end %></td>
               <td><%= row[:name] %><% if row[:kind] == :driver %><small class="distribution-person-type">Chofer</small><% end %><% if section[:label] == "Otros lugares" || %w[Sara-3 Sara-4].include?(row[:location]) %><small class="distribution-person-type"><%= row[:location] %></small><% end %></td>
               <td><%= roll_role_label(row[:primary]) %></td>
               <td><%= roll_role_label(row[:secondary]) %></td>

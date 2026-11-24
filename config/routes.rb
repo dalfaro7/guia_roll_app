@@ -99,6 +99,9 @@ Rails.application.routes.draw do
   get "programacion/:token/distribucion",
       to: "work_days#public_distribution",
       as: :public_work_day_distribution
+  get "programacion/vigente/:token/distribucion",
+      to: "work_days#public_current_distribution",
+      as: :public_current_distribution
 
   resources :work_days do
     collection do

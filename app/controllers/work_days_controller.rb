@@ -1,5 +1,5 @@
 class WorkDaysController < ApplicationController
-  skip_before_action :authenticate_user!, only: :public_distribution
+  skip_before_action :authenticate_user!, only: [:public_distribution, :public_current_distribution]
   before_action :set_work_day, only: [
     :show,
     :sara_operation,
@@ -240,6 +240,25 @@ class WorkDaysController < ApplicationController
     @distribution = WorkDayDistribution.new(@work_day)
     @public_view = true
     render :distribution, layout: "public_distribution"
+  end
+
+  def public_current_distribution
+    raise ActiveRecord::RecordNotFound unless PublicCurrentDistributionLink.valid?(params[:token])
+
+    today = Date.current
+    @work_day = WorkDay.published.where(date: today..(today + 1.day)).order(date: :desc).first
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    @public_view = true
+    @fixed_public_link = true
+
+    if @work_day
+      @distribution = WorkDayDistribution.new(@work_day)
+      render :distribution, layout: "public_distribution"
+    else
+      render :public_current_distribution_unavailable, layout: "public_distribution"
+    end
   end
 
   def available_buses
