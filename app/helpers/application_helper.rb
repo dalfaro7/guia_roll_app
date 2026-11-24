@@ -25,11 +25,11 @@ module ApplicationHelper
     role = value.to_s
     icon, kind = case role
     when "Photographer" then ["📷", "photographer"]
-    when "Safety Kayaker" then ["🛶", "kayaker"]
-    when "River Guide" then ["🚣", "boat"]
+    when "Safety Kayaker" then ["🚣", "kayaker"]
+    when "River Guide" then [image_tag("/icons/paddle.svg", alt: "", class: "distribution-role-svg"), "boat"]
     when "Head Guide", "HG" then ["👑", "head-guide"]
     when "Tour Leader", "TL" then ["⭐", "tour-leader"]
-    when "Driver", "Chofer" then ["🚐", "driver"]
+    when "Driver", "Chofer" then [image_tag("/icons/steering-wheel.svg", alt: "", class: "distribution-role-svg"), "driver"]
     when /\A(?:Bus Guide|Guía de bus)/ then ["🚌", "bus-guide"]
     end
     return roll_role_label(value) unless icon
