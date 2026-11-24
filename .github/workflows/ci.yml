@@ -100,7 +100,9 @@ jobs:
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
-        run: bin/rails db:test:prepare test test/integration/work_day_deletion_test.rb
+        run: |
+          bin/rails db:test:prepare
+          bin/rails test test/integration/work_day_deletion_test.rb
 
       - name: Run tests
         env:
