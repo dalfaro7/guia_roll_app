@@ -2,7 +2,7 @@ require "test_helper"
 
 class SaraManualAssignmentTest < ActiveSupport::TestCase
   setup do
-    @skills = %w[ClassIII ClassIV Busguide Computer address_Sarapiqui].index_with do |name|
+    @skills = %w[ClassIV Busguide Computer address_Sarapiqui].index_with do |name|
       Skill.find_or_create_by!(name: name)
     end
     @skills["Roll de Sara"] = Skill.find_or_create_by!(name: "Roll de Sara")
@@ -205,27 +205,14 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
 
   test "a specialist slot accepts an available qualified guide without Sara roll" do
     specialist = guide("Qualified bus guide", 2,
-      skills: %w[ClassIII Busguide Computer])
-    slot = create_slot("PM", %w[ClassIII Busguide Computer])
+      skills: %w[ClassIV Busguide Computer])
+    slot = create_slot("PM", %w[ClassIV Busguide Computer])
 
     assert_includes service.candidates_for(slot).map { |candidate| candidate.guide.id },
       specialist.id
     service.call(slot_id: slot.id, guide_id: specialist.id, actor: @actor)
 
     assert_equal "PM", @day.guide_days.find_by!(guide: specialist).location
-    assert_empty @day.roll_coverage_errors
-  end
-
-  test "an additional PM guide needs no Class IV skill" do
-    guide_record = guide("PM guide without Class IV", 5,
-      skills: ["ClassIII", "Roll de Sara"])
-
-    assert_includes service.extra_guide_candidates_for("PM").map { |candidate| candidate.guide.id },
-      guide_record.id
-    service.add_guide(location: "PM", guide_id: guide_record.id, actor: @actor)
-
-    assert_empty @day.location_slots.find_by!(location: "PM").skills
-    assert_equal "PM", @day.guide_days.find_by!(guide: guide_record).location
     assert_empty @day.roll_coverage_errors
   end
 

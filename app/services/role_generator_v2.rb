@@ -76,18 +76,20 @@ class RoleGeneratorV2
     required_skill_ids = slot.skills.map(&:id)
     allowed_priorities = PRIORITY_ALLOWED[slot.location] || []
 
-    available_days = GuideDay.available_for_date(@work_day.date)
-      .where(work_day: @work_day)
-      .where(guides: { priority: allowed_priorities })
-    available_days = if required_skill_ids.empty?
-      available_days.joins(:guide)
-    else
-      available_days.joins(guide: :skills)
+    candidates =
+      GuideDay
+        .available_for_date(@work_day.date)
+        .where(work_day: @work_day)
+        .joins(guide: :skills)
+        .where(guides: { priority: allowed_priorities })
         .where(skills: { id: required_skill_ids })
         .group("guide_days.id, guides.id")
-        .having("COUNT(DISTINCT skills.id) = ?", required_skill_ids.size)
-    end
-    candidates = available_days.includes(:guide).to_a
+        .having(
+          "COUNT(DISTINCT skills.id) = ?",
+          required_skill_ids.size
+        )
+        .includes(:guide)
+        .to_a
     ActiveRecord::Associations::Preloader.new(
       records: candidates.map(&:guide), associations: :skills
     ).call

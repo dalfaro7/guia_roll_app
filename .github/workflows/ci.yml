@@ -114,9 +114,7 @@ jobs:
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
-        run: |
-          bin/rails test test/controllers/work_days_controller_test.rb -n /default_requirements/
-          bin/rails test test/services/role_generator_v2_test.rb
+        run: bin/rails test test/controllers/work_days_controller_test.rb -n /default_requirements/
 
       - name: Run tests
         env:

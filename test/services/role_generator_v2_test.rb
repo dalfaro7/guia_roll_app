@@ -20,7 +20,7 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
     day = WorkDay.create!(date: Date.current + 30.days)
     slot(day, "Sara-3&4", %w[ClassIV Busguide Computer])
     slot(day, "Sara-3&4", %w[ClassIV])
-    slot(day, "PM", [])
+    slot(day, "PM", %w[ClassIV])
     slot(day, "Balsa", %w[ClassIII])
 
     day.generate_roles!

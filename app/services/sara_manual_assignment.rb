@@ -82,11 +82,11 @@ class SaraManualAssignment
   def extra_guide_candidates_for(location)
     return [] unless %w[Sara-3&4 PM].include?(location)
 
-    class_iv = Skill.find_by(name: "ClassIV") unless location == "PM"
-    return [] if location == "Sara-3&4" && !class_iv
+    class_iv = Skill.find_by(name: "ClassIV")
+    return [] unless class_iv
 
     virtual_slot = LocationSlot.new(work_day: @work_day, location: location)
-    virtual_slot.skills = class_iv ? [class_iv] : []
+    virtual_slot.skills = [class_iv]
     candidates_for(virtual_slot)
   end
 
@@ -97,13 +97,11 @@ class SaraManualAssignment
         raise InvalidSelection, "Solo puede añadir guías a Sara o PM."
       end
       ensure_departure_open!(location)
-      class_iv = Skill.find_by(name: "ClassIV") unless location == "PM"
-      if location == "Sara-3&4" && !class_iv
-        raise InvalidSelection, "Falta la habilidad Clase IV."
-      end
+      class_iv = Skill.find_by(name: "ClassIV")
+      raise InvalidSelection, "Falta la habilidad Clase IV." unless class_iv
 
       slot = @work_day.location_slots.create!(location: location)
-      slot.skills = class_iv ? [class_iv] : []
+      slot.skills = [class_iv]
       candidate = candidates_for(slot).find { |entry| entry.guide.id == guide_id.to_i }
       raise InvalidSelection, "El guía ya no está disponible para esa salida." unless candidate
 
