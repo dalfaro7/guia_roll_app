@@ -96,6 +96,7 @@ Rails.application.routes.draw do
 
   resources :roll_notes, only: [:index, :create, :destroy]
 
+  get "roll", to: "work_days#public_roll", as: :public_roll
   get "programacion/:token/distribucion",
       to: "work_days#public_distribution",
       as: :public_work_day_distribution

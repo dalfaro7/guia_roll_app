@@ -83,7 +83,7 @@
 
             <% if (Date.current..Date.tomorrow).cover?(@work_day.date) %>
             <%= link_to "Distribución pública · enlace fijo",
-                        public_current_distribution_path(token: PublicCurrentDistributionLink.token),
+                        public_roll_path,
                         class: "btn btn-outline-primary" %>
             <% end %>
 

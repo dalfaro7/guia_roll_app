@@ -1,5 +1,5 @@
 class WorkDaysController < ApplicationController
-  skip_before_action :authenticate_user!, only: [:public_distribution, :public_current_distribution]
+  skip_before_action :authenticate_user!, only: [:public_distribution, :public_current_distribution, :public_roll]
   before_action :set_work_day, only: [
     :show,
     :sara_operation,
@@ -245,6 +245,10 @@ class WorkDaysController < ApplicationController
   def public_current_distribution
     raise ActiveRecord::RecordNotFound unless PublicCurrentDistributionLink.valid?(params[:token])
 
+    public_roll
+  end
+
+  def public_roll
     today = Date.current
     @work_day = WorkDay.published.where(date: today..(today + 1.day)).order(date: :desc).first
     response.headers["Cache-Control"] = "private, no-store"

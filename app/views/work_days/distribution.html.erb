@@ -11,7 +11,7 @@
     <div class="distribution-header-actions">
       <% unless @public_view %><%= link_to "Volver a la operación", work_day_path(@work_day), class: "btn btn-outline-primary" %><% end %>
       <% share_url = if @fixed_public_link
-           public_current_distribution_url(token: PublicCurrentDistributionLink.token)
+           public_roll_url
          else
            share_token = @public_view ? params[:token] : @work_day.signed_id(purpose: :public_distribution, expires_in: 7.days)
            public_work_day_distribution_url(token: share_token)
