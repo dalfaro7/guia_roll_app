@@ -33,7 +33,7 @@ class WorkDaysPublicIconsTest < ActionDispatch::IntegrationTest
     %w[photographer kayaker boat head-guide tour-leader driver bus-guide].each do |kind|
       assert_select "[data-role-icon='#{kind}'][aria-hidden='true']", minimum: 1
     end
-    assert_select "[data-role-icon='boat'] img[src='/icons/paddle.svg']", minimum: 1
+    assert_select "[data-role-icon='boat'] img[src='/icons/guide-helmet-vest.svg']", minimum: 1
     assert_select "[data-role-icon='driver'] img[src='/icons/steering-wheel.svg']", minimum: 1
     assert_select "[data-role-icon='kayaker']", text: "🚣"
     assert_select "tr[data-person-kind='guide']", text: /Photo guide.*Fotógrafo/

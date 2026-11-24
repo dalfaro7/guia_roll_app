@@ -26,7 +26,7 @@ module ApplicationHelper
     icon, kind = case role
     when "Photographer" then ["📷", "photographer"]
     when "Safety Kayaker" then ["🚣", "kayaker"]
-    when "River Guide" then [image_tag("/icons/paddle.svg", alt: "", class: "distribution-role-svg"), "boat"]
+    when "River Guide" then [image_tag("/icons/guide-helmet-vest.svg", alt: "", class: "distribution-role-svg"), "boat"]
     when "Head Guide", "HG" then ["👑", "head-guide"]
     when "Tour Leader", "TL" then ["⭐", "tour-leader"]
     when "Driver", "Chofer" then [image_tag("/icons/steering-wheel.svg", alt: "", class: "distribution-role-svg"), "driver"]
