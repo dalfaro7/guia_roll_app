@@ -39,7 +39,7 @@ class SaraManualAssignment
         elsif specialized && [1, 2, 3].include?(guide.priority)
           :standby_specialist
         end
-      elsif slot.location == "PM" && guide.active? && guide.priority == 5 &&
+      elsif slot.location == "PM" && guide.active? && [5, 6].include?(guide.priority) &&
           day&.worked? && %w[Sara-3&4 Sara-3 Sara-4].include?(day.location) &&
           assignments.one? && assignments.first.location.to_s.start_with?("Sara")
         :second_outing

@@ -2,7 +2,7 @@
     <section class="card mt-4" id="day-sara-pending-assignments">
       <div class="card-header">Completar puestos de Sarapiquí Clase IV y Sarapiquí PM</div>
       <div class="card-body">
-        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas activas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En Sarapiquí PM puede elegir un guía de prioridad 5 que ya hizo Sarapiquí Clase IV.</p>
+        <p class="work-day-hint">Seleccione un guía por puesto pendiente. Las reservas activas de prioridad 6 aparecen aquí aunque no participen en la generación automática. En Sarapiquí PM puede elegir un guía de prioridad 5 o 6 que ya hizo Sarapiquí Clase IV.</p>
         <% @pending_sara_slots.each do |slot| %>
           <% candidates = @sara_candidates_by_slot.fetch(slot) %>
           <div class="border rounded p-3 mb-3">
