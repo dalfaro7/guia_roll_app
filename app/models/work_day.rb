@@ -1,4 +1,6 @@
 class WorkDay < ApplicationRecord
+  class UnsafeDeletion < StandardError; end
+
   # Check financial dependencies before destroying any operational children.
   has_many :departures, dependent: :restrict_with_error
   has_many :work_day_versions, dependent: :destroy
@@ -204,14 +206,80 @@ class WorkDay < ApplicationRecord
 
   def force_delete!
     with_lock do
-      # Never reset assignments or remove financial history to make a deletion pass.
-      # Balance restoration and dependent callbacks roll back if destruction fails.
+      reason = deletion_block_reason
+      raise UnsafeDeletion, reason if reason
+
+      remove_unpublished_plan! if generated?
       RoleResetService.new(self).revert_only_balances
       destroy!
     end
   end
 
+  def deletion_block_reason
+    return "Una programación publicada no se puede eliminar." if published?
+    return (departures.exists? ? "Este borrador tiene valoraciones vinculadas y no se puede eliminar." : nil) if draft?
+    return "Solo se eliminan programaciones generadas para fechas futuras." unless date > Date.current
+    if work_day_versions.where("snapshot ->> 'event' = ?", "publish").exists?
+      return "Esta programación ya fue publicada y conserva historial."
+    end
+    if departures.where.not(status: "scheduled").exists? ||
+        departures.where.not(closed_at: nil).exists?
+      return "Esta programación tiene salidas cerradas o canceladas."
+    end
+
+    assignments = CompensationAssignment.joins(:departure)
+      .where(departures: { work_day_id: id })
+    if assignments.where.not(status: %w[planned canceled]).exists?
+      return "Esta programación tiene trabajo o pagos realizados."
+    end
+    assignment_ids = assignments.select(:id)
+    if bus_assignments.where.not(compensation_assignment_id: nil)
+        .where.not(compensation_assignment_id: assignment_ids).exists?
+      return "Hay pagos de chofer vinculados a otra programación."
+    end
+    if CompensationAdjustment.where(source_assignment_id: assignment_ids).exists?
+      return "Esta programación tiene ajustes contables vinculados."
+    end
+    week_start = Compensation::SettlementService.week_start(date)
+    if CompensationSettlement.where(week_start: week_start)
+        .where("closed_at IS NOT NULL OR paid_at IS NOT NULL").exists?
+      return "La semana de esta programación ya tiene pagos cerrados."
+    end
+    if CompensationSettlementItem.joins(:compensation_settlement)
+        .where(compensation_assignment_id: assignment_ids)
+        .where("compensation_settlements.closed_at IS NOT NULL OR compensation_settlements.paid_at IS NOT NULL").exists?
+      return "Esta programación tiene pagos cerrados vinculados."
+    end
+
+    nil
+  end
+
   private
+
+  def remove_unpublished_plan!
+    assignments = CompensationAssignment.joins(:departure)
+      .where(departures: { work_day_id: id })
+    assignment_ids = assignments.pluck(:id)
+    settlement_ids = CompensationSettlementItem
+      .where(compensation_assignment_id: assignment_ids)
+      .distinct.pluck(:compensation_settlement_id)
+
+    CompensationSettlementItem.where(compensation_assignment_id: assignment_ids).delete_all
+    # BusAssignment callbacks cancel payments but cannot remove a first 4x4 leg
+    # before PM. Here all planned payments are removed together below.
+    bus_assignments.delete_all
+    assignments.find_each(&:destroy!)
+    Compensation::SettlementService.refresh_for(self)
+    CompensationSettlement.where(id: settlement_ids).find_each do |settlement|
+      next if settlement.compensation_settlement_items.exists? ||
+        settlement.compensation_adjustments.exists?
+
+      raise UnsafeDeletion, "Quedó un pago planificado sin conciliar." unless
+        settlement.amount_cents.zero?
+      settlement.destroy!
+    end
+    departures.destroy_all
+  end
 
   def log_event(
     event,

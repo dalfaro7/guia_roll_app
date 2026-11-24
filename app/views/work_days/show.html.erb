@@ -110,15 +110,17 @@
         </div>
 
     <!-- DELETE BUTTON -->
-    <details class="work-day-danger"><summary>Acciones de eliminación</summary><p>Eliminar esta programación restaura los saldos. Esta acción no se puede deshacer.</p>
-        <%= button_to "Eliminar programación",
-                  delete_with_reset_work_day_path(@work_day),
-                  method: :delete,
-                  class: "btn btn-outline-danger btn-sm",
-                  data: {
-                    turbo: false,
-                    confirm: "Esto eliminará permanentemente la programación y restaurará los saldos. ¿Continuar?"
-                  } %>
+    <details class="work-day-danger"><summary>Acciones de eliminación</summary>
+        <% if (deletion_reason = @work_day.deletion_block_reason) %>
+          <p><%= deletion_reason %></p>
+        <% else %>
+          <p>Se restaurarán los saldos y se quitarán los importes planificados. Esta acción no se puede deshacer.</p>
+          <%= button_to "Eliminar programación",
+                    delete_with_reset_work_day_path(@work_day),
+                    method: :delete,
+                    class: "btn btn-outline-danger btn-sm",
+                    data: { turbo_confirm: "¿Eliminar por completo esta programación y sus importes planificados? Esta acción no se puede deshacer." } %>
+        <% end %>
     </details></div>
 <footer class="day-user-footer">
 <span class="work-day-eyebrow">SESIÓN ACTUAL</span><strong><%= current_user.name.presence || current_user.email %></strong>

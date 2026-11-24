@@ -605,6 +605,8 @@ class WorkDaysController < ApplicationController
       work_days_path,
       notice: "Programación eliminada correctamente."
     )
+  rescue WorkDay::UnsafeDeletion => error
+    redirect_to @work_day, alert: error.message
   rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::RecordNotDestroyed
     redirect_to @work_day,
       alert: "Esta programación tiene dependencias protegidas y no se puede eliminar. Use Editar operación o Reiniciar programación para corregirla."
