@@ -104,6 +104,12 @@ jobs:
           bin/rails db:test:prepare
           bin/rails test test/integration/work_day_deletion_test.rb
 
+      - name: Verify Sarapiqui PM assignments
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: bin/rails test test/services/sara_manual_assignment_test.rb
+
       - name: Run tests
         env:
           RAILS_ENV: test

@@ -68,6 +68,30 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
     assert AuditLog.exists?(action: "assign_sara_second_outing", work_day: @day)
   end
 
+  test "a priority six reserve can repeat from Sara in PM" do
+    reserve = guide("Sara reserve double outing", 6,
+      skills: %w[ClassIV address_Sarapiqui])
+    sara_slot = create_slot("Sara-3&4", %w[ClassIV])
+    pm_slot = create_slot("PM", %w[ClassIV])
+    service.call(slot_id: sara_slot.id, guide_id: reserve.id, actor: @actor)
+
+    assert service.candidates_for(pm_slot).any? do |candidate|
+      candidate.guide == reserve && candidate.kind == :second_outing
+    end
+    service.call(slot_id: pm_slot.id, guide_id: reserve.id, actor: @actor)
+
+    assert_equal "Sara-3&4", @day.guide_days.find_by!(guide: reserve).reload.location
+    rows = CompensationAssignment.joins(:departure)
+      .where(guide: reserve, departures: { work_day_id: @day.id })
+      .order("departures.starts_at ASC")
+    assert_equal %w[Sara-3&4 PM], rows.map { |row| row.departure.location }
+    assert_equal 20,
+      rows.last.compensation_lines.find_by!(code: "guide_regular").discount_percent
+    assert_equal 2, RollFairnessPolicy.roll_worked_days_for_guide(reserve,
+      before_date: @day.date + 1.day)
+    assert_empty @day.roll_coverage_errors
+  end
+
   test "resetting the roll cancels both Sara and the added PM outing" do
     sara = guide("Sara reset guide", 5,
       skills: ["ClassIV", "Roll de Sara"])
