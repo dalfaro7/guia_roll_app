@@ -96,6 +96,12 @@ jobs:
         with:
           bundler-cache: true
 
+      - name: Verify safe deletion accounting
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: bin/rails db:test:prepare test test/integration/work_day_deletion_test.rb
+
       - name: Run tests
         env:
           RAILS_ENV: test
