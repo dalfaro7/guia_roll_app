@@ -1,0 +1,18 @@
+<% content_for :title, "Marcar libre a #{@guide_day.guide.name}" %>
+<div class="container py-4">
+  <h1>Marcar libre a <%= @guide_day.guide.name %></h1>
+  <p>Fecha: <strong><%= l(@work_day.date, format: :long) %></strong>. Salida actual: <strong><%= @guide_day.location %></strong>.</p>
+  <div class="alert alert-warning">
+    Esta acción quitará al guía de la salida y dejará su puesto pendiente. Cancelará cualquier asignación económica activa de este día y actualizará el saldo de días libres del guía.
+  </div>
+  <p>Asignación económica actual: <%= @assignment ? compensation_status_label(@assignment.status) : "Sin asignación" %>.</p>
+  <%= form_with url: release_guide_work_day_path(@work_day), method: :post, local: true do %>
+    <%= hidden_field_tag :guide_day_id, @guide_day.id %>
+    <% if compensation_correction_required?(@work_day) %>
+      <%= text_field_tag :correction_reason, nil, class: "form-control mb-3",
+        placeholder: "Motivo de corrección", required: true %>
+    <% end %>
+    <%= submit_tag "Confirmar día libre", class: "btn btn-danger" %>
+    <%= link_to "Volver sin cambios", work_day_path(@work_day), class: "btn btn-outline-secondary ms-2" %>
+  <% end %>
+</div>

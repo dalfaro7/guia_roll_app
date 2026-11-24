@@ -1,5 +1,8 @@
 <% content_for :title, "Valoración del #{@work_day.date}" %>
 <div class="container py-4">
+  <% visible_assignments = ->(departure) do
+       departure.compensation_assignments.reject(&:canceled_by_schedule?)
+     end %>
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
     <div>
       <h1>Valoración del <%= l(@work_day.date, format: :long) %></h1>
@@ -16,7 +19,7 @@
           <thead><tr><th>Salida</th><th>Actividad</th><th class="text-end">Personal</th><th class="text-end">Transporte</th><th class="text-end">Total</th><th>Detalle</th></tr></thead>
           <tbody>
             <% @operating_sections.each do |location, section_departures| %>
-              <% section_assignments = section_departures.flat_map(&:compensation_assignments) %>
+              <% section_assignments = section_departures.flat_map { |departure| visible_assignments.call(departure) } %>
               <% personnel_cents = section_assignments.sum(&:total_cents) %>
               <% transport_cents = @transport_by_location.fetch(location, []).sum(&:cost_cents) %>
               <tr data-operating-section="<%= location %>">
@@ -36,7 +39,7 @@
             <% end %>
           </tbody>
           <tfoot>
-            <% personnel_total = @departures.flat_map(&:compensation_assignments).sum(&:total_cents) %>
+            <% personnel_total = @departures.flat_map { |departure| visible_assignments.call(departure) }.sum(&:total_cents) %>
             <% transport_total = @transport_assignments.sum(&:cost_cents) %>
             <tr><th colspan="2">Total de la operación</th><th class="text-end"><%= usd(personnel_total) %></th><th class="text-end"><%= usd(transport_total) %></th><th class="text-end"><%= usd(personnel_total + transport_total) %></th><th></th></tr>
           </tfoot>
@@ -74,7 +77,7 @@
   <% if @departures.empty? %>
     <p class="alert alert-info">Aún no hay asignaciones económicas registradas para este día.</p>
   <% else %>
-    <% daily_assignments = @departures.flat_map(&:compensation_assignments) %>
+    <% daily_assignments = @departures.flat_map { |departure| visible_assignments.call(departure) } %>
     <% daily_totals = daily_assignments.group_by { |assignment| [assignment.guide_id, assignment.driver_id] } %>
     <section class="card mb-4">
       <div class="card-body">
@@ -102,7 +105,7 @@
   <% end %>
 
   <% @departures.each do |departure| %>
-    <% assignments = departure.compensation_assignments.sort_by { |a| [a.person&.name.to_s, a.id] } %>
+    <% assignments = visible_assignments.call(departure).sort_by { |a| [a.person&.name.to_s, a.id] } %>
     <section class="card mb-4" id="departure-<%= departure.id %>">
       <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div><strong><%= departure.label %></strong> · <%= departure.starts_at.in_time_zone("America/Costa_Rica").strftime("%H:%M") %> · <%= departure.status %></div>
