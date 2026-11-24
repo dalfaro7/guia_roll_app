@@ -90,6 +90,44 @@ class WorkDayDeletionTest < ActionDispatch::IntegrationTest
     assert_not CompensationSettlementItem.exists?(driver_item.id)
   end
 
+  test "recalculates the week without removing another day's planned payment" do
+    future_wednesday = Date.current + ((3 - Date.current.wday) % 7) + 7.days
+    @day.update!(date: future_wednesday, status: :generated)
+    other = WorkDay.create!(date: future_wednesday + 1.day)
+    other.update!(status: :generated)
+
+    first_departure = @day.departures.create!(label: "Balsa", location: "Balsa",
+      starts_at: Departure.fixed_start_for(@day.date, "Balsa"))
+    first = first_departure.compensation_assignments.create!(guide: @guide,
+      role_code: "river_guide", status: "planned")
+    first.compensation_lines.create!(code: "guide_regular", rate_cents: 5_000,
+      amount_cents: 5_000, applied_at: Time.current)
+
+    other_departure = other.departures.create!(label: "Balsa", location: "Balsa",
+      starts_at: Departure.fixed_start_for(other.date, "Balsa"))
+    retained = other_departure.compensation_assignments.create!(guide: @guide,
+      role_code: "river_guide", status: "planned")
+    retained.compensation_lines.create!(code: "guide_regular", rate_cents: 3_000,
+      amount_cents: 3_000, applied_at: Time.current)
+
+    Compensation::SettlementService.refresh_for(@day)
+    settlement = CompensationSettlement.find_by!(guide: @guide,
+      week_start: future_wednesday)
+    assert_equal 8_000, settlement.amount_cents
+
+    assert_difference "WorkDay.count", -1 do
+      delete delete_with_reset_work_day_path(@day)
+    end
+
+    assert_redirected_to work_days_path
+    assert_equal 3_000, settlement.reload.amount_cents
+    assert_equal [retained.id],
+      settlement.compensation_settlement_items.pluck(:compensation_assignment_id)
+    assert CompensationAssignment.exists?(retained.id)
+    assert WorkDay.exists?(other.id)
+    assert_not CompensationAssignment.exists?(first.id)
+  end
+
   test "keeps a future generated plan when its week has a closed payment" do
     @day.update!(status: :generated)
     week_start = Compensation::SettlementService.week_start(@day.date)
