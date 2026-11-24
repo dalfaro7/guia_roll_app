@@ -435,4 +435,41 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     get distribution_work_day_path(day)
     assert_redirected_to new_user_session_path
   end
+  test "published distribution excludes photographers and kayakers from numbering in every outing" do
+    user = User.create!(name: "Numbering admin", email: "numbering@example.test",
+      password: "password123", role: :admin)
+    sign_in user
+    locations = %w[Balsa Sara-3&4 Sara-3 Sara-4 PM Privado]
+    guides = locations.flat_map do |location|
+      ["River Guide", "Photographer", "Safety Kayaker", "River Guide"].each_with_index.map do |role, index|
+        [Guide.create!(name: "#{location} person #{index}", priority: 3, active: true), location, role]
+      end
+    end
+    day = WorkDay.create!(date: Date.current + 29.days, status: :published)
+    guides.each do |guide, location, role|
+      day.guide_days.find_by!(guide: guide).update_columns(
+        status: GuideDay.statuses.fetch("worked"), location: location, role_primary: role)
+    end
+    [distribution_work_day_path(day), public_work_day_distribution_path(
+      token: day.signed_id(purpose: :public_distribution, expires_in: 7.days))].each do |path|
+      get path
+      assert_response :success
+      rows = css_select("tr[data-person-kind='guide']")
+      guides.each do |guide, _location, role|
+        row = rows.find { |candidate| candidate.text.include?(guide.name) }
+        assert row, guide.name
+        number = row.at_css(".distribution-number").text.strip
+        if ["Photographer", "Safety Kayaker"].include?(role)
+          assert_equal "", number, guide.name
+        else
+          assert_match(/\A[1-9]\d*\z/, number, guide.name)
+        end
+      end
+      rows.group_by { |row| row["data-section"] }.each_value do |section_rows|
+        numbers = section_rows.map { |row| row.at_css(".distribution-number").text.strip }.reject(&:empty?)
+        assert_equal (1..numbers.size).map(&:to_s), numbers
+      end
+    end
+  end
+
 end
