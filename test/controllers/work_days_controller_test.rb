@@ -146,7 +146,7 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     assert_equal %w[Busguide ClassIV Computer], sara_slots.first.skills.pluck(:name).sort
     assert_equal %w[ClassIV], sara_slots.second.skills.pluck(:name).sort
     assert_equal %w[Busguide ClassIII Computer], pm_slots.first.skills.pluck(:name).sort
-    assert_empty pm_slots.second.skills
+    assert_equal %w[ClassIV], pm_slots.second.skills.pluck(:name).sort
     assert_equal %w[ClassIII], work_day.location_slots.find_by!(location: "Balsa").skills.pluck(:name)
     assert_equal %w[ClassIII Elite], private_slots.first.skills.pluck(:name).sort
     assert_equal %w[ClassIII], private_slots.second.skills.pluck(:name)

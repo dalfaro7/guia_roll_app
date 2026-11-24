@@ -21,22 +21,6 @@ class CorrectPmBusGuideRequirement < ActiveRecord::Migration[8.1]
         ) = ARRAY['Busguide', 'ClassIV', 'Computer']
     SQL
 
-    execute <<~SQL
-      DELETE FROM slot_skills AS assigned_skill
-      USING location_slots AS slot, work_days AS day, skills AS class_iv
-      WHERE assigned_skill.location_slot_id = slot.id
-        AND slot.work_day_id = day.id
-        AND assigned_skill.skill_id = class_iv.id
-        AND class_iv.name = 'ClassIV'
-        AND slot.location = 'PM'
-        AND day.status IN (0, 1)
-        AND day.date >= DATE '2026-11-24'
-        AND (
-          SELECT COUNT(*)
-          FROM slot_skills AS requirement
-          WHERE requirement.location_slot_id = slot.id
-        ) = 1
-    SQL
   end
 
   def down

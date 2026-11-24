@@ -678,7 +678,7 @@ class WorkDaysController < ApplicationController
           )
           skill_names = case location
           when "Sara-3&4" then %w[ClassIV]
-          when "PM" then index.zero? ? %w[ClassIII] : []
+          when "PM" then index.zero? ? %w[ClassIII] : %w[ClassIV]
           else %w[ClassIII]
           end
           if index.zero?
