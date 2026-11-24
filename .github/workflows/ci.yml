@@ -116,6 +116,12 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
         run: bin/rails test test/controllers/work_days_controller_test.rb -n /default_requirements/
 
+      - name: Verify generated guide release
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: bin/rails test test/integration/generated_guide_release_test.rb
+
       - name: Run tests
         env:
           RAILS_ENV: test

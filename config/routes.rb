@@ -123,6 +123,8 @@ Rails.application.routes.draw do
       post :reset_roll
 
       patch :update_availability
+      get :confirm_release_guide
+      post :release_guide
       patch :update_roles
 
       delete :delete_with_reset
