@@ -21,6 +21,28 @@ module ApplicationHelper
       "SendPhotos" => "Envío de fotos" }.fetch(value.to_s, value.presence || "—")
   end
 
+  def distribution_role_with_icon(value)
+    role = value.to_s
+    icon, kind = case role
+    when "Photographer" then ["📷", "photographer"]
+    when "Safety Kayaker" then ["🛶", "kayaker"]
+    when "River Guide" then ["🚣", "boat"]
+    when "Head Guide", "HG" then ["👑", "head-guide"]
+    when "Tour Leader", "TL" then ["⭐", "tour-leader"]
+    when "Driver", "Chofer" then ["🚐", "driver"]
+    when /\A(?:Bus Guide|Guía de bus)/ then ["🚌", "bus-guide"]
+    end
+    return roll_role_label(value) unless icon
+
+    content_tag(:span, class: "distribution-role") do
+      safe_join([
+        content_tag(:span, icon, class: "distribution-role-icon",
+          data: { role_icon: kind }, aria: { hidden: true }),
+        content_tag(:span, roll_role_label(value))
+      ])
+    end
+  end
+
   def office_employee_day_entry(day, &block)
     content = capture(&block)
     return content unless current_user&.admin?
