@@ -92,6 +92,31 @@ class SaraManualAssignmentTest < ActiveSupport::TestCase
     assert_empty @day.roll_coverage_errors
   end
 
+  test "a priority one Sara guide can repeat in PM" do
+    sara = guide("Priority one Sara double outing", 1,
+      skills: %w[ClassIV])
+    create_slot("Sara-3&4", %w[ClassIV])
+    pm_slot = create_slot("PM", %w[ClassIV])
+    @day.guide_days.create!(guide: sara, status: :worked,
+      location: "Sara-3&4", role_primary: "River Guide")
+
+    assert service.candidates_for(pm_slot).any? do |candidate|
+      candidate.guide == sara && candidate.kind == :second_outing
+    end
+    service.call(slot_id: pm_slot.id, guide_id: sara.id, actor: @actor)
+
+    assert_equal "Sara-3&4", @day.guide_days.find_by!(guide: sara).reload.location
+    rows = CompensationAssignment.joins(:departure)
+      .where(guide: sara, departures: { work_day_id: @day.id })
+      .order("departures.starts_at ASC")
+    assert_equal %w[Sara-3&4 PM], rows.map { |row| row.departure.location }
+    assert_equal 20,
+      rows.last.compensation_lines.find_by!(code: "guide_regular").discount_percent
+    assert_equal 2, RollFairnessPolicy.roll_worked_days_for_guide(sara,
+      before_date: @day.date + 1.day)
+    assert_empty @day.roll_coverage_errors
+  end
+
   test "resetting the roll cancels both Sara and the added PM outing" do
     sara = guide("Sara reset guide", 5,
       skills: ["ClassIV", "Roll de Sara"])
