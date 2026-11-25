@@ -122,6 +122,30 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
     assert_empty day.roll_coverage_errors
   end
 
+  test "regeneration replaces a canceled secondary photographer with the new role" do
+    CompensationRate.find_or_create_by!(code: "guide_regular",
+      effective_at: Time.utc(2020, 1, 1)) { |rate| rate.amount_cents = 5_000 }
+    photographer = guide("Former secondary photographer", 3, %w[ClassIII])
+    day = WorkDay.create!(date: Date.current + 38.days)
+    location_slot = slot(day, "Balsa", %w[ClassIII])
+    guide_day = day.guide_days.find_by!(guide: photographer)
+    departure = day.departures.create!(label: "Balsa", location: "Balsa",
+      starts_at: Departure.fixed_start_for(day.date, "Balsa"))
+    assignment = departure.compensation_assignments.create!(
+      guide: photographer, guide_day: guide_day, role_code: "photographer",
+      source: "manual", status: "canceled", canceled_by_schedule: true,
+      principal_photographer: false)
+
+    day.generate_roles!
+
+    assert day.reload.generated?
+    assert guide_day.reload.worked?
+    assert_equal "river_guide", assignment.reload.role_code
+    assert_equal "planned", assignment.status
+    assert_not assignment.principal_photographer?
+    assert_not assignment.canceled_by_schedule?
+  end
+
   test "Balsa shortage stays pending and blocks publication" do
     sara = guide("Sara assigned guide", 5, ["ClassIV", "Roll de Sara"])
     day = WorkDay.create!(date: Date.current + 34.days)

@@ -49,17 +49,31 @@ module Compensation
           restored = assignment.canceled_by_schedule? &&
             assignment.departure.status != "canceled"
           if restored
-            assignment.update!(status: assignment.departure.closed? ? "performed" : "planned",
-              canceled_by_schedule: false)
-          end
-          if @guide_day.saved_change_to_role_primary? ||
+            # A reset clears the team's roles and tasks. Restore the assignment
+            # using the newly generated role, not its old manual photo settings.
+            role = inferred_role
+            former_departure = assignment.departure
+            departure = find_or_create_departure
+            assignment.update!(
+              departure: departure,
+              role_code: role,
+              status: departure.closed? ? "performed" : "planned",
+              canceled_by_schedule: false,
+              photo_task: photo_task(role),
+              principal_photographer: role == "photographer" &&
+                !departure.compensation_assignments.active
+                  .where(role_code: "photographer", principal_photographer: true)
+                  .where.not(id: assignment.id).exists?,
+              also_drives: @guide_day.role_secondary == "Driver",
+              bus_guide: @guide_day.role_secondary.to_s.include?("Bus Guide")
+            )
+            promote_principal_photographer(former_departure)
+            promote_principal_photographer(departure) if former_departure != departure
+            Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
+          elsif @guide_day.saved_change_to_role_primary? ||
               @guide_day.saved_change_to_role_secondary? ||
               @guide_day.saved_change_to_location?
             sync_manual_role(assignment)
-          end
-          if restored
-            promote_principal_photographer(assignment.departure)
-            Compensation::RepriceDay.call(@work_day, guide: @guide_day.guide)
           end
         end
         return
