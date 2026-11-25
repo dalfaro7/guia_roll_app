@@ -12,8 +12,6 @@ class WorkDaysController < ApplicationController
     :force_assign,
     :assign_sara_guide,
     :update_availability,
-    :confirm_release_guide,
-    :release_guide,
     :delete_with_reset,
     :create_slots,
     :update_roles,
@@ -26,7 +24,7 @@ class WorkDaysController < ApplicationController
 
   before_action :require_compensation_operator!, only: [
     :create, :update, :force_assign,
-    :update_availability, :confirm_release_guide, :release_guide,
+    :update_availability,
     :update_roles, :generate_roles, :publish, :unpublish,
     :delete_with_reset, :reset_roll, :create_slots,
     :move_assigned_task_to_roll
@@ -38,7 +36,7 @@ class WorkDaysController < ApplicationController
   before_action :enforce_edit_window, only: [
     :update, :force_assign, :assign_sara_guide,
     :add_sara_guide, :update_sara_availability,
-    :update_availability, :confirm_release_guide, :release_guide, :update_roles,
+    :update_availability, :update_roles,
     :generate_roles, :publish, :unpublish, :delete_with_reset,
     :reset_roll, :create_slots, :move_assigned_task_to_roll
   ]
@@ -503,55 +501,6 @@ class WorkDaysController < ApplicationController
       @work_day,
       alert: e.record.errors.full_messages.to_sentence
     )
-  end
-
-  def confirm_release_guide
-    unless @work_day.generated?
-      return redirect_to @work_day,
-        alert: "Solo se puede liberar a un guía de una programación generada."
-    end
-
-    @guide_day = @work_day.guide_days.includes(:guide).find(params[:guide_day_id])
-    unless @guide_day.worked?
-      return redirect_to @work_day, alert: "Este guía ya no está asignado a una salida."
-    end
-
-    @assignment = CompensationAssignment.find_by(guide_day: @guide_day)
-  end
-
-  def release_guide
-    released = false
-    @work_day.with_lock do
-      guide_day = @work_day.guide_days.lock.includes(:guide).find(params[:guide_day_id])
-      if @work_day.generated? && guide_day.worked?
-        before = guide_day.attributes.slice("status", "location", "role_primary", "role_secondary")
-        guide_day.update!(status: :day_off, location: nil, role_primary: nil,
-          role_secondary: nil, status_note: nil, manually_modified: true,
-          modified_by: current_user)
-
-        # Keep canceled records for audit, including ones manually canceled earlier.
-        assignments = CompensationAssignment.joins(:departure)
-          .where(guide: guide_day.guide,
-            departures: { work_day_id: @work_day.id })
-        assignments.find_each do |assignment|
-          assignment.update!(status: "canceled", canceled_by_schedule: true,
-            updated_by: current_user)
-        end
-        Compensation::RepriceDay.call(@work_day, guide: guide_day.guide)
-        audit!(action: "release_generated_guide", auditable: guide_day,
-          work_day: @work_day, metadata: { guide_id: guide_day.guide_id,
-            guide_name: guide_day.guide.name, before: before,
-            after: guide_day.attributes.slice("status", "location", "role_primary", "role_secondary"),
-            canceled_assignment_ids: assignments.pluck(:id) })
-        released = true
-      end
-    end
-
-    redirect_to @work_day,
-      (released ? { notice: "Guía marcado libre; su puesto queda pendiente y no tiene pago activo." } :
-        { alert: "Solo se puede liberar a un guía asignado de una programación generada." })
-  rescue ActiveRecord::RecordInvalid => error
-    redirect_to @work_day, alert: error.record.errors.full_messages.to_sentence
   end
 
   def update_roles

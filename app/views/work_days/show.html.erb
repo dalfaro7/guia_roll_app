@@ -244,7 +244,6 @@
                 <th>Tarea de fotos</th>
                 <th>Ubicación actual</th>
                 <th>Nueva ubicación</th>
-                <% if current_user.admin? || current_user.operador? %><th>Disponibilidad</th><% end %>
             </tr>
         </thead>
 
@@ -343,9 +342,6 @@
                                  gd.location
                                ), class: "team-location" %>
                 </td>
-                <% if current_user.admin? || current_user.operador? %>
-                  <td><%= link_to "Marcar libre", confirm_release_guide_work_day_path(@work_day, guide_day_id: gd.id), class: "btn btn-sm btn-outline-danger" %></td>
-                <% end %>
             </tr>
             <% end %>
             <% @second_pm_assignments.each do |assignment| %>
@@ -357,7 +353,6 @@
                     <%= link_to "Operación HG Sarapiquí", sara_operation_work_day_path(@work_day) %>.</td>
                 <td>PM</td>
                 <td>—</td>
-                <% if current_user.admin? || current_user.operador? %><td>—</td><% end %>
             </tr>
             <% end %>
         </tbody>

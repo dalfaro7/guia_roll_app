@@ -121,6 +121,26 @@ class WorkDaysControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "generated programming cannot mark a worked guide free" do
+    operator = User.create!(name: "Generated availability operator",
+      email: "generated-availability-operator@example.test",
+      password: "password123", role: :operador)
+    sign_in operator
+    guide = Guide.create!(name: "Assigned guide", priority: 3, active: true)
+    day = WorkDay.create!(date: Date.current + 5.days, status: :generated)
+    guide_day = day.guide_days.find_by!(guide: guide)
+    guide_day.update!(status: :worked, location: "Balsa", role_primary: "River Guide")
+
+    get work_day_path(day)
+    assert_response :success
+    assert_select "a", text: "Marcar libre", count: 0
+    assert_raises(ActionController::RoutingError) do
+      Rails.application.routes.recognize_path(
+        "/work_days/#{day.id}/release_guide", method: :post)
+    end
+    assert guide_day.reload.worked?
+  end
+
   test "Sara PM and Private default requirements keep one specialized first slot" do
     user = User.create!(name: "Slot defaults admin", email: "slot-defaults-admin@example.test",
       password: "password123", role: :admin)
