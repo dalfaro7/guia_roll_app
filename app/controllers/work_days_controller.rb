@@ -617,8 +617,18 @@ class WorkDaysController < ApplicationController
       else
         "Programación generada correctamente."
       end
-    rescue => e
-      flash[:alert] = e.message
+    rescue ActiveRecord::RecordInvalid => error
+      details = error.record.errors.full_messages.to_sentence
+      Rails.logger.error(
+        "[ROLL GENERATION] WorkDay #{work_day.id}: " \
+        "#{error.record.class.name} #{error.record.id} #{details}"
+      )
+      flash[:alert] = "No se pudo generar: #{details}"
+    rescue => error
+      Rails.logger.error(
+        "[ROLL GENERATION] WorkDay #{work_day.id}: #{error.class}: #{error.message}"
+      )
+      flash[:alert] = error.message
     end
 
     redirect_to work_day_path(work_day)
