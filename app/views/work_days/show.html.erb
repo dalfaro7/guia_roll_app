@@ -39,14 +39,14 @@
             <% end %>
 
             <% if @work_day.generated? %>
-            <%= button_to "Reiniciar programación",
-                      reset_roll_work_day_path(@work_day),
-                      method: :post,
-                      class: "btn btn-secondary",
-                      data: {
-                        turbo: false,
-                        confirm: "¿Reiniciar completamente la programación de este día?"
-                      } %>
+            <%= form_with url: reset_roll_work_day_path(@work_day), method: :post,
+                  local: true, data: { turbo_confirm: "¿Reiniciar completamente la programación de este día?" } do %>
+              <% if compensation_correction_required?(@work_day) %>
+                <%= text_field_tag :correction_reason, nil, class: "form-control mb-2",
+                      placeholder: "Motivo de corrección", required: true %>
+              <% end %>
+              <%= submit_tag "Reiniciar programación", class: "btn btn-secondary" %>
+            <% end %>
             <% end %>
 
 
@@ -59,14 +59,14 @@
             <% end %>
 
             <% if @work_day.draft? %>
-            <%= button_to "Generar roles",
-                      generate_roles_work_day_path(@work_day),
-                      method: :patch,
-                      class: "btn btn-success",
-                      data: {
-                        turbo: false,
-                        confirm: "¿Generar los roles de este día?"
-                      } %>
+            <%= form_with url: generate_roles_work_day_path(@work_day), method: :patch,
+                  local: true, data: { turbo_confirm: "¿Generar los roles de este día?" } do %>
+              <% if compensation_correction_required?(@work_day) %>
+                <%= text_field_tag :correction_reason, nil, class: "form-control mb-2",
+                      placeholder: "Motivo de corrección", required: true %>
+              <% end %>
+              <%= submit_tag "Generar roles", class: "btn btn-success" %>
+            <% end %>
             <% end %>
 
             <% if @work_day.generated? %>

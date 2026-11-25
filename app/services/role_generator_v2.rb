@@ -21,11 +21,9 @@ class RoleGeneratorV2
         guide = select_guide_for_slot(slot)
 
         unless guide
-          # Sara y PM pueden quedar pendientes para completarse después.
-          # Las demás salidas conservan la exigencia de cobertura total.
-          next if %w[Sara-3&4 PM].include?(slot.location)
-
-          raise diagnostic_message(slot)
+          # Los puestos sin guía quedan pendientes para que la operación
+          # pueda revisar la cobertura antes de publicar.
+          next
         end
 
         assign_guide(slot, guide)

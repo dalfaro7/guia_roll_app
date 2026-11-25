@@ -122,17 +122,18 @@ class RoleGeneratorV2Test < ActiveSupport::TestCase
     assert_empty day.roll_coverage_errors
   end
 
-  test "Balsa shortage still rolls back all generated assignments" do
-    sara = guide("Sara rollback guide", 5, ["ClassIV", "Roll de Sara"])
+  test "Balsa shortage stays pending and blocks publication" do
+    sara = guide("Sara assigned guide", 5, ["ClassIV", "Roll de Sara"])
     day = WorkDay.create!(date: Date.current + 34.days)
     slot(day, "Sara-3&4", %w[ClassIV])
     slot(day, "Balsa", %w[ClassIII])
 
-    assert_raises(RuntimeError) { day.generate_roles! }
+    day.generate_roles!
 
-    assert day.reload.draft?
-    assert day.guide_days.find_by!(guide: sara).reload.standby?
-    assert_equal 0, day.assigned_roll_count
+    assert day.reload.generated?
+    assert day.guide_days.find_by!(guide: sara).reload.worked?
+    assert_equal ["Balsa: falta 1 puesto por cubrir"], day.roll_coverage_errors
+    assert_raises(ActiveRecord::RecordInvalid) { day.publish! }
   end
 
   private

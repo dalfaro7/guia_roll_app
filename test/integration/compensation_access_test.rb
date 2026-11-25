@@ -800,6 +800,26 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "admin can regenerate a draft after cutoff with a correction reason" do
+    cutoff = Time.find_zone!("America/Costa_Rica").local(
+      @day.date.year, @day.date.month, @day.date.day, 21, 30)
+
+    travel_to cutoff do
+      sign_in user(:admin)
+      get work_day_path(@day)
+      assert_response :success
+      assert_select "form[action='#{generate_roles_work_day_path(@day)}'] input[name='correction_reason']"
+
+      patch generate_roles_work_day_path(@day)
+      assert @day.reload.draft?
+
+      patch generate_roles_work_day_path(@day), params: {
+        correction_reason: "Restaurar programación del día"
+      }
+      assert @day.reload.generated?
+    end
+  end
+
   test "after 21:00 only admin can correct a departure with a reason" do
     departure = @day.departures.first
     travel_to departure.starts_at + 15.hours do
