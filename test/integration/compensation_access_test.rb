@@ -770,7 +770,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_equal "completed", departure.reload.status
   end
 
-  test "operator can cancel a scheduled outing before 20:00 and clear pending pay" do
+  test "operator can cancel a scheduled outing before 21:00 and clear pending pay" do
     departure = @day.departures.first
     guide = Guide.create!(name: "Cancel test guide", priority: 3,
       active: true, pay_category: "freelance_regular")
@@ -780,7 +780,7 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     assert_operator assignment.reload.total_cents, :>, 0
     original_start = departure.starts_at
 
-    travel_to departure.starts_at + 13.hours + 59.minutes do
+    travel_to departure.starts_at + 14.hours + 59.minutes + 59.seconds do
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
         departure: { status: "canceled" }
@@ -800,9 +800,9 @@ class CompensationAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "after 20:00 only admin can correct a departure with a reason" do
+  test "after 21:00 only admin can correct a departure with a reason" do
     departure = @day.departures.first
-    travel_to departure.starts_at + 14.hours do
+    travel_to departure.starts_at + 15.hours do
       sign_in user(:operador)
       patch work_day_departure_path(@day, departure), params: {
         departure: { status: "canceled" }

@@ -27,12 +27,12 @@ class GuideAssignmentsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "Tuesday becomes the latest closed week at 20:00 Costa Rica" do
-    travel_to @zone.local(2026, 11, 10, 19, 59) do
+  test "Tuesday becomes the latest closed week at 21:00 Costa Rica" do
+    travel_to @zone.local(2026, 11, 10, 20, 59, 59) do
       get guide_assignments_path
       assert_select "p", text: /28\/10\/2026.*03\/11\/2026/
     end
-    travel_to @zone.local(2026, 11, 10, 20) do
+    travel_to @zone.local(2026, 11, 10, 21) do
       get guide_assignments_path
       assert_select "p", text: /04\/11\/2026.*10\/11\/2026/
     end

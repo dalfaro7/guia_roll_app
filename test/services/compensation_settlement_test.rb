@@ -34,8 +34,8 @@ class CompensationSettlementTest < ActiveSupport::TestCase
     Compensation::RepriceDay.call(@day)
   end
 
-  test "day stays open before 20:00 and paid week corrections settle once" do
-    travel_to @zone.local(@date.year, @date.month, @date.day, 19, 59) do
+  test "day stays open before 21:00 and paid week corrections settle once" do
+    travel_to @zone.local(@date.year, @date.month, @date.day, 20, 59, 59) do
       CompensationCloseDueDaysJob.perform_now
       assert_equal "planned", @assignment.reload.status
       assert_nil @departure.reload.closed_at
@@ -43,7 +43,7 @@ class CompensationSettlementTest < ActiveSupport::TestCase
         week_start: @date - 6.days).closed_at
     end
 
-    travel_to @zone.local(@date.year, @date.month, @date.day, 20, 0) do
+    travel_to @zone.local(@date.year, @date.month, @date.day, 21, 0) do
       CompensationCloseDueDaysJob.perform_now
       assert_equal "performed", @assignment.reload.status
       assert_equal "completed", @departure.reload.status
@@ -74,7 +74,7 @@ class CompensationSettlementTest < ActiveSupport::TestCase
       assert_equal(-5_000, next_week.reload.amount_cents)
       next_tuesday = @date + 7.days
       Compensation::SettlementService.close_due!(now: @zone.local(
-        next_tuesday.year, next_tuesday.month, next_tuesday.day, 20, 0
+        next_tuesday.year, next_tuesday.month, next_tuesday.day, 21, 0
       ))
       assert next_week.reload.closed_at.present?
 

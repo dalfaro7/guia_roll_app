@@ -1,6 +1,6 @@
 module Compensation
   class EditWindow
-    CUTOFF_HOUR = 20
+    CUTOFF_HOUR = 21
     ZONE = "America/Costa_Rica"
 
     def self.cutoff_reached?(now: Time.current)
