@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   post "tracking/teams", to: "kayaktalkie_dashboard#create_team", as: :tracking_teams
   get 'kayaktalkie/login', to: 'kayaktalkie#new', as: :kayaktalkie_login
   post 'kayaktalkie/login', to: 'kayaktalkie#create'
+  get 'kayaktalkie/logout', to: 'kayaktalkie#confirm_logout', as: :confirm_kayaktalkie_logout
   post 'kayaktalkie/logout', to: 'kayaktalkie#destroy', as: :kayaktalkie_logout
   get 'kayaktalkie', to: 'kayaktalkie#show', as: :kayaktalkie
   get 'api/account', to: 'tracking_api#account'

@@ -1,6 +1,8 @@
 class KayaktalkieController < ActionController::Base
   protect_from_forgery with: :exception
   layout 'kayaktalkie'
+  rescue_from ActionController::InvalidAuthenticityToken, with: :recover_expired_logout
+  before_action { response.headers['Cache-Control'] = 'no-store' }
   include KayaktalkieAuthentication
   before_action :authenticate_kayaktalkie!, only: :show
   rate_limit to: 15, within: 15.minutes, only: :create,
@@ -20,9 +22,19 @@ class KayaktalkieController < ActionController::Base
   end
   def show
   end
+  def confirm_logout
+  end
   def destroy
     KayaktalkieSession.authenticate(session[:kayaktalkie_token])&.destroy!
     reset_session
-    redirect_to kayaktalkie_login_path
+    redirect_to kayaktalkie_login_path, status: :see_other
+  end
+
+  private
+  def recover_expired_logout(error)
+    raise error unless action_name == 'destroy'
+
+    redirect_to kayaktalkie_logout_path, status: :see_other,
+      alert: 'La página tenía una validación vencida. Confirma para cerrar tu sesión.'
   end
 end
