@@ -7,6 +7,9 @@ class VoiceController < ActionController::API
   before_action :browser_csrf!, except: [:status, :channels]
   before_action :authorize_channel!, except: :channels
   rescue_from VoiceTransport::Unavailable, with: ->(e) { render json: { error: e.message }, status: :service_unavailable }
+  rescue_from VoiceTransport::ParticipantDisconnected, with: ->(e) {
+    render json: { error: e.message, code: 'voice_reconnect_required' }, status: :conflict
+  }
   def channels
     response.headers['Cache-Control'] = 'no-store'
     render json: { channels: available_channels.map(&:client_profile) }

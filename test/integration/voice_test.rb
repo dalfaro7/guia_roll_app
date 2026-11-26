@@ -55,6 +55,19 @@ class VoiceTest < ActionDispatch::IntegrationTest
       assert_equal ['test-other',false], calls.last
     end
   end
+  test 'disconnected participant releases its floor and requests reconnection' do
+    with_transport(:permission, ->(*) { raise VoiceTransport::ParticipantDisconnected, 'Reconnect' }) do
+      post '/api/voice/claim', headers: @headers, as: :json
+      assert_response :conflict
+      assert_equal 'voice_reconnect_required', response.parsed_body['code']
+      assert_nil VoiceFloor.general.holder_identity
+      assert_nil VoiceFloor.general.lease_id
+    end
+    with_transport(:permission, ->(*) {}) do
+      post '/api/voice/claim', headers: @headers, as: :json
+      assert_response :success
+    end
+  end
   test 'uncertain network grant keeps its reservation until recovery' do
     with_transport(:permission, ->(*) { raise VoiceTransport::Unavailable, 'Prueba sin red' }) do
       post '/api/voice/claim', headers: @headers, as: :json

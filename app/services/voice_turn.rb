@@ -15,6 +15,10 @@ class VoiceTurn
         # Reserve and schedule recovery before a network call that may succeed but time out.
         VoiceTransport.permission(identity, true, room: floor.room_key)
         result = { lease: lease, expiresAt: (floor.expires_at.to_f * 1000).round }
+      rescue VoiceTransport::ParticipantDisconnected => e
+        # A definitive not_found means no grant occurred. Release only this floor.
+        floor.update!(holder_identity: nil, holder_name: nil, expires_at: nil, lease_id: nil)
+        failure = e
       rescue VoiceTransport::Unavailable => e
         failure = e
       end

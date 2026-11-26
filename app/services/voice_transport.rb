@@ -1,5 +1,6 @@
 class VoiceTransport
   class Unavailable < StandardError; end
+  class ParticipantDisconnected < Unavailable; end
   def self.configured?
     ENV['LIVEKIT_URL'].present? && ENV['LIVEKIT_API_KEY'].present? && ENV['LIVEKIT_API_SECRET'].present?
   end
@@ -32,7 +33,13 @@ class VoiceTransport
   rescue StandardError => e
     # Revoking a disconnected participant is already effective.
     return if !publish && e.respond_to?(:code) && e.code.to_s == 'not_found'
-    Rails.logger.warn("Voice transport failed: #{e.class}")
+    code = e.respond_to?(:code) ? e.code.to_s : 'unknown'
+    # Log only the SDK error code, never tokens, secrets, or server payloads.
+    safe_code = %w[not_found permission_denied unauthenticated unavailable deadline_exceeded internal invalid_argument resource_exhausted].include?(code) ? code : 'unknown'
+    Rails.logger.warn("Voice transport failed: #{e.class} code=#{safe_code}")
+    if publish && code == 'not_found'
+      raise ParticipantDisconnected, 'La conexión de voz se perdió. Desconecta y vuelve a conectar el canal para hablar.'
+    end
     raise Unavailable, 'No se pudo comunicar con el servidor de audio. Se mantiene el micrófono apagado.'
   end
 end
